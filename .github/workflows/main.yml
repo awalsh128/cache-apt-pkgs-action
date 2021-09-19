@@ -17,6 +17,6 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install Dependencies
         run: |
-        [ -d "~/cached-apt-install-packages" ] || exit 1;
-        [ -d "~/cached-apt-install-packages/rolldice" ] || exit 2;
-        [ -d "~/cached-apt-install-packages/dot" ] || exit 3;
+          [ -d "~/cached-apt-install-packages" ] || exit 1;
+          [ -d "~/cached-apt-install-packages/rolldice" ] || exit 2;
+          [ -d "~/cached-apt-install-packages/dot" ] || exit 3;
