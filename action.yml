@@ -1,20 +1,26 @@
-name: 'Cached APT Install'
+name: 'Cache APT Packages'
 description: 'Install APT based packages and cache them for future runs.'
+author: awalsh128
+
 inputs:
+  cache_key:
+    description: 'Unique key representing the cache being used.'
+    required: true
+    default: ''
   packages:
     description: 'Space delimited list of packages to install.'
     required: true
     default: ''
+
 runs:
   using: "composite"
   steps:
-    - name: Cache Packages
+    - name: Create Package Cache
       uses: actions/cache@v2
-      id: cached-apt-install-packages
-        with:
-          path: "~/cached-apt-install-packages"
-          key: cached-apt-install-packages
+      with:
+        path: "~/cache-apt-pkgs"
+        key: cache-apt-pkgs_${{ inputs.cache_key }}
 
     - name: Install Packages
-      run: ${{ github.action_path }}/install.sh "~/cached-apt-install-packages" "${{ inputs.packages }}"
+      run: ${{ github.action_path }}/run.sh "~/cache-apt-pkgs" "${{ inputs.packages }}"
       shell: bash
