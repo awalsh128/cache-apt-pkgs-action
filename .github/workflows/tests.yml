@@ -8,7 +8,7 @@ jobs:
     name: Install and cache.
     steps:
       - uses: actions/checkout@v2
-      - uses: .
+      - uses: ./
         with:
           cache_key: ${{ env.GITHUB_JOB }}
           packages: dot rolldice
@@ -30,7 +30,7 @@ jobs:
     name: Add another install and cache.
     steps:
       - uses: actions/checkout@v2
-      - uses: .
+      - uses: ./
         with:
           cache_key: ${{ env.GITHUB_JOB }}
           packages: dot rolldice g++
@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Verify omitted packages are cleaned up.
     steps:      
-      - uses: .
+      - uses: ./
         with:
           cache_key: ${{ env.GITHUB_JOB }}_1
           packages: dot g++
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Verify cache state is not shared.
     steps:      
-      - uses: .
+      - uses: ./
         with:
           cache_key: ${{ env.GITHUB_JOB }}_1
           packages: show-motd
