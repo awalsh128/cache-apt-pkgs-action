@@ -1,4 +1,4 @@
-name: Success Tests
+name: Tests
 on: [push, pull_request]
 
 jobs:
@@ -20,9 +20,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: |
-        [ -d "~/cached-apt-install-packages" ] || exit 1;
-        [ -d "~/cached-apt-install-packages/dot" ] || exit 2;
-        [ -d "~/cached-apt-install-packages/rolldice" ] || exit 3;
+          [ -d "~/cached-apt-install-packages" ] || exit 1;
+          [ -d "~/cached-apt-install-packages/dot" ] || exit 2;
+          [ -d "~/cached-apt-install-packages/rolldice" ] || exit 3;        
 
   add_install:
     needs: verify
@@ -42,10 +42,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: |
-        [ -d "~/cached-apt-install-packages" ] || exit 4;
-        [ -d "~/cached-apt-install-packages/dot" ] || exit 5;
-        [ -d "~/cached-apt-install-packages/g++" ] || exit 6;
-        [ -d "~/cached-apt-install-packages/rolldice" ] || exit 7;
+          [ -d "~/cached-apt-install-packages" ] || exit 4;
+          [ -d "~/cached-apt-install-packages/dot" ] || exit 5;
+          [ -d "~/cached-apt-install-packages/g++" ] || exit 6;
+          [ -d "~/cached-apt-install-packages/rolldice" ] || exit 7;
 
   verify_cleanup:
     needs: verify_add
@@ -57,10 +57,10 @@ jobs:
           cache_key: ${{ env.GITHUB_JOB }}_1
           packages: dot g++
       - run: |
-        [ -d "~/cached-apt-install-packages" ] || exit 8;        
-        [ -d "~/cached-apt-install-packages/dot" ] || exit 9;
-        [ -d "~/cached-apt-install-packages/g++" ] || exit 10;
-        [ -d "~/cached-apt-install-packages/rolldice" ] && exit 11;
+          [ -d "~/cached-apt-install-packages" ] || exit 8;   
+          [ -d "~/cached-apt-install-packages/dot" ] || exit 9;
+          [ -d "~/cached-apt-install-packages/g++" ] || exit 10;
+          [ -d "~/cached-apt-install-packages/rolldice" ] && exit 11;
   
   verify_isolation:
     needs: verify_add
@@ -72,11 +72,11 @@ jobs:
           cache_key: ${{ env.GITHUB_JOB }}_1
           packages: show-motd
       - run: |
-        [ -d "~/cached-apt-install-packages" ] || exit 12;
-        [ -d "~/cached-apt-install-packages/motd" ] || exit 13;
-        [ -d "~/cached-apt-install-packages/dot" ] && exit 14;
-        [ -d "~/cached-apt-install-packages/g++" ] && exit 15;
-        [ -d "~/cached-apt-install-packages/rolldice" ] && exit 16;
+          [ -d "~/cached-apt-install-packages" ] || exit 12;
+          [ -d "~/cached-apt-install-packages/motd" ] || exit 13;
+          [ -d "~/cached-apt-install-packages/dot" ] && exit 14;
+          [ -d "~/cached-apt-install-packages/g++" ] && exit 15;
+          [ -d "~/cached-apt-install-packages/rolldice" ] && exit 16;
 
   no_packages:
     runs-on: ubuntu-latest
@@ -85,8 +85,8 @@ jobs:
       - name: Execute
         uses: .
         with:
-          cache_key: 
-          packages: dot
+          cache_key: ''
+          packages: ''
         continue-on-error: true
       - name: Verify
         if: steps.execute.outcom != 'failure'
