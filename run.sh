@@ -131,7 +131,13 @@ install_and_cache_pkg() {
 }
 
 validate_args
-clean_cache
+
+if [ -d $cache_dir ]; then
+  clean_cache
+else
+  # Initial run of action; no directory will exist.
+  mkdir -p $cache_dir
+fi
 
 for package in $packages; do
   echo "* Processing package $package..."
