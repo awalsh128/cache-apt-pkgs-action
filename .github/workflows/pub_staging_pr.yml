@@ -11,6 +11,8 @@ jobs:
     name: Publish staging pull request.
     steps:
       - run: |
-          curl -X POST -H "Accept: application/vnd.github.v3+json" \
+          curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/repos/awalsh128/cache-apt-pkgs-actions-ci/dispatches \
             -d '{"event_type":"staging_pull_request"}'
