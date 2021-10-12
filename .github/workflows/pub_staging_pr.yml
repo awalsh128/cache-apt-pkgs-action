@@ -1,5 +1,9 @@
 name: Publish Staging Pull Request
-on: [pull_request]
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - staging
 
 jobs:
   publish_event:
