@@ -22,5 +22,5 @@ runs:
         key: cache-apt-pkgs_${{ inputs.cache_key }}
 
     - name: Install Packages
-      run: ${{ github.action_path }}/run.sh / ~/cache-apt-pkgs ${{ inputs.packages }}
+      run: ${{ github.action_path }}/run.sh ~/cache-apt-pkgs / ${{ inputs.packages }}
       shell: bash
