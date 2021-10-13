@@ -24,11 +24,6 @@ packages="${@:3}"
 ##############################################################################
 validate_args() {
   echo -n "* Validating action arguments... ";
-  if [ ! -d "$cache_dir" ]; then
-    echo "aborted."
-    echo "Cache directory '$cache_dir' does not exist." >&2
-    exit 1
-  fi
   if [ "$packages" == "" ]; then
     echo "aborted."
     echo "* Packages argument cannot be empty." >&2
