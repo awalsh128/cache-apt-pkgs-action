@@ -17,7 +17,6 @@ Create a workflow `.yml` file in your repositories `.github/workflows` directory
 
 ### Inputs
 
-* `key` - Unique key representing the cache being used.
 * `packages` - Space delimited list of packages to install.
 
 ### Outputs
@@ -26,9 +25,7 @@ Create a workflow `.yml` file in your repositories `.github/workflows` directory
 
 ### Cache scopes
 
-The cache is scoped to the key and branch. The default branch cache is available to other branches.
-
-See [Matching a cache key](https://help.github.com/en/actions/configuring-and-managing-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key) for more info.
+The cache is scoped to the packages given and the branch. The default branch cache is available to other branches.
 
 ### Example workflow
 
@@ -48,7 +45,6 @@ jobs:
       - uses: actions/checkout@v2
       - uses: awalsh128/cache-apt-pkgs-action-action@v1
         with:
-          cache_key: doxygen_env
           packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
 
       - name: Build        
@@ -62,37 +58,6 @@ jobs:
           branch: gh-pages
           folder: ${{github.workspace}}/build/website
 ```
-
-## Creating a cache key
-
-A cache key can include any of the contexts, functions, literals, and operators supported by GitHub Actions.
-
-For example, using the [`hashFiles`](https://help.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#hashfiles) function allows you to create a new cache when dependencies change.
-
-```yaml
-  - uses: awalsh128/cache-apt-pkgs-action@v1
-    with:
-      cache_key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
-      packages: dot
-```
-
-Additionally, you can use arbitrary command output in a cache key, such as a date or software version:
-
-```yaml
-  # http://man7.org/linux/man-pages/man1/date.1.html
-  - name: Get Epoch Seconds
-    id: get-epoch-sec
-    run: |
-      echo "::set-output name=epoch_sec::$(/bin/date +%s)"
-    shell: bash
-
-  - uses: awalsh128/cache-apt-pkgs-action@v1
-    with:
-      cache_key: ${{ runner.os }}-${{ steps.get-epoch-sec.outputs.epoch_sec }}-${{ hashFiles('**/lockfiles') }}
-      packages: dot
-```
-
-See [Using contexts to create cache keys](https://help.github.com/en/actions/configuring-and-managing-workflows/caching-dependencies-to-speed-up-workflows#using-contexts-to-create-cache-keys)
 
 ## Cache Limits
 
