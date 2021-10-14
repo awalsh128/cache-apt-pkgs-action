@@ -1,6 +1,9 @@
 name: 'Cache APT Packages'
 description: 'Install APT based packages and cache them for future runs.'
 author: awalsh128
+branding:
+  icon: 'hard-drive'  
+  color: 'green'
 
 inputs:
   packages:
