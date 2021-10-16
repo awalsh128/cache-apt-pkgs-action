@@ -41,7 +41,7 @@ jobs:
     name: Build Doxygen documentation and deploy
     steps:
       - uses: actions/checkout@v2
-      - uses: awalsh128/cache-apt-pkgs-action-action@v1
+      - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
 
