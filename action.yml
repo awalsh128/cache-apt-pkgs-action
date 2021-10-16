@@ -10,6 +10,10 @@ inputs:
     description: 'Space delimited list of packages to install.'
     required: true
     default: ''
+  version:
+    description: 'Version will create a new cache and install packages.'
+    required: false
+    default: ''
 
 outputs:
   cache-hit:
@@ -24,7 +28,7 @@ runs:
       shell: bash
 
     - name: Create Cache Key
-      run: echo ${{ inputs.packages }} | sed 's/[\s,]+/\n/g' | sort > /tmp/package_list.txt
+      run: echo ${{ inputs.packages }} "cache-apt-pkgs-version:${{ inputs.version }}" | sed 's/[\s,]+/\n/g' | sort > /tmp/package_list.txt
       shell: bash
 
     - name: Load Package Cache
