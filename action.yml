@@ -18,7 +18,7 @@ inputs:
 outputs:
   cache-hit:
     description: 'A boolean value to indicate a cache was found for the packages requested.'
-    value: ${{ steps.load-cache.outputs.cache-hit || "false" }}
+    value: ${{ steps.load-cache.outputs.cache-hit || false }}
 
 runs:
   using: "composite"
