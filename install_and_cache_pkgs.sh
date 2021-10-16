@@ -19,6 +19,6 @@ for package in $packages; do
       if test -f $f; then echo $f; fi;
     done | 
     xargs tar -czf $cache_filepath -C /
-fi
+done
 
 echo "Action complete. ${#packages[@]} package(s) installed and cached."
