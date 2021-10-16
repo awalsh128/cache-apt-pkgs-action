@@ -36,8 +36,9 @@ runs:
 
     - name: Load Packages      
       run: |
-        if [ ${{ steps.load-pkg-cache.outputs.cache-hit }} == "true" ]; then
+        if [ ${{ steps.load-pkg-cache.outputs.cache-hit }} ]; then
           ${{ github.action_path }}/install_and_cache.sh ~/cache-apt-pkgs ${{ inputs.packages }}
         else
           ${{ github.action_path }}/run.sh ~/cache-apt-pkgs /
+        fi
       shell: bash
