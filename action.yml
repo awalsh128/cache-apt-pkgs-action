@@ -39,6 +39,6 @@ runs:
         if [ ${{ steps.load-pkg-cache.outputs.cache-hit }} ]; then
           ${{ github.action_path }}/restore_pkgs.sh ~/cache-apt-pkgs /
         else
-          ${{ github.action_path }}/install_and_cache.sh ~/cache-apt-pkgs ${{ inputs.packages }}
+          ${{ github.action_path }}/install_and_cache_pkgs.sh ~/cache-apt-pkgs ${{ inputs.packages }}
         fi
       shell: bash
