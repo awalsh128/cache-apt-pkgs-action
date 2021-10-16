@@ -3,7 +3,7 @@
 [![License: Apache2](https://shields.io/badge/license-apache2-blue.svg)](https://github.com/awalsh128/fluentcpp/blob/master/LICENSE)
 [![GitHub Tests status](https://github.com/awalsh128/cache-apt-pkgs-action-ci/actions/workflows/tests.yml/badge.svg)](https://github.com/awalsh128/cache-apt-pkgs-action-ci/actions/workflows/tests.yml)
 
-This action allows caching of Advanced Package Tool (APT) package dependencies to improve workflow execution time.
+This action allows caching of Advanced Package Tool (APT) package dependencies to improve workflow execution time instead of installing the packages on every run.
 
 ## Documentation
 
@@ -32,10 +32,8 @@ The cache is scoped to the packages given and the branch. The default branch cac
 This was a motivating use case for creating this action.
 
 ```yaml
-name: Documentation
-
+name: Create Documentation
 on: push
-
 jobs:
   
   build_and_deploy_docs:
