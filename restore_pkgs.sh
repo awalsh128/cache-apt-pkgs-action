@@ -7,9 +7,9 @@ cache_dir=$1
 cache_restore_root=$2
 
 for cache_filepath in $(ls $cache_dir); do
-  echo "* Restoring $package from cache $cache_filepath... "
+  echo "* Restoring $cache_filepath from cache... "
   sudo tar -xf $cache_filepath -C $cache_restore_root
   sudo apt-get --yes --only-upgrade install $package
 done
 
-echo "Action complete. ${#packages[@]} package(s) restored."
+echo "Action complete. $(ls -l $cache_dir | wc -l) package(s) restored."
