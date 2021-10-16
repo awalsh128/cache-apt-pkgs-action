@@ -34,12 +34,10 @@ runs:
         path: ~/cache-apt-pkgs
         key: cache-apt-pkgs_${{ hashFiles('/tmp/package_list.txt') }}
 
-    - name: Install and Cache Packages
-      if: steps.load-pkg-cache.outputs.cache-hit != 'true'
-      run: ${{ github.action_path }}/install_and_cache.sh ~/cache-apt-pkgs ${{ inputs.packages }}
-      shell: bash
-
-    - name: Restore Cached Packages
-      if: steps.load-pkg-cache.outputs.cache-hit != 'true'
-      run: ${{ github.action_path }}/run.sh ~/cache-apt-pkgs /
+    - name: Load Packages      
+      run: |
+        if [ ${{ steps.load-pkg-cache.outputs.cache-hit }} == "true" ]; then
+          ${{ github.action_path }}/install_and_cache.sh ~/cache-apt-pkgs ${{ inputs.packages }}
+        else
+          ${{ github.action_path }}/run.sh ~/cache-apt-pkgs /
       shell: bash
