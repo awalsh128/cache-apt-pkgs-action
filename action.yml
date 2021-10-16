@@ -18,7 +18,7 @@ inputs:
 outputs:
   cache-hit:
     description: 'A boolean value to indicate a cache was found for the packages requested.'
-    value: ${{ steps.load-pkg-cache.outputs.cache-hit }}
+    value: ${{ steps.load-cache.outputs.cache-hit || "false" }}
 
 runs:
   using: "composite"
@@ -32,7 +32,7 @@ runs:
       shell: bash
 
     - name: Load Package Cache
-      id: load-pkg-cache
+      id: load-cache
       uses: actions/cache@v2
       with:
         path: ~/cache-apt-pkgs
@@ -40,7 +40,7 @@ runs:
 
     - name: Load Packages      
       run: |
-        if [ ${{ steps.load-pkg-cache.outputs.cache-hit }} ]; then
+        if [ ${{ steps.load-cache.outputs.cache-hit }} ]; then
           ${{ github.action_path }}/restore_pkgs.sh ~/cache-apt-pkgs /
         else
           ${{ github.action_path }}/install_and_cache_pkgs.sh ~/cache-apt-pkgs ${{ inputs.packages }}
