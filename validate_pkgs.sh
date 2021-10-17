@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Fail on any error.
-set -e
-
 version=$1
 packages=${@:2}
 
