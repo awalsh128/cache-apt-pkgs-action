@@ -1,9 +1,18 @@
 #!/bin/bash
 
+# Fail on any error.
+set -e
+
 # Directory that holds the cached packages.
 cache_dir=$1
 # List of the packages to use.
 packages="${@:2}"
+
+package_count=$(echo $packages | wc -w)
+echo "* Clean installing $package_count packages..."
+for package in $packages; do
+  echo "  - $package"
+done
 
 mkdir -p $cache_dir
 for package in $packages; do
@@ -19,6 +28,6 @@ for package in $packages; do
       if test -f $f; then echo $f; fi;
     done | 
     xargs tar -czf $cache_filepath -C /
-fi
+done
 
-echo "Action complete. ${#packages[@]} package(s) installed and cached."
+echo "Action complete. $(echo $packages | wc -w) package(s) installed and cached."

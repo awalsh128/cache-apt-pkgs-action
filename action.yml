@@ -10,36 +10,42 @@ inputs:
     description: 'Space delimited list of packages to install.'
     required: true
     default: ''
+  version:
+    description: 'Version will create a new cache and install packages.'
+    required: false
+    default: ''
 
 outputs:
   cache-hit:
     description: 'A boolean value to indicate a cache was found for the packages requested.'
-    value: ${{ steps.load-pkg-cache.outputs.cache-hit }}
+    # This compound expression is needed because lhs can be empty.
+    # Need to output true and false instead of true and nothing.
+    value: ${{ steps.load-cache.outputs.cache-hit || false }}
 
 runs:
   using: "composite"
   steps:
     - name: Validate Packages
-      run: ${{ github.action_path }}/validate_pkgs.sh ${{ inputs.packages }}
+      run: ${{ github.action_path }}/validate_pkgs.sh "${{ inputs.version }}" ${{ inputs.packages }}
       shell: bash
 
     - name: Create Cache Key
-      run: echo ${{ inputs.packages }} | sed 's/[\s,]+/\n/g' | sort > /tmp/package_list.txt
+      run: |
+        ${{ github.action_path }}/create_cache_key.sh "${{ inputs.version }})" ${{ inputs.packages }}
       shell: bash
 
     - name: Load Package Cache
-      id: load-pkg-cache
+      id: load-cache
       uses: actions/cache@v2
       with:
         path: ~/cache-apt-pkgs
-        key: cache-apt-pkgs_${{ hashFiles('/tmp/package_list.txt') }}
+        key: cache-apt-pkgs_${{ env.CACHE_KEY }}
 
-    - name: Install and Cache Packages
-      if: steps.load-pkg-cache.outputs.cache-hit != 'true'
-      run: ${{ github.action_path }}/install_and_cache.sh ~/cache-apt-pkgs ${{ inputs.packages }}
-      shell: bash
-
-    - name: Restore Cached Packages
-      if: steps.load-pkg-cache.outputs.cache-hit != 'true'
-      run: ${{ github.action_path }}/run.sh ~/cache-apt-pkgs /
+    - name: Load Packages      
+      run: |
+        if [ ${{ steps.load-cache.outputs.cache-hit }} ]; then
+          ${{ github.action_path }}/restore_pkgs.sh ~/cache-apt-pkgs /
+        else
+          ${{ github.action_path }}/install_and_cache_pkgs.sh ~/cache-apt-pkgs ${{ inputs.packages }}
+        fi
       shell: bash
