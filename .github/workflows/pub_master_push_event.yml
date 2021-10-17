@@ -1,9 +1,9 @@
-name: Publish Staging Push Event
+name: Publish Master Push Event
 on:
   workflow_dispatch:
   push:
     branches:
-      - staging
+      - master
 
 jobs:
   publish_event:
@@ -16,4 +16,4 @@ jobs:
             -H "Accept: application/vnd.github.v3+json" \
             -H "Authorization: token ${{ secrets.PUBLISH_PUSH_TOKEN }}" \
             https://api.github.com/repos/awalsh128/cache-apt-pkgs-action-ci/dispatches \
-            -d '{"event_type":"staging_push"}'
+            -d '{"event_type":"master_push"}'
