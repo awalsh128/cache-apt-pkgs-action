@@ -30,7 +30,10 @@ runs:
       shell: bash
 
     - name: Create Cache Key
-      run: echo ${{ inputs.packages }} "cache-apt-pkgs-version:${{ inputs.version }}" | sed 's/[\s,]+/\n/g' | sort > package_list.txt
+      run: |
+        normalized_list=$(${{ inputs.packages }} | sed 's/[\s,]+/ /g' | sort)
+        value=$(echo $normalized_list @ ${{ inputs.version }})
+        echo "CACHE_KEY=$(echo value | md5sum | /bin/cut -f1 -d' ')" >> $GITHUB_ENV
       shell: bash
 
     - name: Load Package Cache
@@ -38,7 +41,7 @@ runs:
       uses: actions/cache@v2
       with:
         path: ~/cache-apt-pkgs
-        key: cache-apt-pkgs_${{ hashFiles('package_list.txt') }}
+        key: cache-apt-pkgs_${{ env.CACHE_KEY }}
 
     - name: Load Packages      
       run: |
