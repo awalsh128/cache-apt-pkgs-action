@@ -18,6 +18,8 @@ inputs:
 outputs:
   cache-hit:
     description: 'A boolean value to indicate a cache was found for the packages requested.'
+    # This compound expression is needed because lhs can be empty.
+    # Need to output true and false instead of true and nothing.
     value: ${{ steps.load-cache.outputs.cache-hit || false }}
 
 runs:
