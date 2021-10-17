@@ -18,4 +18,4 @@ echo "* Value to hash is '$value'."
 key=$(echo $value | md5sum | /bin/cut -f1 -d' ')
 echo "* Value hashed as '$key'."
 
-echo "CACHE_KEY=$key"
+echo "CACHE_KEY=$key" >> $GITHUB_ENV

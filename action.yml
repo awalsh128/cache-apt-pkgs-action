@@ -31,7 +31,7 @@ runs:
 
     - name: Create Cache Key
       run: |
-        ${{ github.action_path }}/create_cache_key.sh "${{ inputs.version }})" ${{ inputs.packages }} >> $GITHUB_ENV
+        ${{ github.action_path }}/create_cache_key.sh "${{ inputs.version }})" ${{ inputs.packages }}
       shell: bash
 
     - name: Load Package Cache
