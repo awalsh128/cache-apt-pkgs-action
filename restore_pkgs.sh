@@ -8,17 +8,23 @@ cache_dir=$1
 # Root directory to untar the cached packages to.
 # Typically filesystem root '/' but can be changed for testing.
 cache_restore_root=$2
+# List of the packages to use.
+packages="${@:3}"
 
 cache_filenames=$(ls -1 $cache_dir | sort)
-echo "* Found ${#cache_filenames[@]} files in cache..."
-echo $cache_filenames
-
+cache_filename_count=$(echo $cache_filenames | wc -w)
+echo "* Found $cache_filename_count files in cache..."
 for cache_filename in $cache_filenames; do
-  cache_filepath=$cache_dir/$cache_filename
-  echo "* Restoring $cache_filepath from cache... "
-  sudo tar -xf $cache_filepath -C $cache_restore_root  
+  echo "  - $cache_filename"
 done
-# Update all packages.
-sudo apt-get --yes --only-upgrade install
 
-echo "Action complete. $(echo $cache_filenames | wc -l) package(s) restored."
+for package in $packages; do
+  cache_filepath=$cache_dir/$package.tar.gz
+  echo "* Restoring package $package ($cache_filepath) from cache... "
+  sudo tar -xf $cache_filepath -C $cache_restore_root
+  # Upgrade the install from last state.
+  # TODO(awalsh128) Add versioning to cache key creation.
+  sudo apt-get --yes --only-upgrade install $package
+done
+
+echo "Action complete. $cache_filename_count package(s) restored."

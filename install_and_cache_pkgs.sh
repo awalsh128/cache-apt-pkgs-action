@@ -8,6 +8,12 @@ cache_dir=$1
 # List of the packages to use.
 packages="${@:2}"
 
+package_count=$(echo $packages | wc -w)
+echo "* Clean installing $package_count packages..."
+for package in $packages; do
+  echo "  - $package"
+done
+
 mkdir -p $cache_dir
 for package in $packages; do
   cache_filepath=$cache_dir/$package.tar.gz
@@ -24,4 +30,4 @@ for package in $packages; do
     xargs tar -czf $cache_filepath -C /
 done
 
-echo "Action complete. ${#packages[@]} package(s) installed and cached."
+echo "Action complete. $(echo $packages | wc -w) package(s) installed and cached."
