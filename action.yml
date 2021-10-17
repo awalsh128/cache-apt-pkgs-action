@@ -26,14 +26,12 @@ runs:
   using: "composite"
   steps:
     - name: Validate Packages
-      run: ${{ github.action_path }}/validate_pkgs.sh ${{ inputs.packages }}
+      run: ${{ github.action_path }}/validate_pkgs.sh "${{ inputs.version }}" ${{ inputs.packages }}
       shell: bash
 
     - name: Create Cache Key
       run: |
-        normalized_list=$(echo ${{ inputs.packages }} | sed 's/[\s,]+/ /g' | sort)
-        value=$(echo $normalized_list @ ${{ inputs.version }})
-        echo "CACHE_KEY=$(echo $value | md5sum | /bin/cut -f1 -d' ')" >> $GITHUB_ENV
+        ${{ github.action_path }}/create_cache_key.sh "${{ inputs.version }})"" ${{ inputs.packages }} >> $GITHUB_ENV
       shell: bash
 
     - name: Load Package Cache

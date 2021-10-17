@@ -18,6 +18,7 @@ Create a workflow `.yml` file in your repositories `.github/workflows` directory
 ### Inputs
 
 * `packages` - Space delimited list of packages to install.
+* `version` - Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
 
 ### Outputs
 
@@ -44,6 +45,7 @@ jobs:
       - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
+          version: 1.0
 
       - name: Build        
         run: |
