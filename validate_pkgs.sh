@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Fail on any error.
+set -e
+
 packages=$1
 
 echo -n "* Validating action arguments... ";

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Fail on any error.
+set -e
+
 # Directory that holds the cached packages.
 cache_dir=$1
 # Root directory to untar the cached packages to.
