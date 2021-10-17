@@ -9,7 +9,7 @@ packages=${@:2}
 echo -n "* Validating action arguments... ";
 
 echo $version | grep -o " " > /dev/null
-if [ $? -ne 0 ]; then
+if [ $? -eq 0 ]; then
     echo "aborted."
     echo "* Version value '$version' cannot contain spaces." >&2
     exit 1
