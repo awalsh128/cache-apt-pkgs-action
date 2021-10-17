@@ -10,10 +10,10 @@ echo -n "* Validating action arguments... ";
 
 echo $version | grep -o " " > /dev/null
 if [ $? -eq 0 ]; then
-    echo "aborted."
-    echo "* Version value '$version' cannot contain spaces." >&2
-    exit 1
-  fi
+  echo "aborted."
+  echo "* Version value '$version' cannot contain spaces." >&2
+  exit 1
+fi
 
 if [ "$packages" == "" ]; then
   echo "aborted."
