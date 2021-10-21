@@ -25,9 +25,6 @@ for package in $packages; do
   cache_filepath=$cache_dir/$package.tar.gz
   echo "::debug::Restoring package $package ($cache_filepath) from cache... "
   sudo tar -xf $cache_filepath -C $cache_restore_root
-  # Upgrade the install from last state.
-  # TODO(awalsh128) Add versioning to cache key creation.
-  sudo apt-get --yes --only-upgrade install $package
 done
 echo "::endgroup::"
 
