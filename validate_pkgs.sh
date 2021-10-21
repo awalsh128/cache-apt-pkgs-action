@@ -10,6 +10,7 @@ if [ $? -eq 0 ]; then
   echo "::error::Aborted. Version value '$version' cannot contain spaces." >&2
   exit 1
 fi
+echo "::debug::Version '$version' is valid."
 
 if [ "$packages" == "" ]; then
   echo "::error::Aborted. Packages argument cannot be empty." >&2
@@ -23,5 +24,6 @@ for package in $packages; do
     exit 3
   fi
 done
+echo "::debug::Packages '$packages' are valid."
 
 echo "::endgroup::"
