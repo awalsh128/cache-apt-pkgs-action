@@ -15,6 +15,8 @@ for package in $packages; do
 done
 
 mkdir -p $cache_dir
+echo "* Updating APT package list and get the latest information..."
+sudo apt-get update
 for package in $packages; do
   cache_filepath=$cache_dir/$package.tar.gz
 
