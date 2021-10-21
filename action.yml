@@ -64,5 +64,5 @@ runs:
         for package in ${{ inputs.packages }}; do
           output=$output,$package:$(dpkg -s xdot | grep Version | awk '{print $2}')
         done
-        ::set-output name=package_version_list::output
+        echo '::set-output name=package_version_list::output'
       shell: bash
