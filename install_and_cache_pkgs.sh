@@ -9,27 +9,35 @@ cache_dir=$1
 packages="${@:2}"
 
 package_count=$(echo $packages | wc -w)
-echo "* Clean installing $package_count packages..."
+echo "::debug::Clean installing $package_count packages..."
 for package in $packages; do
-  echo "  - $package"
+  echo "::debug::- $package"
 done
+echo "::endgroup::"
 
 mkdir -p $cache_dir
-echo "* Updating APT package list and get the latest information..."
+
+echo "::group::Update APT Package List"
 sudo apt-get update
+echo "::endgroup::"
+
 for package in $packages; do
   cache_filepath=$cache_dir/$package.tar.gz
 
-  echo "* Clean installing $package... "
+  echo "::group::Clean install $package"
   sudo apt-get --yes install $package  
+  echo "::endgroup::"
 
-  echo "* Caching $package to $cache_filepath..."
+  echo "::group::Caching $package to $cache_filepath"
   # Pipe all package files (no folders) to Tar.
   dpkg -L $package |
     while IFS= read -r f; do 
       if test -f $f; then echo $f; fi;
     done | 
     xargs tar -czf $cache_filepath -C /
+  echo "::endgroup::"
 done
 
-echo "Action complete. $(echo $packages | wc -w) package(s) installed and cached."
+echo "::group::Finished"
+echo "::debug::$(echo $packages | wc -w) package(s) installed and cached."
+echo "::endgroup::"
