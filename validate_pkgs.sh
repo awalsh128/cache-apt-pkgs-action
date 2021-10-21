@@ -3,7 +3,7 @@
 version=$1
 packages=${@:2}
 
-echo -n "::group::Validate Action Arguments";
+echo "::group::Validate Action Arguments";
 
 echo $version | grep -o " " > /dev/null
 if [ $? -eq 0 ]; then
