@@ -19,10 +19,13 @@ Create a workflow `.yml` file in your repositories `.github/workflows` directory
 
 * `packages` - Space delimited list of packages to install.
 * `version` - Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
+* `refresh` - Refresh / upgrade the packages in the same cache.
 
 ### Outputs
 
 * `cache-hit` - A boolean value to indicate a cache was found for the packages requested.
+* `package_version_list` - The packages and versions that are installed as a comma delimited list with colon delimit on the package version (i.e. \<package1>:<version1\>,\<package2>:\<version2>,...).
+  
 
 ### Cache scopes
 
@@ -57,6 +60,19 @@ jobs:
         with:
           branch: gh-pages
           folder: ${{github.workspace}}/build/website
+```
+
+```yaml
+...
+  install_doxygen_deps:
+    runs-on: ubuntu-latest    
+    steps:
+      - uses: actions/checkout@v2
+      - uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
+          version: 1.0
+          refresh: true # Force refresh / upgrade v1.0 cache.
 ```
 
 ## Cache Limits
