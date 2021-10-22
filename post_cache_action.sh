@@ -21,7 +21,7 @@ packages="${@:5}"
 
 script_dir=$(dirname $0)
 
-if [ ! $cache_hit ] || [ $refresh ]; then
+if [ "$cache_hit" == false ] || [ "$refresh" == true ]; then
   $script_dir/install_and_cache_pkgs.sh ~/cache-apt-pkgs $packages
 else
   $script_dir/restore_pkgs.sh ~/cache-apt-pkgs $cache_restore_root
