@@ -18,9 +18,9 @@ packages="${@:4}"
 
 script_dir=$(dirname $0)
 
-if [ "$cache_hit" == false ]; then
-  $script_dir/install_and_cache_pkgs.sh ~/cache-apt-pkgs $packages
-else
+if [ "$cache_hit" == true ]; then
   $script_dir/restore_pkgs.sh ~/cache-apt-pkgs $cache_restore_root
+else
+  $script_dir/install_and_cache_pkgs.sh ~/cache-apt-pkgs $packages
 fi
 echo ""
