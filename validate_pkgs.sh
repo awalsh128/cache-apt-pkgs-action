@@ -3,28 +3,27 @@
 version=$1
 packages=${@:2}
 
-echo -n "* Validating action arguments... ";
+echo "::group::Validate Action Arguments";
 
 echo $version | grep -o " " > /dev/null
 if [ $? -eq 0 ]; then
-  echo "aborted."
-  echo "* Version value '$version' cannot contain spaces." >&2
+  echo "::error::Aborted. Version value '$version' cannot contain spaces." >&2
   exit 1
 fi
+echo "::debug::Version '$version' is valid."
 
 if [ "$packages" == "" ]; then
-  echo "aborted."
-  echo "* Packages argument cannot be empty." >&2
+  echo "::error::Aborted. Packages argument cannot be empty." >&2
   exit 2
 fi
 
 for package in $packages; do
   apt-cache search ^$package$ | grep $package > /dev/null
   if [ $? -ne 0 ]; then
-    echo "aborted."
-    echo "* Package '$package' not found." >&2
+    echo "::error::Aborted. Package '$package' not found." >&2
     exit 3
   fi
 done
+echo "::debug::Packages '$packages' are valid."
 
-echo "done."
+echo "::endgroup::"
