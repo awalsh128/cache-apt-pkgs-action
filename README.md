@@ -20,12 +20,11 @@ Create a workflow `.yml` file in your repositories `.github/workflows` directory
 
 * `packages` - Space delimited list of packages to install.
 * `version` - Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
-* `refresh` - Refresh / upgrade the packages in the same cache.
 
 ### Outputs
 
 * `cache-hit` - A boolean value to indicate a cache was found for the packages requested.
-* `package_version_list` - The packages and versions that are installed as a comma delimited list with colon delimit on the package version (i.e. \<package1>:<version1\>,\<package2>:\<version2>,...).
+* `package-version-list` - The packages and versions that are installed as a comma delimited list with colon delimit on the package version (i.e. \<package1>:<version1\>,\<package2>:\<version2>,...).
   
 
 ### Cache scopes
