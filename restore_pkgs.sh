@@ -20,6 +20,7 @@ echo "Reading from manifest..."
 for logline in $(cat $cache_dir/manifest.log | tr ',' '\n' ); do
   echo "- $(echo $logline | tr ':' ' ')"
 done
+echo "done."
 
 # Only search for archived results. Manifest and cache key also live here.
 cache_pkg_filepaths=$(ls -1 $cache_dir/*.tar.gz | sort)

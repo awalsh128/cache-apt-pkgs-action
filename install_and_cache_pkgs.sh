@@ -42,6 +42,10 @@ echo "done."
 
 manifest_filepath="$cache_dir/manifest.log"
 echo -n "Writing package manifest to $manifest_filepath..."
+manifest=
+for package in $packages; do
+  manifest=$manifest,$package:$(dpkg -s $package | grep Version | awk '{print $2}')
+done  
 # Remove trailing comma.
 echo ${manifest:0:-1} > $manifest_filepath
 echo "done."
