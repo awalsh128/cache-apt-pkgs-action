@@ -20,7 +20,6 @@ Create a workflow `.yml` file in your repositories `.github/workflows` directory
 
 * `packages` - Space delimited list of packages to install.
 * `version` - Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
-* `refresh` - Refresh / upgrade the packages in the same cache.
 
 ### Outputs
 

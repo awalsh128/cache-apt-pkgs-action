@@ -53,7 +53,6 @@ runs:
           ~/cache-apt-pkgs \
           / \
           "${{ steps.load-cache.outputs.cache-hit }}" \
-          "${{ inputs.refresh }}" \
           ${{ inputs.packages }}
         echo "::set-output name=package-version-list::$(cat ~/cache-apt-pkgs/manifest.log)"
       shell: bash
