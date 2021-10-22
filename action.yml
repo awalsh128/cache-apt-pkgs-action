@@ -34,7 +34,10 @@ runs:
   steps:
     - id: pre-cache
       run: |
-        ${{ github.action_path }}/pre_cache_action.sh ~/cache-apt-pkgs "${{ inputs.version }}" ${{ inputs.packages }}
+        ${{ github.action_path }}/pre_cache_action.sh \
+          ~/cache-apt-pkgs \
+          "${{ inputs.version }}" \
+          ${{ inputs.packages }}
         echo "CACHE_KEY=$(cat ~/cache-apt-pkgs/cache_key.md5)" >> $GITHUB_ENV
       shell: bash
 
