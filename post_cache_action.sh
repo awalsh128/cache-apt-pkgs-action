@@ -36,9 +36,3 @@ for package in $packages; do
   manifest=$manifest$item,
 done
 echo "done."
-
-manifest_filepath="$cache_dir/manifest.log"
-echo -n "Writing manifest to $manifest_filepath..."
-# Remove trailing comma.
-echo ${manifest:0:-1} > $manifest_filepath
-echo "done."

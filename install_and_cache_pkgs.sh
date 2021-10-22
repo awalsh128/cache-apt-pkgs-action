@@ -20,14 +20,16 @@ echo -n "Updating APT package list..."
 sudo apt-get update > /dev/null
 echo "done."
 
+echo "Clean installing and caching $(echo $packages | wc -w) packages..."
 for package in $packages; do
   cache_filepath=$cache_dir/$package.tar.gz
 
-  echo -n "Clean installing $package..."
+  echo "- $package"
+  echo -n "  Installing..."
   sudo apt-get --yes install $package > /dev/null
   echo "done."
 
-  echo -n "Caching $package to $cache_filepath..."
+  echo -n "  Caching to $cache_filepath..."
   # Pipe all package files (no folders) to Tar.
   dpkg -L $package |
     while IFS= read -r f; do     
@@ -36,5 +38,10 @@ for package in $packages; do
     xargs tar -czf $cache_filepath -C /    
   echo "done."
 done
+echo "done."
 
-echo "$(echo $packages | wc -w) package(s) installed and cached."
+manifest_filepath="$cache_dir/manifest.log"
+echo -n "Writing package manifest to $manifest_filepath..."
+# Remove trailing comma.
+echo ${manifest:0:-1} > $manifest_filepath
+echo "done."

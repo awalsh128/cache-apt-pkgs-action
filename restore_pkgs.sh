@@ -17,17 +17,10 @@ packages="${@:3}"
 cache_filenames=$(ls -1 $cache_dir | grep .tar.gz | sort)
 cache_filename_count=$(echo $cache_filenames | wc -w)
 
-echo "Found $cache_filename_count packages in cache."
+echo -n "Restoring $cache_filename_count packages from cache..."
 for cache_filename in $cache_filenames; do
-  echo "- $cache_filename"
-done
-
-echo -n "Restoring cached packages..."
-for package in $packages; do
   cache_filepath=$cache_dir/$package.tar.gz
   echo "- $package ($cache_filepath)"
   sudo tar -xf $cache_filepath -C $cache_restore_root > /dev/null
 done
 echo "done."
-
-echo "$cache_filename_count package(s) restored."
