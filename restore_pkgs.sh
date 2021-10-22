@@ -21,7 +21,7 @@ done
 
 # Only search for archived results. Manifest and cache key also live here.
 cache_pkg_filenames=$(ls -1 $cache_dir/*.tar.gz | sort)
-echo "Found $(echo $cache_filenames | wc -w) packages in the cache."
+echo "Found $(echo $cache_pkg_filenames | wc -w) packages in the cache."
 for cache_pkg_filename in $cache_pkg_filenames; do
   echo "- $(basename $cache_pkg_filename)"
 done
