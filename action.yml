@@ -50,10 +50,10 @@ runs:
     - id: post-cache
       run: |      
         ${{ github.action_path }}/post_cache_action.sh \
-          ~/cache-apt-pkgs / \
+          ~/cache-apt-pkgs \
+          / \
           "${{ steps.load-cache.outputs.cache-hit }}" \
           "${{ inputs.refresh }}" \
-          "${{ inputs.version }}" \
           ${{ inputs.packages }}
         echo "::set-output name=package-version-list::$(cat ~/cache-apt-pkgs/manifest.log)"
       shell: bash
