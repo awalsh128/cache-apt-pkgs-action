@@ -25,44 +25,27 @@ outputs:
     # This compound expression is needed because lhs can be empty.
     # Need to output true and false instead of true and nothing.
     value: ${{ steps.load-cache.outputs.cache-hit || false }}
-  package_version_list:
+  package-version-list:
     description: 'The packages and versions that are installed as a comma delimited list with colon delimit on the package version (i.e. <package>:<version,<package>:<version>).'
-    value: ${{ steps.get-package-versions.outputs.package_version_list }}
+    value: ${{ steps.post-cache.outputs.package-version-list }}
 
 runs:
   using: "composite"
   steps:
-    - name: Validate Packages
-      run: ${{ github.action_path }}/validate_pkgs.sh "${{ inputs.version }}" ${{ inputs.packages }}
-      shell: bash
-
-    - name: Create Cache Key
+    - id: pre-cache
       run: |
-        ${{ github.action_path }}/create_cache_key.sh "${{ inputs.version }})" ${{ inputs.packages }}
+        ${{ github.action_path }}/pre_cache_action.sh ~/cache-apt-pkgs "${{ inputs.version }}" ${{ inputs.packages }}
+        echo "CACHE_KEY=$(cat ~/cache-apt-pkgs/cache_key.md5)" >> $GITHUB_ENV
       shell: bash
 
-    - name: Load Package Cache
-      id: load-cache
+    - id: load-cache
       uses: actions/cache@v2
       with:
         path: ~/cache-apt-pkgs
         key: cache-apt-pkgs_${{ env.CACHE_KEY }}
 
-    - name: Load Packages      
+    - id: post-cache
       run: |      
-        if [ ! ${{ steps.load-cache.outputs.cache-hit }} ] || [ ${{ inputs.refresh }} ]; then
-          ${{ github.action_path }}/install_and_cache_pkgs.sh ~/cache-apt-pkgs ${{ inputs.packages }}
-        else
-          ${{ github.action_path }}/restore_pkgs.sh ~/cache-apt-pkgs /          
-        fi
-      shell: bash
-
-    - name: Get Package Versions
-      id: get-package-versions
-      run: |
-        output=
-        for package in ${{ inputs.packages }}; do
-          output=$output,$package:$(dpkg -s $package | grep Version | awk '{print $2}')
-        done
-        echo '::set-output name=package_version_list::output'
+        ${{ github.action_path }}/pre_cache_action.sh ~/cache-apt-pkgs "${{ inputs.version }}" ${{ inputs.packages }}
+        echo "::set-output name=package-version-list::$(cat ~/cache-apt-pkgs/manifest.log)"
       shell: bash
