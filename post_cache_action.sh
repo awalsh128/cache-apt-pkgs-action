@@ -19,10 +19,12 @@ refresh=$4
 # List of the packages to use.
 packages="${@:5}"
 
+script_dir=$(dirname $0)
+
 if [ ! $cache_hit ] || [ $refresh ]; then
-  ./install_and_cache_pkgs.sh ~/cache-apt-pkgs $packages
+  $script_dir/install_and_cache_pkgs.sh ~/cache-apt-pkgs $packages
 else
-  ./restore_pkgs.sh ~/cache-apt-pkgs $cache_restore_root
+  $script_dir/restore_pkgs.sh ~/cache-apt-pkgs $cache_restore_root
 fi
 echo ""
 
@@ -33,9 +35,10 @@ for package in $packages; do
   echo "- $item"
   manifest=$manifest$item,
 done
-# Remove trailing comma.
-manifest=${manifest:0:-1}
+echo "done."
 
 manifest_filepath="$cache_dir/manifest.log"
-echo $manifest > $manifest_filepath
-echo "Manifest written to $manifest_filepath"
+echo -n "Writing manifest to $manifest_filepath..."
+# Remove trailing comma.
+echo ${manifest:0:-1} > $manifest_filepath
+echo "done."
