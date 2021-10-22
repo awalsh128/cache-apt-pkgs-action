@@ -17,8 +17,6 @@ for package in $packages; do
 done
 echo ""
 
-mkdir -p $cache_dir
-
 echo -n "Updating APT package list..."
 sudo apt-get update > /dev/null
 echo "done."
