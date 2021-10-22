@@ -9,6 +9,9 @@ version=$2
 # List of the packages to use.
 packages=${@:3}
 
+# Create cache directory so artifacts can be saved.
+mkdir -p $cache_dir
+
 echo -n "Validating action arguments (version='$version', packages='$packages')...";
 echo $version | grep -o " " > /dev/null
 if [ $? -eq 0 ]; then
