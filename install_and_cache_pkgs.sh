@@ -10,12 +10,11 @@ cache_dir=$1
 packages="${@:2}"
 
 package_count=$(echo $packages | wc -w)
-echo "Clean installing and caching $package_count package(s).\n"
+echo "Clean installing and caching $package_count package(s)."
 echo "Package list:"
 for package in $packages; do
   echo "- $package"
 done
-echo ""
 
 echo -n "Updating APT package list..."
 sudo apt-get update > /dev/null
