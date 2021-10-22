@@ -18,7 +18,7 @@ done
 
 echo "Reading from manifest..."
 for logline in $(cat $cache_dir/manifest.log | tr ',' '\n' ); do
-  echo "- $(echo $logline | tr ',' ' ')"
+  echo "- $(echo $logline | tr ':' ' ')"
 done
 
 # Only search for archived results. Manifest and cache key also live here.
