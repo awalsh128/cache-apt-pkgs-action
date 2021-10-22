@@ -13,7 +13,8 @@ cache_restore_root=$2
 # List of the packages to use.
 packages="${@:3}"
 
-cache_filenames=$(ls -1 $cache_dir | sort)
+# Only search for archived results. Manifest and cache key also live here.
+cache_filenames=$(ls -1 $cache_dir | grep .tar.gz | sort)
 cache_filename_count=$(echo $cache_filenames | wc -w)
 
 echo "Found $cache_filename_count packages in cache."
