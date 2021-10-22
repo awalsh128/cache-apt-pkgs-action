@@ -27,12 +27,3 @@ else
   $script_dir/restore_pkgs.sh ~/cache-apt-pkgs $cache_restore_root
 fi
 echo ""
-
-echo "Creating package manifest..."
-manifest=
-for package in $packages; do
-  item=$package:$(dpkg -s $package | grep Version | awk '{print $2}')
-  echo "- $item"
-  manifest=$manifest$item,
-done
-echo "done."
