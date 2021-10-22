@@ -21,11 +21,12 @@ for cache_filename in $cache_filenames; do
   echo "- $cache_filename"
 done
 
-echo "Restoring cached packages..."
+echo -n "Restoring cached packages..."
 for package in $packages; do
   cache_filepath=$cache_dir/$package.tar.gz
   echo "- $package ($cache_filepath)"
   sudo tar -xf $cache_filepath -C $cache_restore_root > /dev/null
 done
+echo "done."
 
 echo "$cache_filename_count package(s) restored."
