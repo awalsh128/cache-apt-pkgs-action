@@ -28,7 +28,8 @@ echo "done."
 
 echo -n "Verifying packages..."
 for package in $packages; do
-  apt-cache search ^$package$ | grep $package > /dev/null
+  escaped=$(echo $package | sed 's/+/\\+/g')
+  apt-cache search ^$escaped$ | grep $package > /dev/null
   if [ $? -ne 0 ]; then
     echo "aborted."
     echo "Package '$package' not found." >&2
