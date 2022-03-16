@@ -31,7 +31,7 @@ for package in $packages; do
 
   echo -n "  Caching to $cache_filepath..."
   # Pipe all package files (no folders) to Tar.
-  dpkg -L $package |
+  dpkg -L "$(echo "${package}" | cut -d"=" -f1)" |
     while IFS= read -r f; do     
       if test -f $f; then echo ${f:1}; fi;  #${f:1} removes the leading slash that Tar disallows
     done | 
@@ -44,6 +44,7 @@ manifest_filepath="$cache_dir/manifest.log"
 echo -n "Writing package manifest to $manifest_filepath..."
 manifest=
 for package in $packages; do
+  package="$(echo "${package}" | cut -d"=" -f1)"
   manifest=$manifest$package:$(dpkg -s $package | grep Version | awk '{print $2}'),
 done  
 # Remove trailing comma.
