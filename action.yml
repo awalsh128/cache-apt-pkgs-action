@@ -25,6 +25,9 @@ outputs:
     # This compound expression is needed because lhs can be empty.
     # Need to output true and false instead of true and nothing.
     value: ${{ steps.load-cache.outputs.cache-hit || false }}
+  cache-key:
+    description: 'The key where the cache is stored with packages, their versions, and the cache version (i.e. package=version package=version @ 1).'
+    value: ${{ steps.pre-cache.outputs.cache-key }}
   package-version-list:
     description: 'The packages and versions that are installed as a comma delimited list with colon delimit on the package version (i.e. <package>:<version,<package>:<version>).'
     value: ${{ steps.post-cache.outputs.package-version-list }}
@@ -39,6 +42,7 @@ runs:
           "${{ inputs.version }}" \
           ${{ inputs.packages }}
         echo "CACHE_KEY=$(cat ~/cache-apt-pkgs/cache_key.md5)" >> $GITHUB_ENV
+        echo "::set-output name=cache-key::$(cat ~/cache-apt-pkgs/cache_key.md5)"
       shell: bash
 
     - id: load-cache
