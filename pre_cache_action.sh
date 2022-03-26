@@ -2,7 +2,7 @@
 
 # Include library.
 script_dir="$(dirname -- "$(realpath -- "${0}")")"
-source "${script_dir}/lib"
+source "${script_dir}/lib.sh"
 
 # Directory that holds the cached packages.
 cache_dir="${1}"
