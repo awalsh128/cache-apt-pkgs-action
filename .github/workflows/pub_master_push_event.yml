@@ -8,7 +8,7 @@ on:
 jobs:
   publish_event:
     runs-on: ubuntu-latest
-    name: Publish staging push
+    name: Publish master push
     steps:
       - run: |
           curl -i \
