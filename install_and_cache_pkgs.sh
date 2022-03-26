@@ -3,22 +3,23 @@
 # Fail on any error.
 set -e
 
+# Include library.
+script_dir="$(dirname -- "$(realpath -- "${0}")")"
+source "${script_dir}/lib"
+
 # Directory that holds the cached packages.
 cache_dir="${1}"
 
 # List of the packages to use.
-packages="${@:2}"
+input_packages="${@:2}"
 
-# Sort these packages by name and split on commas.
-packages=$(echo "${packages}" | sed 's/[\s,]+/ /g' | tr ' ' '\n' | sort | tr '\n' ' ')
-
-# Remove extraneous spaces
-packages="$(echo "${packages}" | sed 's/\s\+/ /g;s/^\s\+//g;s/\s\+$//g')"
+# Trim commas, excess spaces, and sort.
+packages="$(normalize_package_list "${input_packages}")"
 
 package_count=$(echo "${packages}" | wc -w)
 echo "Clean installing and caching ${package_count} package(s)."
 echo "Package list:"
-for package in ${packages}; do
+for package in "${packages}"; do
   echo "- ${package}"
 done
 
@@ -28,21 +29,23 @@ echo "done."
 
 manifest=
 echo "Clean installing and caching ${package_count} packages..."
-for package in ${packages}; do
-  echo "- ${package}"
-  echo -n "  Installing..."
+for package in "${packages}"; do
+  get_package_name_ver "${package}" # -> package_name, package_ver
+  package_deps="$(apt-get install --dry-run --yes "${package_name}" | grep "^Inst" | awk '{print $2}')"
 
-  # Gather a list of all packages apt installs to make this package work
-  required_packages=$(apt-get install --dry-run --yes "${package}" | grep -Po "(?<=Inst )[^\s]+" || echo "${package}")
-  echo "Package ${package} installs the following packages: ${required_packages//$'\n'/, }"
+  echo "- ${package_name}"
+  echo "  * Version: ${package_ver}"
+  echo "  * Dependencies: ${package_deps}"
+  echo -n "  * Installing..."
+  # Zero interaction while installing or upgrading the system via apt.
   sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install "${package}" > /dev/null
-
   echo "done."
 
-  for cache_package in ${required_packages}; do
+  for cache_package in "${package_deps}"; do
     cache_filepath="${cache_dir}/${cache_package}.tar.gz"
-    if [ ! -f "${cache_filepath}" ]; then
-      package_name="$(echo "${cache_package}" | cut -d"=" -f1)"
+
+    if test ! -f "${cache_filepath}"; then
+      get_package_name_ver "${cache_package}" # -> package_name, package_ver      
       echo -n "  Caching ${package_name} to ${cache_filepath}..."
       # Pipe all package files (no folders) to Tar.
       dpkg -L "${package_name}" |
@@ -60,6 +63,6 @@ echo "done."
 
 manifest_filepath="${cache_dir}/manifest.log"
 echo -n "Writing package manifest to ${manifest_filepath}..."
-# Remove trailing comma.
-echo ${manifest:0:-1} > ${manifest_filepath}
+# Remove trailing comma and write to manifest file.
+echo "${manifest:0:-1}" > "${manifest_filepath}"
 echo "done."

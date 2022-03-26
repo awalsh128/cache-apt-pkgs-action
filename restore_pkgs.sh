@@ -17,7 +17,7 @@ for cache_filepath in ${cache_filepaths}; do
 done
 
 echo "Reading from manifest..."
-for logline in $(cat "${cache_dir}/manifest.log" | tr ',' '\n' ); do
+for logline in "$(cat "${cache_dir}/manifest.log" | tr ',' '\n' )"; do
   echo "- $(echo "${logline}" | tr ':' ' ')"
 done
 echo "done."

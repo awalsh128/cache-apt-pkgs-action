@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Include library.
+script_dir="$(dirname -- "$(realpath -- "${0}")")"
+source "${script_dir}/lib"
+
 # Directory that holds the cached packages.
 cache_dir="${1}"
 
@@ -7,22 +11,23 @@ cache_dir="${1}"
 cache_version="${2}"
 
 # List of the packages to use.
-packages="${@:3}"
+input_packages="${@:3}"
 
-# Sort these packages by name and split on commas.
-packages=$(echo "${packages}" | sed 's/[\s,]+/ /g' | tr ' ' '\n' | sort | tr '\n' ' ')
+# Trim commas, excess spaces, and sort.
+packages="$(normalize_package_list "${input_packages}")"
 
 # Create cache directory so artifacts can be saved.
 mkdir -p "${cache_dir}"
 
 echo -n "Validating action arguments (version='${cache_version}', packages='${packages}')...";
 
-if echo "${cache_version}" | grep -q " " > /dev/null; then
+if grep -q " " <<< "${cache_version}"; then
   echo "aborted." 
   echo "Version value '${cache_version}' cannot contain spaces." >&2
   exit 1
 fi
-if [ "${packages}" == "" ]; then
+# Is length of string zero?
+if test -z "${packages}"; then
   echo "aborted." 
   echo "Packages argument cannot be empty." >&2
   exit 2
@@ -33,24 +38,16 @@ echo -n "Updating APT package list..."
 sudo apt-get update > /dev/null
 echo "done."
 
+versioned_packages=""
 echo -n "Verifying packages..."
-for package in ${packages}; do
-  if echo "${package}" | grep -q "="; then
-    package_name=$(echo "${package}" | cut -d "=" -f1)
-    package_ver=$(echo "${package}" | cut -d "=" -f2)
-  else
-    package_name="${package}"
-  fi
-  apt_show=$(apt show "${package}")
-  if echo ${apt_show} | grep -qi "No packages found" > /dev/null; then
+for package in ${packages}; do 
+  if test ! "$(apt show "${package}")"; then
     echo "aborted."
     echo "Package '${package}' not found." >&2
     exit 3
   fi
-  if [ -z "${package_ver}" ]; then
-    package_ver=$(echo "${apt_show}" | grep -Po "(?<=Version: )[^\s]+")
-  fi
-  package_list="${package_list} ${package_name}=${package_ver}"
+  get_package_name_ver "${package}" # -> package_name, package_ver  
+  versioned_packages="${versioned_packages} ${package_name}=${package_ver}"
 done
 echo "done."
 
@@ -59,15 +56,15 @@ set -e
 
 echo "Creating cache key..."
 
-# Remove extraneous spaces
-package_list="$(echo "${package_list}" | sed 's/\s\+/ /g;s/^\s\+//g;s/\s\+$//g')"
-echo "- Normalized package list is '$package_list'."
+# TODO Can we prove this will happen again?
+normalized_versioned_packages="$(normalize_package_list "${versioned_packages}")"
+echo "- Normalized package list is '${normalized_versioned_packages}'."
 
-value=$(echo "${package_list} @ ${cache_version}")
+value="$(echo "${normalized_versioned_packages} @ ${cache_version}")"
 echo "- Value to hash is '${value}'."
 
-key=$(echo "${value}" | md5sum | /bin/cut -f1 -d' ')
-echo "- Value hashed as '$key'."
+key="$(echo "${value}" | md5sum | /bin/cut -f1 -d' ')"
+echo "- Value hashed as '${key}'."
 
 echo "done."
 
