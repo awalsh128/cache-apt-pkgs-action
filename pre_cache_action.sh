@@ -15,12 +15,12 @@ mkdir -p $cache_dir
 echo -n "Validating action arguments (version='$version', packages='$packages')...";
 echo $version | grep -o " " > /dev/null
 if [ $? -eq 0 ]; then
-  echo "aborted." 
+  echo "aborted."
   echo "Version value '$version' cannot contain spaces." >&2
   exit 1
 fi
 if [ "$packages" == "" ]; then
-  echo "aborted." 
+  echo "aborted."
   echo "Packages argument cannot be empty." >&2
   exit 2
 fi
@@ -50,7 +50,7 @@ echo "- Normalized package list is '$normalized_list'."
 value=$(echo $normalized_list @ $version)
 echo "- Value to hash is '$value'."
 
-key=$(echo $value | md5sum | /bin/cut -f1 -d' ')
+key=$(echo $value | md5sum | cut -f1 -d' ')
 echo "- Value hashed as '$key'."
 
 echo "done."
