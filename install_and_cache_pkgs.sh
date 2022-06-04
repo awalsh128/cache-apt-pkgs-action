@@ -8,7 +8,7 @@ script_dir="$(dirname -- "$(realpath -- "${0}")")"
 source "${script_dir}/lib.sh"
 
 # Directory that holds the cached packages.
-cache_dir="${1}"
+cache_dir=$1
 
 # List of the packages to use.
 input_packages="${@:2}"
@@ -27,7 +27,7 @@ echo -n "Updating APT package list..."
 sudo apt-get update > /dev/null
 echo "done."
 
-manifest=
+manifest=""
 echo "Clean installing and caching ${package_count} packages..."
 for package in "${packages}"; do
   get_package_name_ver "${package}" # -> package_name, package_ver
