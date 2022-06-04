@@ -2,9 +2,9 @@
 
 # Sort these packages by name and split on commas.
 function normalize_package_list {
-  stripped="$(echo \"${1}\" | sed 's/,//g')"
+  stripped="$(echo ${1} | sed 's/,//g')"
   # Remove extraneous spaces at the middle, beginning, and end.
-  trimmed="$(echo \"${stripped}\" | sed 's/\s\+/ /g; s/^\s\+//g; s/\s\+$//g')"  
+  trimmed="$(echo ${stripped} | sed 's/\s\+/ /g; s/^\s\+//g; s/\s\+$//g')"  
   echo "${trimmed}" | sort
 }
 

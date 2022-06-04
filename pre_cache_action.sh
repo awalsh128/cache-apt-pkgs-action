@@ -5,10 +5,10 @@ script_dir="$(dirname -- "$(realpath -- "${0}")")"
 source "${script_dir}/lib.sh"
 
 # Directory that holds the cached packages.
-cache_dir=$1
+cache_dir="${1}"
 
 # Version of the cache to create or load.
-version=$2
+cache_version="${2}"
 
 # List of the packages to use.
 input_packages="${@:3}"
@@ -17,12 +17,12 @@ input_packages="${@:3}"
 packages="$(normalize_package_list "${input_packages}")"
 
 # Create cache directory so artifacts can be saved.
-mkdir -p $cache_dir
+mkdir -p "${cache_dir}"
 
-echo -n "Validating action arguments (version='$version', packages='$packages')...";
+echo -n "Validating action arguments (version='${cache_version}', packages='${packages}')...";
 if grep -q " " <<< "${cache_version}"; then
   echo "aborted." 
-  echo "Version value '$version' cannot contain spaces." >&2
+  echo "Version value '${cache_version}' cannot contain spaces." >&2
   exit 1
 fi
 
@@ -34,12 +34,16 @@ if test -z "${packages}"; then
 fi
 echo "done."
 
+echo -n "Updating APT package list..."
+sudo apt-get update > /dev/null
+echo "done."
+
 versioned_packages=""
 echo -n "Verifying packages..."
 for package in ${packages}; do 
   if test ! "$(apt show "${package}")"; then
     echo "aborted."
-    echo "Package '$package' not found." >&2
+    echo "Package '${package}' not found." >&2
     exit 3
   fi
   get_package_name_ver "${package}" # -> package_name, package_ver  
@@ -64,6 +68,6 @@ echo "- Value hashed as '${key}'."
 
 echo "done."
 
-key_filepath="$cache_dir/cache_key.md5"
-echo $key > $key_filepath
-echo "Hash value written to $key_filepath"
+key_filepath="${cache_dir}/cache_key.md5"
+echo "${key}" > "${key_filepath}"
+echo "Hash value written to ${key_filepath}"
