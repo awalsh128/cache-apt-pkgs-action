@@ -16,8 +16,8 @@ for cache_filepath in ${cache_filepaths}; do
   echo "- "$(basename ${cache_filepath})""
 done
 
-echo "Reading from manifest..."
-for logline in $(cat "${cache_dir}/manifest.log" | tr ',' '\n' ); do
+echo "Reading from main requested packages manifest..."
+for logline in $(cat "${cache_dir}/manifest_main.log" | tr ',' '\n' ); do
   echo "- $(echo "${logline}" | tr ':' ' ')"
 done
 echo "done."
