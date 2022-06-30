@@ -20,7 +20,7 @@ packages="$(normalize_package_list "${input_packages}")"
 mkdir -p ${cache_dir}
 
 echo -n "Validating action arguments (version='${version}', packages='${packages}')...";
-if grep -q " " <<< "${cache_version}"; then
+if grep -q " " <<< "${version}"; then
   echo "aborted." 
   echo "Version value '${version}' cannot contain spaces." >&2
   exit 1
@@ -41,8 +41,9 @@ for package in ${packages}; do
     echo "aborted."
     echo "Package '${package}' not found." >&2
     exit 3
-  fi  
-  versioned_packages=""${versioned_packages}" "$(get_package_name_ver "${package}")""
+  fi
+  read package_name package_ver < <(get_package_name_ver "${package}") # -> package_name, package_ver  
+  versioned_packages=""${versioned_packages}" "${package_name}"="${package_ver}""
 done
 echo "done."
 
@@ -55,7 +56,7 @@ echo "Creating cache key..."
 normalized_versioned_packages="$(normalize_package_list "${versioned_packages}")"
 echo "- Normalized package list is '${normalized_versioned_packages}'."
 
-value="$(echo "${normalized_versioned_packages} @ ${cache_version}")"
+value="$(echo "${normalized_versioned_packages} @ ${version}")"
 echo "- Value to hash is '${value}'."
 
 key="$(echo "${value}" | md5sum | /bin/cut -f1 -d' ')"
