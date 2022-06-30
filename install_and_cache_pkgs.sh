@@ -40,11 +40,11 @@ for package in ${normalized_packages}; do
   manifest_main="${manifest_main}${package_name}:${package_ver},"
 
   all_packages="$(apt-get install --dry-run --yes "${package_name}" | grep "^Inst" | awk '{print $2}')"
-  dep_packages="$(grep -v "${package_name}" <<< ${all_packages})"
+  dep_packages="$(echo ${dep_packages} | grep -v "${package_name}" | tr '\n' ,)"
 
   echo "- ${package_name}"
   echo "  * Version: ${package_ver}"
-  echo "  * Dependencies: ${dep_packages}"
+  echo "  * Dependencies: ${dep_packages:0:-1}"
   echo -n "  * Installing..."
   # Zero interaction while installing or upgrading the system via apt.
   sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install "${package}" > /dev/null
