@@ -55,7 +55,7 @@ for package in ${normalized_packages}; do
 
     if test ! -f "${cache_filepath}"; then
       read cache_package_name cache_package_ver < <(get_package_name_ver "${cache_package}")
-      echo -n "  Caching ${cache_package_name} to ${cache_filepath}..."
+      echo -n "  * Caching ${cache_package_name} to ${cache_filepath}..."
       # Pipe all package files (no folders) to Tar.
       dpkg -L "${cache_package_name}" |
         while IFS= read -r f; do     
