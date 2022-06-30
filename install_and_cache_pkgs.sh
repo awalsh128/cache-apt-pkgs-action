@@ -40,7 +40,7 @@ for package in ${normalized_packages}; do
   manifest_main="${manifest_main}${package_name}:${package_ver},"
 
   all_packages="$(apt-get install --dry-run --yes "${package_name}" | grep "^Inst" | awk '{print $2}')"
-  dep_packages="$(echo ${dep_packages} | grep -v "${package_name}" | tr '\n' ,)"
+  dep_packages="$(echo ${all_packages} | grep -v "${package_name}" | tr '\n' ,)"
 
   log "- ${package_name}"
   log "  * Version: ${package_ver}"
