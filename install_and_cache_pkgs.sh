@@ -41,7 +41,7 @@ for package in ${normalized_packages}; do
   sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install "${package}" > /dev/null
   echo "done."
 
-  for cache_package in "${package_deps}"; do
+  for cache_package in ${package_deps}; do
     cache_filepath="${cache_dir}/${cache_package}.tar.gz"
 
     if test ! -f "${cache_filepath}"; then
