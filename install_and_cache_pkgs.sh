@@ -25,7 +25,7 @@ done
 
 log -n "Updating APT package list..."
 sudo apt-get update > /dev/null
-"done."
+echo "done."
 
 # Strictly contains the requested packages.
 manifest_main=""
