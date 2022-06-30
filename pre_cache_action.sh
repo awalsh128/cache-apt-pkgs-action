@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Include library.
+script_dir="$(dirname -- "$(realpath -- "${0}")")"
+source "${script_dir}/lib.sh"
+
 # Directory that holds the cached packages.
 cache_dir=$1
 
@@ -7,34 +11,39 @@ cache_dir=$1
 version=$2
 
 # List of the packages to use.
-packages=${@:3}
+input_packages="${@:3}"
+
+# Trim commas, excess spaces, and sort.
+packages="$(normalize_package_list "${input_packages}")"
 
 # Create cache directory so artifacts can be saved.
 mkdir -p $cache_dir
 
 echo -n "Validating action arguments (version='$version', packages='$packages')...";
-echo $version | grep -o " " > /dev/null
-if [ $? -eq 0 ]; then
-  echo "aborted."
+if grep -q " " <<< "${cache_version}"; then
+  echo "aborted." 
   echo "Version value '$version' cannot contain spaces." >&2
   exit 1
 fi
-if [ "$packages" == "" ]; then
+
+# Is length of string zero?
+if test -z "${packages}"; then
   echo "aborted."
   echo "Packages argument cannot be empty." >&2
   exit 2
 fi
 echo "done."
 
+versioned_packages=""
 echo -n "Verifying packages..."
-for package in $packages; do
-  escaped=$(echo $package | sed 's/+/\\+/g')
-  apt-cache search ^$escaped$ | grep $package > /dev/null
-  if [ $? -ne 0 ]; then
+for package in ${packages}; do 
+  if test ! "$(apt show "${package}")"; then
     echo "aborted."
     echo "Package '$package' not found." >&2
     exit 3
   fi
+  get_package_name_ver "${package}" # -> package_name, package_ver  
+  versioned_packages="${versioned_packages} ${package_name}=${package_ver}"
 done
 echo "done."
 
@@ -43,15 +52,15 @@ set -e
 
 echo "Creating cache key..."
 
-# Remove package delimiters, sort (requires newline) and then convert back to inline list.
-normalized_list=$(echo $packages | sed 's/[\s,]+/ /g' | tr ' ' '\n' | sort | tr '\n' ' ')
-echo "- Normalized package list is '$normalized_list'."
+# TODO Can we prove this will happen again?
+normalized_versioned_packages="$(normalize_package_list "${versioned_packages}")"
+echo "- Normalized package list is '${normalized_versioned_packages}'."
 
-value=$(echo $normalized_list @ $version)
-echo "- Value to hash is '$value'."
+value="$(echo "${normalized_versioned_packages} @ ${cache_version}")"
+echo "- Value to hash is '${value}'."
 
-key=$(echo $value | md5sum | cut -f1 -d' ')
-echo "- Value hashed as '$key'."
+key="$(echo "${value}" | md5sum | /bin/cut -f1 -d' ')"
+echo "- Value hashed as '${key}'."
 
 echo "done."
 
