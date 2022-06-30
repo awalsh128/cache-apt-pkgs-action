@@ -41,9 +41,8 @@ for package in ${packages}; do
     echo "aborted."
     echo "Package '${package}' not found." >&2
     exit 3
-  fi
-  get_package_name_ver "${package}" # -> package_name, package_ver  
-  versioned_packages="${versioned_packages} ${package_name}=${package_ver}"
+  fi  
+  versioned_packages=""${versioned_packages}" "$(get_package_name_ver "${package}")""
 done
 echo "done."
 

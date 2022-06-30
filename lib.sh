@@ -15,5 +15,5 @@ function get_package_name_ver {
   if test -z "${ver}"; then
     ver="$(grep "Version:" <<< "$(apt show ${name})" | awk '{print $2}')"
   fi
-  echo 'package_name="${name}"; package_ver="${ver}"'
+  echo ""${name}"="${ver}""
 }
