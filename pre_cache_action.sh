@@ -5,10 +5,10 @@ script_dir="$(dirname -- "$(realpath -- "${0}")")"
 source "${script_dir}/lib.sh"
 
 # Directory that holds the cached packages.
-cache_dir=${1}
+cache_dir="${1}"
 
 # Version of the cache to create or load.
-version=${2}
+version="${2}"
 
 # List of the packages to use.
 input_packages="${@:3}"
