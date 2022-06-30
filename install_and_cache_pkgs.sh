@@ -61,8 +61,8 @@ for package in ${normalized_packages}; do
         while IFS= read -r f; do     
           if test -f $f; then echo "${f:1}"; fi;  #${f:1} removes the leading slash that Tar disallows
         done | 
-        xargs tar -czf "${cache_filepath}" -C /    
-      echo "done."            
+        xargs tar -czf "${cache_filepath}" -C /      
+      echo "done (compressed size $(du -k "${cache_filepath}" | cut -f1))."
     fi
 
     # Comma delimited name:ver pairs in the all packages manifest.
