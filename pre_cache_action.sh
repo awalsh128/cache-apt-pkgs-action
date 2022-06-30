@@ -19,27 +19,27 @@ packages="$(normalize_package_list "${input_packages}")"
 # Create cache directory so artifacts can be saved.
 mkdir -p ${cache_dir}
 
-echo -n "Validating action arguments (version='${version}', packages='${packages}')...";
+log -n "Validating action arguments (version='${version}', packages='${packages}')...";
 if grep -q " " <<< "${version}"; then
-  echo "aborted." 
-  echo "Version value '${version}' cannot contain spaces." >&2
+  log "aborted." 
+  log "Version value '${version}' cannot contain spaces." >&2
   exit 1
 fi
 
 # Is length of string zero?
 if test -z "${packages}"; then
-  echo "aborted."
-  echo "Packages argument cannot be empty." >&2
+  log "aborted."
+  log "Packages argument cannot be empty." >&2
   exit 2
 fi
-echo "done."
+log "done."
 
 versioned_packages=""
-echo -n "Verifying packages..."
+log -n "Verifying packages..."
 for package in ${packages}; do 
   if test ! "$(apt show "${package}")"; then
     echo "aborted."
-    echo "Package '${package}' not found." >&2
+    log "Package '${package}' not found." >&2
     exit 3
   fi
   read package_name package_ver < <(get_package_name_ver "${package}")
@@ -50,20 +50,20 @@ echo "done."
 # Abort on any failure at this point.
 set -e
 
-echo "Creating cache key..."
+log "Creating cache key..."
 
 # TODO Can we prove this will happen again?
 normalized_versioned_packages="$(normalize_package_list "${versioned_packages}")"
-echo "- Normalized package list is '${normalized_versioned_packages}'."
+log "- Normalized package list is '${normalized_versioned_packages}'."
 
 value="$(echo "${normalized_versioned_packages} @ ${version}")"
-echo "- Value to hash is '${value}'."
+log "- Value to hash is '${value}'."
 
 key="$(echo "${value}" | md5sum | /bin/cut -f1 -d' ')"
-echo "- Value hashed as '${key}'."
+log "- Value hashed as '${key}'."
 
-echo "done."
+log "done."
 
 key_filepath="${cache_dir}/cache_key.md5"
 echo ${key} > ${key_filepath}
-echo "Hash value written to ${key_filepath}"
+log "Hash value written to ${key_filepath}"

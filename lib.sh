@@ -17,3 +17,13 @@ function get_package_name_ver {
   fi
   echo "${name}" "${ver}"
 }
+
+function log {
+  timestamp="$(echo -n "$(date +%H:%M:%S)")"
+  line=""${timestamp}" "$(echo ${@})""
+  if [[ "${1}" == "-n" ]]; then
+    echo -n "${line}"
+  else
+    echo "${line}"
+  fi   
+}
