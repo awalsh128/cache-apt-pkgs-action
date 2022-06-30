@@ -17,7 +17,3 @@ function get_package_name_ver {
   fi
   echo 'package_name="${name}"; package_ver="${ver}"'
 }
-
-function blah {
-  > /dev/null 2>&1
-}

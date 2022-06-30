@@ -8,7 +8,7 @@ script_dir="$(dirname -- "$(realpath -- "${0}")")"
 source "${script_dir}/lib.sh"
 
 # Directory that holds the cached packages.
-cache_dir=$1
+cache_dir="${1}"
 
 # List of the packages to use.
 input_packages="${@:2}"
