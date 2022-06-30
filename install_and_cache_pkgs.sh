@@ -14,12 +14,12 @@ cache_dir="${1}"
 input_packages="${@:2}"
 
 # Trim commas, excess spaces, and sort.
-packages="$(normalize_package_list "${input_packages}")"
+normalized_packages="$(normalize_package_list "${input_packages}")"
 
-package_count=$(echo "${packages}" | wc -w)
+package_count=$(echo "${normalized_packages}" | wc -w)
 echo "Clean installing and caching ${package_count} package(s)."
 echo "Package list:"
-for package in "${packages}"; do
+for package in ${normalized_packages}; do
   echo "- ${package}"
 done
 
@@ -29,8 +29,8 @@ echo "done."
 
 manifest=""
 echo "Clean installing and caching ${package_count} packages..."
-for package in "${packages}"; do
-  get_package_name_ver "${package}" # -> package_name, package_ver
+for package in ${normalized_packages}; do
+  read package_name package_ver < <(get_package_name_ver "${package}")
   package_deps="$(apt-get install --dry-run --yes "${package_name}" | grep "^Inst" | awk '{print $2}')"
 
   echo "- ${package_name}"

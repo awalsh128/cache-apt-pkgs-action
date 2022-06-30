@@ -42,7 +42,7 @@ for package in ${packages}; do
     echo "Package '${package}' not found." >&2
     exit 3
   fi
-  read package_name package_ver < <(get_package_name_ver "${package}") # -> package_name, package_ver  
+  read package_name package_ver < <(get_package_name_ver "${package}")
   versioned_packages=""${versioned_packages}" "${package_name}"="${package_ver}""
 done
 echo "done."
