@@ -45,7 +45,7 @@ for package in ${normalized_packages}; do
     cache_filepath="${cache_dir}/${cache_package}.tar.gz"
 
     if test ! -f "${cache_filepath}"; then
-      get_package_name_ver "${cache_package}" # -> package_name, package_ver      
+      read package_name package_ver < <(get_package_name_ver "${cache_package}")
       echo -n "  Caching ${package_name} to ${cache_filepath}..."
       # Pipe all package files (no folders) to Tar.
       dpkg -L "${package_name}" |
