@@ -33,7 +33,7 @@ for package in $packages; do
   # Pipe all package files (no folders) to Tar.
   dpkg -L $package |
     while IFS= read -r f; do     
-      if test -f $f; then echo ${f:1}; fi;  #${f:1} removes the leading slash that Tar disallows
+      if test -f $f || test -L $f; then echo "${f:1}"; fi;  #${f:1} removes the leading slash that Tar disallows
     done | 
     xargs tar -czf $cache_filepath -C /    
   echo "done."
