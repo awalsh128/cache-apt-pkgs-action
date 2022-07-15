@@ -3,8 +3,12 @@
 # Fail on any error.
 set -e
 
+# Include library.
+script_dir="$(dirname -- "$(realpath -- "${0}")")"
+source "${script_dir}/lib.sh"
+
 # Directory that holds the cached packages.
-cache_dir=$1
+cache_dir="${1}"
 
 # List of the packages to use.
 input_packages="${@:2}"
@@ -81,4 +85,3 @@ log "Writing main requested packages manifest to ${manifest_main_filepath}..."
 # Remove trailing comma and write to manifest_main file.
 echo "${manifest_main:0:-1}" > "${manifest_main_filepath}"
 log "done."
-
