@@ -23,7 +23,7 @@ for package in ${normalized_packages}; do
   log "- ${package}"
 done
 
-log -n "Updating APT package list..."
+log "Updating APT package list..."
 sudo apt-get update > /dev/null
 echo "done."
 
@@ -41,11 +41,14 @@ for package in ${normalized_packages}; do
 
   all_packages="$(apt-get install --dry-run --yes "${package_name}" | grep "^Inst" | awk '{print $2}')"
   dep_packages="$(echo ${all_packages} | grep -v "${package_name}" | tr '\n' ,)"
+  if "${dep_packages}" == ","; then
+    dep_packages="none";
+  fi
 
   log "- ${package_name}"
   log "  * Version: ${package_ver}"
-  log "  * Dependencies: ${dep_packages:0:-1}"
-  log -n "  * Installing..."
+  log "  * Dependencies: ${dep_packages}"
+  log "  * Installing..."
   # Zero interaction while installing or upgrading the system via apt.
   sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install "${package}" > /dev/null
   echo "done."
@@ -55,14 +58,14 @@ for package in ${normalized_packages}; do
 
     if test ! -f "${cache_filepath}"; then
       read cache_package_name cache_package_ver < <(get_package_name_ver "${cache_package}")
-      log -n "  * Caching ${cache_package_name} to ${cache_filepath}..."
+      log "  * Caching ${cache_package_name} to ${cache_filepath}..."
       # Pipe all package files (no folders) to Tar.
       dpkg -L "${cache_package_name}" |
         while IFS= read -r f; do     
           if test -f $f; then echo "${f:1}"; fi;  #${f:1} removes the leading slash that Tar disallows
         done | 
         xargs tar -czf "${cache_filepath}" -C /      
-      echo "done (compressed size $(du -k "${cache_filepath}" | cut -f1))."
+      log "done (compressed size $(du -k "${cache_filepath}" | cut -f1))."
     fi
 
     # Comma delimited name:ver pairs in the all packages manifest.
@@ -72,13 +75,13 @@ done
 log "done."
 
 manifest_all_filepath="${cache_dir}/manifest_all.log"
-log -n "Writing all packages manifest to ${manifest_all_filepath}..."
+log "Writing all packages manifest to ${manifest_all_filepath}..."
 # Remove trailing comma and write to manifest_all file.
 echo "${manifest_all:0:-1}" > "${manifest_all_filepath}"
-echo "done."
+log "done."
 
 manifest_main_filepath="${cache_dir}/manifest_main.log"
-log -n "Writing main requested packages manifest to ${manifest_main_filepath}..."
+log "Writing main requested packages manifest to ${manifest_main_filepath}..."
 # Remove trailing comma and write to manifest_main file.
 echo "${manifest_main:0:-1}" > "${manifest_main_filepath}"
-echo "done."
+log "done."

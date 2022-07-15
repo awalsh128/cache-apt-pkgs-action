@@ -31,8 +31,8 @@ cache_pkg_filepaths=$(ls -1 "${cache_dir}"/*.tar.gz | sort)
 cache_pkg_filecount=$(echo ${cache_pkg_filepaths} | wc -w)
 log "Restoring ${cache_pkg_filecount} packages from cache..."
 for cache_pkg_filepath in ${cache_pkg_filepaths}; do
-  log -n "- $(basename "${cache_pkg_filepath}") restoring..."
+  log "- $(basename "${cache_pkg_filepath}") restoring..."
   sudo tar -xf "${cache_pkg_filepath}" -C "${cache_restore_root}" > /dev/null
-  echo "done."
+  log "done."
 done
 log "done."

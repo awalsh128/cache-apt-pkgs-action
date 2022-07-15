@@ -56,7 +56,7 @@ log "Creating cache key..."
 normalized_versioned_packages="$(normalize_package_list "${versioned_packages}")"
 log "- Normalized package list is '${normalized_versioned_packages}'."
 
-value="$(echo "${normalized_versioned_packages} @ ${version}")"
+value="${normalized_versioned_packages} @ ${version}"
 log "- Value to hash is '${value}'."
 
 key="$(echo "${value}" | md5sum | /bin/cut -f1 -d' ')"
