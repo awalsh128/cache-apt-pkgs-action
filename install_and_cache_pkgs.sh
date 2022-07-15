@@ -75,14 +75,5 @@ for package in ${normalized_packages}; do
 done
 log "done."
 
-manifest_all_filepath="${cache_dir}/manifest_all.log"
-log "Writing all packages manifest to ${manifest_all_filepath}..."
-# Remove trailing comma and write to manifest_all file.
-echo "${manifest_all:0:-1}" > "${manifest_all_filepath}"
-log "done."
-
-manifest_main_filepath="${cache_dir}/manifest_main.log"
-log "Writing main requested packages manifest to ${manifest_main_filepath}..."
-# Remove trailing comma and write to manifest_main file.
-echo "${manifest_main:0:-1}" > "${manifest_main_filepath}"
-log "done."
+write_manifest "all" "${manifest_all}" "${cache_dir}/manifest_all.log"
+write_manifest "main" "${manifest_main}" "${cache_dir}/manifest_main.log"

@@ -57,6 +57,7 @@ runs:
           / \
           "${{ steps.load-cache.outputs.cache-hit }}" \
           ${{ inputs.packages }}
-        echo "::set-output name=package-version-list::$(cat ~/cache-apt-pkgs/manifest_main.log)"
-        echo "::set-output name=all-package-version-list::$(cat ~/cache-apt-pkgs/manifest_all.log)"
+        function create_list { local list=$(cat ~/cache-apt-pkgs/manifest_${1}.log | tr '\n' ','); echo ${list:0:-1}; };
+        echo "::set-output name=package-version-list::$(create_list main)"
+        echo "::set-output name=all-package-version-list::$(create_list all)"
       shell: bash
