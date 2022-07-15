@@ -26,7 +26,10 @@ outputs:
     # Need to output true and false instead of true and nothing.
     value: ${{ steps.load-cache.outputs.cache-hit || false }}
   package-version-list:
-    description: 'The packages and versions that are installed as a comma delimited list with colon delimit on the package version (i.e. <package>:<version,<package>:<version>).'
+    description: 'The main requested packages and versions that are installed. Represented as a comma delimited list with colon delimit on the package version (i.e. <package>:<version,<package>:<version>).'
+    value: ${{ steps.post-cache.outputs.package-version-list }}
+  all-package-version-list:
+    description: 'All the pulled in packages and versions, including dependencies, that are installed. Represented as a comma delimited list with colon delimit on the package version (i.e. <package>:<version,<package>:<version>).'
     value: ${{ steps.post-cache.outputs.package-version-list }}
 
 runs:
@@ -54,5 +57,6 @@ runs:
           / \
           "${{ steps.load-cache.outputs.cache-hit }}" \
           ${{ inputs.packages }}
-        echo "::set-output name=package-version-list::$(cat ~/cache-apt-pkgs/manifest.log)"
+        echo "::set-output name=package-version-list::$(cat ~/cache-apt-pkgs/manifest_main.log)"
+        echo "::set-output name=all-package-version-list::$(cat ~/cache-apt-pkgs/manifest_all.log)"
       shell: bash
