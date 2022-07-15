@@ -39,7 +39,7 @@ for package in ${normalized_packages}; do
   # Comma delimited name:ver pairs in the main requested packages manifest.
   manifest_main="${manifest_main}${package_name}:${package_ver},"
 
-  all_packages="$(apt-get install --dry-run --yes "${package_name}" | grep "^Inst" | sort | awk '{print $2 $3}' | tr '(' ':'))"
+  all_packages="$(apt-get install --dry-run --yes "${package_name}" | grep "^Inst" | sort | awk '{print $2 $3}' | tr '(' ':')"
   dep_packages="$(echo "${all_packages}" | grep -v "${package_name}" | tr '\n' ,)"
   if "${dep_packages}" == ","; then
     dep_packages="none";
