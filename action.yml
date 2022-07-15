@@ -30,7 +30,7 @@ outputs:
     value: ${{ steps.post-cache.outputs.package-version-list }}
   all-package-version-list:
     description: 'All the pulled in packages and versions, including dependencies, that are installed. Represented as a comma delimited list with colon delimit on the package version (i.e. <package>:<version,<package>:<version>).'
-    value: ${{ steps.post-cache.outputs.package-version-list }}
+    value: ${{ steps.post-cache.outputs.all-package-version-list }}
 
 runs:
   using: "composite"
