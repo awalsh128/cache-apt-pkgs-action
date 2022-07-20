@@ -59,7 +59,7 @@ log "- Normalized package list is '${normalized_versioned_packages}'."
 value="${normalized_versioned_packages} @ ${version}"
 log "- Value to hash is '${value}'."
 
-key="$(echo "${value}" | md5sum | /bin/cut -f1 -d' ')"
+key="$(echo "${value}" | md5sum | cut -f1 -d' ')"
 log "- Value hashed as '${key}'."
 
 log "done."
