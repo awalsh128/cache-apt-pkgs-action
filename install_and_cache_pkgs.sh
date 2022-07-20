@@ -39,21 +39,22 @@ for package in ${normalized_packages}; do
   # Comma delimited name:ver pairs in the main requested packages manifest.
   manifest_main="${manifest_main}${package_name}:${package_ver},"
 
-  all_packages="$(apt-get install --dry-run --yes "${package_name}" | grep "^Inst" | sort | awk '{print $2 $3}' | tr '(' ':')"
-  dep_packages="$(echo "${all_packages}" | grep -v "${package_name}" | tr '\n' ,)"
-  if "${dep_packages}" == ","; then
-    dep_packages="none";
+  read dep_packages < <(get_dep_packages "${package_name}")
+  if test -z "${dep_packages}"; then
+    dep_packages_text="none";
+  else
+    dep_packages_text="${dep_packages}"
   fi
 
   log "- ${package_name}"
   log "  * Version: ${package_ver}"
-  log "  * Dependencies: ${dep_packages}"
+  log "  * Dependencies: ${dep_packages_text}"
   log "  * Installing..."
   # Zero interaction while installing or upgrading the system via apt.
-  sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install "${package}" > /dev/null
+  sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install "${package_name}" > /dev/null
   echo "done."
 
-  for cache_package in ${all_packages}; do
+  for cache_package in ${package_name}:${package_ver} ${dep_packages}; do
     cache_filepath="${cache_dir}/${cache_package}.tar.gz"
 
     if test ! -f "${cache_filepath}"; then
@@ -65,7 +66,7 @@ for package in ${normalized_packages}; do
           if test -f $f || test -L $f; then echo "${f:1}"; fi;  #${f:1} removes the leading slash that Tar disallows
         done | 
         xargs tar -czf "${cache_filepath}" -C /      
-      log "done (compressed size $(du -k "${cache_filepath}" | cut -f1))."
+      log "done (compressed size $(du -h "${cache_filepath}" | cut -f1))."
     fi
 
     # Comma delimited name:ver pairs in the all packages manifest.

@@ -9,9 +9,17 @@ function normalize_package_list {
   echo "${sorted}"  
 }
 
+# Gets a package list of dependencies as common delimited pairs
+#   <name>:<version>,<name:version>...
+function get_dep_packages {  
+  echo $(apt-get install --dry-run --yes "${1}" | \
+    grep "^Inst" | sort | awk '{print $2 $3}' | \
+    tr '(' ':' | grep -v "${1}:")
+}
+
 # Split fully qualified package into name and version
 function get_package_name_ver {
-  IFS=\= read name ver <<< "${1}"
+  IFS=\: read name ver <<< "${1}"
   # If version not found in the fully qualified package value.
   if test -z "${ver}"; then
     ver="$(grep "Version:" <<< "$(apt show ${name})" | awk '{print $2}')"
