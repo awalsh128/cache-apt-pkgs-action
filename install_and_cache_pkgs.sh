@@ -8,61 +8,72 @@ script_dir="$(dirname -- "$(realpath -- "${0}")")"
 source "${script_dir}/lib.sh"
 
 # Directory that holds the cached packages.
-cache_dir=$1
+cache_dir="${1}"
 
 # List of the packages to use.
 input_packages="${@:2}"
 
 # Trim commas, excess spaces, and sort.
-packages="$(normalize_package_list "${input_packages}")"
+normalized_packages="$(normalize_package_list "${input_packages}")"
 
-package_count=$(echo "${packages}" | wc -w)
-echo "Clean installing and caching ${package_count} package(s)."
-echo "Package list:"
-for package in "${packages}"; do
-  echo "- ${package}"
+package_count=$(wc -w <<< "${normalized_packages}")
+log "Clean installing and caching ${package_count} package(s)."
+log "Package list:"
+for package in ${normalized_packages}; do
+  log "- ${package}"
 done
 
-echo -n "Updating APT package list..."
+log "Updating APT package list..."
 sudo apt-get update > /dev/null
 echo "done."
 
-manifest=""
-echo "Clean installing and caching ${package_count} packages..."
-for package in "${packages}"; do
-  get_package_name_ver "${package}" # -> package_name, package_ver
-  package_deps="$(apt-get install --dry-run --yes "${package_name}" | grep "^Inst" | awk '{print $2}')"
+# Strictly contains the requested packages.
+manifest_main=""
+# Contains all packages including dependencies.
+manifest_all=""
 
-  echo "- ${package_name}"
-  echo "  * Version: ${package_ver}"
-  echo "  * Dependencies: ${package_deps}"
-  echo -n "  * Installing..."
+log "Clean installing and caching ${package_count} packages..."
+for package in ${normalized_packages}; do
+  read package_name package_ver < <(get_package_name_ver "${package}")  
+
+  # Comma delimited name:ver pairs in the main requested packages manifest.
+  manifest_main="${manifest_main}${package_name}:${package_ver},"
+
+  read dep_packages < <(get_dep_packages "${package_name}")
+  if test -z "${dep_packages}"; then
+    dep_packages_text="none";
+  else
+    dep_packages_text="${dep_packages}"
+  fi
+
+  log "- ${package_name}"
+  log "  * Version: ${package_ver}"
+  log "  * Dependencies: ${dep_packages_text}"
+  log "  * Installing..."
   # Zero interaction while installing or upgrading the system via apt.
-  sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install "${package}" > /dev/null
+  sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install "${package_name}" > /dev/null
   echo "done."
 
-  for cache_package in "${package_deps}"; do
+  for cache_package in ${package_name}:${package_ver} ${dep_packages}; do
     cache_filepath="${cache_dir}/${cache_package}.tar.gz"
 
     if test ! -f "${cache_filepath}"; then
-      get_package_name_ver "${cache_package}" # -> package_name, package_ver      
-      echo -n "  Caching ${package_name} to ${cache_filepath}..."
+      read cache_package_name cache_package_ver < <(get_package_name_ver "${cache_package}")
+      log "  * Caching ${cache_package_name} to ${cache_filepath}..."
       # Pipe all package files (no folders) to Tar.
-      dpkg -L "${package_name}" |
+      dpkg -L "${cache_package_name}" |
         while IFS= read -r f; do     
-          if test -f $f; then echo "${f:1}"; fi;  #${f:1} removes the leading slash that Tar disallows
+          if test -f $f || test -L $f; then echo "${f:1}"; fi;  #${f:1} removes the leading slash that Tar disallows
         done | 
-        xargs tar -czf "${cache_filepath}" -C /    
-      echo "done."
-      # Add package to manifest
-      manifest="${manifest}${package_name}:$(dpkg -s "${package_name}" | grep Version | awk '{print $2}'),"
+        xargs tar -czf "${cache_filepath}" -C /      
+      log "done (compressed size $(du -h "${cache_filepath}" | cut -f1))."
     fi
-  done
-done
-echo "done."
 
-manifest_filepath="${cache_dir}/manifest.log"
-echo -n "Writing package manifest to ${manifest_filepath}..."
-# Remove trailing comma and write to manifest file.
-echo "${manifest:0:-1}" > "${manifest_filepath}"
-echo "done."
+    # Comma delimited name:ver pairs in the all packages manifest.
+    manifest_all="${manifest_all}${cache_package_name}:${cache_package_ver},"
+  done  
+done
+log "done."
+
+write_manifest "all" "${manifest_all}" "${cache_dir}/manifest_all.log"
+write_manifest "main" "${manifest_main}" "${cache_dir}/manifest_main.log"

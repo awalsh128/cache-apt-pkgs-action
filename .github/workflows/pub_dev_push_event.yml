@@ -1,14 +1,14 @@
-name: Publish Master Push Event
+name: Publish Dev Push Event
 on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - dev
 
 jobs:
   publish_event:
     runs-on: ubuntu-latest
-    name: Publish master push
+    name: Publish dev push
     steps:
       - run: |
           curl -i \
@@ -16,4 +16,4 @@ jobs:
             -H "Accept: application/vnd.github.v3+json" \
             -H "Authorization: token ${{ secrets.PUBLISH_PUSH_TOKEN }}" \
             https://api.github.com/repos/awalsh128/cache-apt-pkgs-action-ci/dispatches \
-            -d '{"event_type":"master_push"}'
+            -d '{"event_type":"dev_push"}'
