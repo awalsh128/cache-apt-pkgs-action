@@ -29,8 +29,7 @@ function get_package_name_ver {
 
 function log { echo "$(date +%H:%M:%S)" "${@}"; }
 
-function write_manifest {
-  echo "manifest list ${2}"
+function write_manifest {  
   log "Writing ${1} packages manifest to ${3}..."  
   # 0:-1 to remove trailing comma, delimit by newline and sort
   echo "${2:0:-1}" | tr ',' '\n' | sort > ${3}
