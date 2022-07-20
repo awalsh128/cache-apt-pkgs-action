@@ -45,7 +45,7 @@ runs:
       shell: bash
 
     - id: load-cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/cache-apt-pkgs
         key: cache-apt-pkgs_${{ env.CACHE_KEY }}
