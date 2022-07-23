@@ -22,7 +22,7 @@ function get_package_name_ver {
   IFS=\: read name ver <<< "${1}"
   # If version not found in the fully qualified package value.
   if test -z "${ver}"; then
-    ver="$(grep "Version:" <<< "$(apt show ${name})" | awk '{print $2}')"
+    ver="$(grep "Version:" <<< "$(apt-cache show ${name})" | awk '{print $2}')"
   fi
   echo "${name}" "${ver}"
 }
