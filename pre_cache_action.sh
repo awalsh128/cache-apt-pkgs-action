@@ -21,31 +21,35 @@ mkdir -p ${cache_dir}
 
 log -n "Validating action arguments (version='${version}', packages='${packages}')...";
 if grep -q " " <<< "${version}"; then
-  log "aborted." 
+  log "aborted" 
   log "Version value '${version}' cannot contain spaces." >&2
   exit 1
 fi
 
 # Is length of string zero?
 if test -z "${packages}"; then
-  log "aborted."
+  log "aborted"
   log "Packages argument cannot be empty." >&2
   exit 2
 fi
-log "done."
+log "done"
+
+log_empty_line
 
 versioned_packages=""
 log -n "Verifying packages..."
 for package in ${packages}; do 
   if test ! "$(apt show "${package}")"; then
-    echo "aborted."
+    echo "aborted"
     log "Package '${package}' not found." >&2
     exit 3
   fi
   read package_name package_ver < <(get_package_name_ver "${package}")
   versioned_packages=""${versioned_packages}" "${package_name}"="${package_ver}""
 done
-echo "done."
+echo "done"
+
+log_empty_line
 
 # Abort on any failure at this point.
 set -e
@@ -62,7 +66,7 @@ log "- Value to hash is '${value}'."
 key="$(echo "${value}" | md5sum | /bin/cut -f1 -d' ')"
 log "- Value hashed as '${key}'."
 
-log "done."
+log "done"
 
 key_filepath="${cache_dir}/cache_key.md5"
 echo ${key} > ${key_filepath}
