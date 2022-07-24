@@ -27,4 +27,5 @@ if [ "$cache_hit" == true ]; then
 else
   ${script_dir}/install_and_cache_pkgs.sh ~/cache-apt-pkgs ${packages}
 fi
-echo ""
+
+log_empty_line

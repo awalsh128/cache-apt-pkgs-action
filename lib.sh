@@ -9,10 +9,10 @@ function normalize_package_list {
   echo "${sorted}"  
 }
 
-# Gets a package list of dependencies as common delimited pairs
-#   <name>:<version>,<name:version>...
+# Gets a package list of dependencies as newline delimited pairs
+#   <name>:<version>\n<name:version>...
 function get_dep_packages {  
-  echo $(apt-get install --dry-run --yes "${1}" | \
+  echo $(apt-fast install --dry-run --yes "${1}" | \
     grep "^Inst" | sort | awk '{print $2 $3}' | \
     tr '(' ':' | grep -v "${1}:")
 }
@@ -22,16 +22,19 @@ function get_package_name_ver {
   IFS=\: read name ver <<< "${1}"
   # If version not found in the fully qualified package value.
   if test -z "${ver}"; then
-    ver="$(grep "Version:" <<< "$(apt show ${name})" | awk '{print $2}')"
+    ver="$(grep "Version:" <<< "$(apt-cache show ${name})" | awk '{print $2}')"
   fi
   echo "${name}" "${ver}"
 }
 
 function log { echo "$(date +%H:%M:%S)" "${@}"; }
 
-function write_manifest {  
+function log_empty_line { echo ""; }
+
+# Writes the manifest to a specified file.
+function write_manifest {
   log "Writing ${1} packages manifest to ${3}..."  
   # 0:-1 to remove trailing comma, delimit by newline and sort
   echo "${2:0:-1}" | tr ',' '\n' | sort > ${3}
-  log "done."
+  log "done"
 }
