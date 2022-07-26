@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # Fail on any error.
 set -e
@@ -53,7 +53,7 @@ for package in ${normalized_packages}; do
 
   cached_packages="${cached_packages} ${package_name}:${package_version}"
   read dep_packages < <(get_dep_packages "${package_name}") || exit 2
-  cached_packages="${cached_packages} $(echo ${dep_packages} | tr '\n' ' ')"
+  cached_packages="${cached_packages} ${dep_packages}"
 
   if test -z "${dep_packages}"; then
     dep_packages_text="none";
