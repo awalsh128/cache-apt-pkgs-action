@@ -22,7 +22,11 @@ function get_dep_packages {
       exit 2
     fi
   done < <(apt-fast install --dry-run --yes "${1}" | grep "^Inst" | grep -v "^Inst ${1} " | sort)
-  echo "${dep_packages:0:-1}"  # Removing trailing space.
+  if test -n "${dep_packages}"; then
+    echo "${dep_packages:0:-1}"  # Removing trailing space.
+  else
+    echo ""
+  fi
 }
 
 # Split fully qualified package into name and version.
