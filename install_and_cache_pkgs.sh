@@ -52,7 +52,7 @@ for package in ${normalized_packages}; do
   manifest_main="${manifest_main}${package_name}:${package_ver},"
 
   cached_packages="${cached_packages} ${package_name}:${package_version}"
-  read dep_packages < <(get_dep_packages "${package_name}")
+  read dep_packages < <(get_dep_packages "${package_name}") || exit 2
   cached_packages="${cached_packages} $(echo ${dep_packages} | tr '\n' ' ')"
 
   if test -z "${dep_packages}"; then
