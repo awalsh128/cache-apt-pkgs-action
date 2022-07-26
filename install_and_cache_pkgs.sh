@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 # Fail on any error.
 set -e
@@ -51,7 +51,7 @@ for package in ${normalized_packages}; do
   # Comma delimited name:ver pairs in the main requested packages manifest.
   manifest_main="${manifest_main}${package_name}:${package_ver},"
 
-  cached_packages="${cached_packages} ${package_name}:${package_version}"
+  cached_packages="${cached_packages} ${package_name}:${package_ver}"
   read dep_packages < <(get_dep_packages "${package_name}") || exit 2
   cached_packages="${cached_packages} ${dep_packages}"
 
@@ -72,7 +72,8 @@ log_empty_line
 
 log "Clean installing ${package_count} packages..."
 # Zero interaction while installing or upgrading the system via apt.
-sudo DEBIAN_FRONTEND=noninteractive apt-fast --yes install ${normalized_packages} > /dev/null
+#sudo DEBIAN_FRONTEND=noninteractive apt-fast --yes install ${normalized_packages} > /dev/null
+sudo apt-fast --yes install ${normalized_packages}
 log "done"
 
 log_empty_line
