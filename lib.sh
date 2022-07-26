@@ -9,10 +9,11 @@ function normalize_package_list {
   echo "${sorted}"  
 }
 
-# Gets a package list of dependencies as space delimited pairs with each pair colon delimited.
+# Gets a list of installed packages as space delimited pairs with each pair colon delimited.
 #   <name>:<version> <name:version>...
-function get_dep_packages {  
-  local regex="^Inst ([^ ]+) (\[[^ ]+\]\s)?\(([^ ]+)"
+function get_installed_packages {   
+  install_log_filepath="${1}"
+  local regex="^Unpacking ([^ ]+) (\[[^ ]+\]\s)?\(([^ )]+)"
   dep_packages=""  
   while read -r line; do
     if [[ "${line}" =~ ${regex} ]]; then
@@ -21,7 +22,7 @@ function get_dep_packages {
       log_err "Unable to parse package name and version from \"$line\""
       exit 2
     fi
-  done < <(apt-fast install --dry-run --yes "${1}" | grep "^Inst" | grep -v "^Inst ${1} " | sort)
+  done < <(grep "^Unpacking " ${install_log_filepath})
   if test -n "${dep_packages}"; then
     echo "${dep_packages:0:-1}"  # Removing trailing space.
   else
