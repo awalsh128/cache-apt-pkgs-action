@@ -7,9 +7,6 @@ set -e
 script_dir="$(dirname -- "$(realpath -- "${0}")")"
 source "${script_dir}/lib.sh"
 
-# Install apt-fast for optimized installs.
-/bin/bash -c "$(curl -sL https://git.io/vokNn)"
-
 # Directory that holds the cached packages.
 cache_dir="${1}"
 
