@@ -25,10 +25,10 @@ manifest_main=""
 log "Package list:"
 for package in ${normalized_packages}; do
   read package_name package_ver < <(get_package_name_ver "${package}")
-  manifest_main="${manifest_main}${package_name}:${package_ver},"
+  manifest_main="${manifest_main}${package_name}:${package_ver},"  
   log "- ${package_name}:${package_ver}"
 done
-write_manifest "main" "${manifest_main:0:-1}" "${cache_dir}/manifest_main.log"
+write_manifest "main" "${manifest_main}" "${cache_dir}/manifest_main.log"
 
 log_empty_line
 
