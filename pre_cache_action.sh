@@ -47,7 +47,7 @@ log_empty_line
 versioned_packages=""
 log "Verifying packages..."
 for package in ${packages}; do 
-  if test ! "$(apt show "${package}")"; then
+  if test ! "$(apt-fast show "${package}")"; then
     echo "aborted"
     log "Package '${package}' not found." >&2
     exit 3
