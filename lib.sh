@@ -13,13 +13,13 @@ function normalize_package_list {
 #   <name>:<version> <name:version>...
 function get_installed_packages {   
   install_log_filepath="${1}"
-  local regex="^Unpacking ([^ ]+) (\[[^ ]+\]\s)?\(([^ )]+)"
+  local regex="^Unpacking ([^ :]+)([^ ]+)? (\[[^ ]+\]\s)?\(([^ )]+)"  
   dep_packages=""  
   while read -r line; do
     if [[ "${line}" =~ ${regex} ]]; then
-      dep_packages="${dep_packages}${BASH_REMATCH[1]}:${BASH_REMATCH[3]} "      
+      dep_packages="${dep_packages}${BASH_REMATCH[1]}:${BASH_REMATCH[4]} "      
     else
-      log_err "Unable to parse package name and version from \"$line\""
+      log_err "Unable to parse package name and version from \"${line}\""
       exit 2
     fi
   done < <(grep "^Unpacking " ${install_log_filepath})
@@ -52,3 +52,5 @@ function write_manifest {
   echo "${2:0:-1}" | tr ',' '\n' | sort > ${3}
   log "done"
 }
+
+get_installed_packages "/tmp/cache-apt-pkgs-action-cache/install.log"
