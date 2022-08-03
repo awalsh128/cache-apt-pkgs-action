@@ -19,7 +19,7 @@ packages="$(normalize_package_list "${input_packages}")"
 # Create cache directory so artifacts can be saved.
 mkdir -p ${cache_dir}
 
-log -n "Validating action arguments (version='${version}', packages='${packages}')...";
+log "Validating action arguments (version='${version}', packages='${packages}')...";
 if grep -q " " <<< "${version}"; then
   log "aborted" 
   log "Version value '${version}' cannot contain spaces." >&2
@@ -32,12 +32,13 @@ if test -z "${packages}"; then
   log "Packages argument cannot be empty." >&2
   exit 2
 fi
+
 log "done"
 
 log_empty_line
 
 versioned_packages=""
-log -n "Verifying packages..."
+log "Verifying packages..."
 for package in ${packages}; do 
   if test ! "$(apt show "${package}")"; then
     echo "aborted"
@@ -47,7 +48,7 @@ for package in ${packages}; do
   read package_name package_ver < <(get_package_name_ver "${package}")
   versioned_packages=""${versioned_packages}" "${package_name}"="${package_ver}""
 done
-echo "done"
+log "done"
 
 log_empty_line
 
