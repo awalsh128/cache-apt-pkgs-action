@@ -45,7 +45,7 @@ jobs:
     name: Build Doxygen documentation and deploy
     steps:
       - uses: actions/checkout@v2
-      - uses: awalsh128/cache-apt-pkgs-action@v1
+      - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
           version: 1.0
@@ -68,11 +68,10 @@ jobs:
     runs-on: ubuntu-latest    
     steps:
       - uses: actions/checkout@v2
-      - uses: awalsh128/cache-apt-pkgs-action@v1
+      - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
           version: 1.0
-          refresh: true # Force refresh / upgrade v1.0 cache.
 ```
 
 ## Cache Limits
