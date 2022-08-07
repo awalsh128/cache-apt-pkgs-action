@@ -13,11 +13,11 @@ function normalize_package_list {
 #   <name>:<version> <name:version>...
 function get_installed_packages {   
   install_log_filepath="${1}"
-  local regex="^Unpacking ([^ :]+)([^ ]+)? (\[[^ ]+\]\s)?\(([^ )]+)"  
+  local regex="^Unpacking ([^ :]+)([^ ]+)? (\[[^ ]+\]\s)?\(([^ )]+)"
   dep_packages=""  
   while read -r line; do
     if [[ "${line}" =~ ${regex} ]]; then
-      dep_packages="${dep_packages}${BASH_REMATCH[1]}:${BASH_REMATCH[4]} "      
+      dep_packages="${dep_packages}${BASH_REMATCH[1]}:${BASH_REMATCH[4]} "
     else
       log_err "Unable to parse package name and version from \"${line}\""
       exit 2
