@@ -6,7 +6,7 @@ function normalize_package_list {
   # Remove extraneous spaces at the middle, beginning, and end.
   local trimmed="$(echo "${stripped}" | sed 's/\s\+/ /g; s/^\s\+//g; s/\s\+$//g')"
   local sorted="$(echo ${trimmed} | tr ' ' '\n' | sort | tr '\n' ' ')"
-  echo "${sorted}"  
+  echo "${sorted}"
 }
 
 # Gets a list of installed packages as space delimited pairs with each pair colon delimited.
