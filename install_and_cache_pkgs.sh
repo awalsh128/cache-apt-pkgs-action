@@ -75,7 +75,7 @@ for installed_package in ${installed_packages}; do
       while IFS= read -r f; do     
         if test -f $f || test -L $f; then echo "${f:1}"; fi;  #${f:1} removes the leading slash that Tar disallows
       done |
-      xargs tar -czf "${cache_filepath}" -C /      
+      sudo xargs tar -czf "${cache_filepath}" -C /      
     log "    done (compressed size $(du -h "${cache_filepath}" | cut -f1))."
   fi
 
