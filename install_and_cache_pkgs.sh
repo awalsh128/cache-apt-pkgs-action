@@ -64,7 +64,7 @@ log_empty_line
 installed_package_count=$(wc -w <<< "${installed_packages}")
 log "Caching ${installed_package_count} installed packages..."
 for installed_package in ${installed_packages}; do
-  cache_filepath="${cache_dir}/${installed_package}.tar.gz"
+  cache_filepath="${cache_dir}/${installed_package}.tar"
 
   # Sanity test in case APT enumerates duplicates.
   if test ! -f "${cache_filepath}"; then
@@ -75,7 +75,7 @@ for installed_package in ${installed_packages}; do
       while IFS= read -r f; do     
         if test -f $f || test -L $f; then echo "${f:1}"; fi;  #${f:1} removes the leading slash that Tar disallows
       done |
-      sudo xargs tar -czf "${cache_filepath}" -C /      
+      sudo xargs tar -cf "${cache_filepath}" -C /
     log "    done (compressed size $(du -h "${cache_filepath}" | cut -f1))."
   fi
 
