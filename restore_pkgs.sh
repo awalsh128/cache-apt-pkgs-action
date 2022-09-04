@@ -31,7 +31,7 @@ log "done"
 log_empty_line
 
 # Only search for archived results. Manifest and cache key also live here.
-cached_pkg_filepaths=$(ls -1 "${cache_dir}"/*.tar.gz | sort)
+cached_pkg_filepaths=$(ls -1 "${cache_dir}"/*.tar | sort)
 cached_pkg_filecount=$(echo ${cached_pkg_filepaths} | wc -w)
 log "Restoring ${cached_pkg_filecount} packages from cache..."
 for cached_pkg_filepath in ${cached_pkg_filepaths}; do
