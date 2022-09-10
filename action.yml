@@ -13,7 +13,11 @@ inputs:
   version:
     description: 'Version will create a new cache and install packages.'
     required: false
-    default: ''  
+    default: '' 
+  execute_postinst:
+    description: 'Execute Debian package postinst script upon restore. Required by some packages.'
+    required: false
+    default: 'false'
   refresh:
     description: 'Option to refresh / upgrade the packages in the same cache.'
     required: false
@@ -56,6 +60,7 @@ runs:
           ~/cache-apt-pkgs \
           / \
           "${{ steps.load-cache.outputs.cache-hit }}" \
+          "${{ inputs.execute_postinst }}" \
           ${{ inputs.packages }}
         function create_list { local list=$(cat ~/cache-apt-pkgs/manifest_${1}.log | tr '\n' ','); echo ${list:0:-1}; };
         echo "::set-output name=package-version-list::$(create_list main)"

@@ -10,8 +10,11 @@ source "${script_dir}/lib.sh"
 # Directory that holds the cached packages.
 cache_dir="${1}"
 
+# Cache and execute post install scripts on restore.
+execute_postinst="${2}"
+
 # List of the packages to use.
-input_packages="${@:2}"
+input_packages="${@:3}"
 
 # Trim commas, excess spaces, and sort.
 normalized_packages="$(normalize_package_list "${input_packages}")"
@@ -61,6 +64,11 @@ done
 
 log_empty_line
 
+# Post install script install location.
+postinst_filepath="/tmp/deb-ctrl-data/postinst"
+postinst_dirpath=$(dirname ${postinst_filepath})
+mkdir -r "${postinst_dirpath}"
+
 installed_package_count=$(wc -w <<< "${installed_packages}")
 log "Caching ${installed_package_count} installed packages..."
 for installed_package in ${installed_packages}; do
@@ -70,12 +78,23 @@ for installed_package in ${installed_packages}; do
   if test ! -f "${cache_filepath}"; then
     read installed_package_name installed_package_ver < <(get_package_name_ver "${installed_package}")
     log "  * Caching ${installed_package_name} to ${cache_filepath}..."
+    
     # Pipe all package files (no folders) to Tar.
     dpkg -L "${installed_package_name}" |
       while IFS= read -r f; do     
         if test -f $f || test -L $f; then echo "${f:1}"; fi;  #${f:1} removes the leading slash that Tar disallows
       done |
       sudo xargs tar -cf "${cache_filepath}" -C /
+
+    # Append post install scripts if enabled and available.
+    if test "${execute_postinst}" == "true"; then
+      dpkg -e pkg "${postinst_dirpath}"
+      if test -f "${postinst_filepath}"; then
+        tar -caf "${cache_filepath}" "${postinst_filepath}"
+        rm "${postinst_filepath}"
+      fi
+    fi
+
     log "    done (compressed size $(du -h "${cache_filepath}" | cut -f1))."
   fi
 
