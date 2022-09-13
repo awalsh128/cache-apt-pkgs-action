@@ -46,9 +46,13 @@ function log_err { >&2 echo "$(date +%H:%M:%S)" "${@}"; }
 function log_empty_line { echo ""; }
 
 # Writes the manifest to a specified file.
-function write_manifest {
-  log "Writing ${1} packages manifest to ${3}..."  
-  # 0:-1 to remove trailing comma, delimit by newline and sort.
-  echo "${2:0:-1}" | tr ',' '\n' | sort > ${3}
-  log "done"
+function write_manifest {  
+  if [ ${#2} -eq 0 ]; then 
+    log "Skipped ${1} manifest write. No packages to install."
+  else
+    log "Writing ${1} packages manifest to ${3}..."
+    # 0:-1 to remove trailing comma, delimit by newline and sort.
+    echo "${2:0:-1}" | tr ',' '\n' | sort > ${3}
+    log "done"
+  fi
 }
