@@ -67,7 +67,7 @@ log_empty_line
 # Post install script install location.
 postinst_filepath="/tmp/deb-ctrl-data/postinst"
 postinst_dirpath=$(dirname ${postinst_filepath})
-mkdir -r "${postinst_dirpath}"
+mkdir "${postinst_dirpath}"
 
 installed_package_count=$(wc -w <<< "${installed_packages}")
 log "Caching ${installed_package_count} installed packages..."
