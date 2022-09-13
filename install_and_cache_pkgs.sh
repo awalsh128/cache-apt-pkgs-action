@@ -64,10 +64,8 @@ done
 
 log_empty_line
 
-# Post install script install location.
-postinst_filepath="/tmp/deb-ctrl-data/postinst"
-postinst_dirpath=$(dirname ${postinst_filepath})
-mkdir "${postinst_dirpath}"
+# Post install script install location {package name}.postinst
+postinst_dirpath="/var/lib/dpkg/info/"
 
 installed_package_count=$(wc -w <<< "${installed_packages}")
 log "Caching ${installed_package_count} installed packages..."
@@ -87,12 +85,9 @@ for installed_package in ${installed_packages}; do
       sudo xargs tar -cf "${cache_filepath}" -C /
 
     # Append post install scripts if enabled and available.
-    if test "${execute_postinst}" == "true"; then
-      dpkg -e pkg "${postinst_dirpath}"
-      if test -f "${postinst_filepath}"; then
-        tar -caf "${cache_filepath}" "${postinst_filepath}"
-        rm "${postinst_filepath}"
-      fi
+    postinst_filepath=$(get_postinst_filepath "${package_name}")
+    if test "${execute_postinst}" == "true" && test ! -z "${postinst_filepath}"; then
+      tar -caf "${cache_filepath}" "${postinst_filepath}"
     fi
 
     log "    done (compressed size $(du -h "${cache_filepath}" | cut -f1))."

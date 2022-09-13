@@ -1,6 +1,13 @@
 #!/bin/bash
 
 # Sort these packages by name and split on commas.
+#######################################
+# Sorts given packages by name and split on commas.
+# Arguments:
+#   The comma delimited list of packages.
+# Returns:
+#   Sorted list of space delimited packages.
+#######################################
 function normalize_package_list {
   local stripped=$(echo "${1}" | sed 's/,//g')
   # Remove extraneous spaces at the middle, beginning, and end.
@@ -9,8 +16,14 @@ function normalize_package_list {
   echo "${sorted}"  
 }
 
-# Gets a list of installed packages as space delimited pairs with each pair colon delimited.
+#######################################
+# Gets a list of installed packages from a Debian package installation log.
+# Arguments:
+#   The filepath of the Debian install log.
+# Returns:
+#   The list of space delimited pairs with each pair colon delimited.
 #   <name>:<version> <name:version>...
+#######################################
 function get_installed_packages {   
   install_log_filepath="${1}"
   local regex="^Unpacking ([^ :]+)([^ ]+)? (\[[^ ]+\]\s)?\(([^ )]+)"  
@@ -30,7 +43,13 @@ function get_installed_packages {
   fi
 }
 
-# Split fully qualified package into name and version.
+#######################################
+# Splits a fully qualified package into name and version.
+# Arguments:
+#   The colon delimited package pair or just the package name.
+# Returns:
+#   The package name and version pair.
+#######################################
 function get_package_name_ver {
   IFS=\: read name ver <<< "${1}"
   # If version not found in the fully qualified package value.
@@ -40,12 +59,36 @@ function get_package_name_ver {
   echo "${name}" "${ver}"
 }
 
+#######################################
+# Gets the Debian postinst file location.
+# Arguments:
+#   Name of the unqualified package to search for.
+# Returns:
+#   Filepath of the postinst file, otherwise an empty string.
+#######################################
+function get_postinst_filepath {
+  filepath="/var/lib/dpkg/info/${1}"
+  if test -f "${filepath}"; then
+    echo "${filepath}"
+  else
+    echo ""
+  fi
+}
+
 function log { echo "$(date +%H:%M:%S)" "${@}"; }
 function log_err { >&2 echo "$(date +%H:%M:%S)" "${@}"; }
 
 function log_empty_line { echo ""; }
 
+#######################################
 # Writes the manifest to a specified file.
+# Arguments:
+#   Type of manifest being written.
+#   List of packages being written to the file.
+#   File path of the manifest being written.
+# Returns:
+#   Log lines from write.
+#######################################
 function write_manifest {  
   if [ ${#2} -eq 0 ]; then 
     log "Skipped ${1} manifest write. No packages to install."

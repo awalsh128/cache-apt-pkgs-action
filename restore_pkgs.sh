@@ -37,21 +37,16 @@ log_empty_line
 cached_pkg_filepaths=$(ls -1 "${cache_dir}"/*.tar | sort)
 cached_pkg_filecount=$(echo ${cached_pkg_filepaths} | wc -w)
 
-# Post install script restore location.
-postint_filepath="/tmp/deb-ctrl-data/postinst"
-
 log "Restoring ${cached_pkg_filecount} packages from cache..."
 for cached_pkg_filepath in ${cached_pkg_filepaths}; do
   log "- $(basename "${cached_pkg_filepath}") restoring..."
 
   sudo tar -xf "${cached_pkg_filepath}" -C "${cache_restore_root}" > /dev/null
 
-  if test "${execute_postinst}" == "true"; then
-    # Execute post install script if available.
-    if test -f "${postint_filepath}"; then
-      sh -x ${postint_filepath}
-      rm -fr ${postint_filepath}
-    fi
+  # Execute post install script if available.
+  postinst_filepath=$(get_postinst_filepath "${package_name}")
+  if test "${execute_postinst}" == "true" && test ! -z "${postinst_filepath}"; then
+    sh -x ${postint_filepath}    
   fi
 
   log "  done"
