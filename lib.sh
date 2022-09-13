@@ -52,5 +52,3 @@ function write_manifest {
   echo "${2:0:-1}" | tr ',' '\n' | sort > ${3}
   log "done"
 }
-
-get_installed_packages "/tmp/cache-apt-pkgs-action-cache/install.log"
