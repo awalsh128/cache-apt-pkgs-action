@@ -64,9 +64,6 @@ done
 
 log_empty_line
 
-# Post install script install location {package name}.postinst
-postinst_dirpath="/var/lib/dpkg/info/"
-
 installed_package_count=$(wc -w <<< "${installed_packages}")
 log "Caching ${installed_package_count} installed packages..."
 for installed_package in ${installed_packages}; do
@@ -76,19 +73,11 @@ for installed_package in ${installed_packages}; do
   if test ! -f "${cache_filepath}"; then
     read installed_package_name installed_package_ver < <(get_package_name_ver "${installed_package}")
     log "  * Caching ${installed_package_name} to ${cache_filepath}..."
-    
-    # Pipe all package files (no folders) to Tar.
-    dpkg -L "${installed_package_name}" |
-      while IFS= read -r f; do     
-        if test -f $f || test -L $f; then echo "${f:1}"; fi;  #${f:1} removes the leading slash that Tar disallows
-      done |
-      sudo xargs tar -cf "${cache_filepath}" -C /
 
-    # Append post install scripts if enabled and available.
-    postinst_filepath=$(get_postinst_filepath "${package_name}")
-    if test "${execute_postinst}" == "true" && test ! -z "${postinst_filepath}"; then
-      tar -caf "${cache_filepath}" "${postinst_filepath}"
-    fi
+    # Pipe all package files (no folders) and postinst control data to Tar.
+    { dpkg -L "${installed_package_name}" & get_postinst_filepath "${package_name}"; } |
+      while IFS= read -r f; do test -f "${f}" -o -L "${f}" && get_tar_relpath "${f}"; done |
+      sudo xargs tar -cf "${cache_filepath}" -C /
 
     log "    done (compressed size $(du -h "${cache_filepath}" | cut -f1))."
   fi

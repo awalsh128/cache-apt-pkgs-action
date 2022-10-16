@@ -39,16 +39,20 @@ cached_pkg_filecount=$(echo ${cached_pkg_filepaths} | wc -w)
 
 log "Restoring ${cached_pkg_filecount} packages from cache..."
 for cached_pkg_filepath in ${cached_pkg_filepaths}; do
+
   log "- $(basename "${cached_pkg_filepath}") restoring..."
-
   sudo tar -xf "${cached_pkg_filepath}" -C "${cache_restore_root}" > /dev/null
-
-  # Execute post install script if available.
-  postinst_filepath=$(get_postinst_filepath "${package_name}")
-  if test "${execute_postinst}" == "true" && test ! -z "${postinst_filepath}"; then
-    sh -x ${postint_filepath}    
-  fi
-
   log "  done"
+
+  # Execute post install script if available.    
+  if test "${execute_postinst}" == "true"; then
+    package_name=$(get_package_name_from_cached_filepath ${package_name})
+    postinst_filepath=$(get_postinst_filepath "${cache_restore_root}" "${package_name}")
+    if test ! -z "${postinst_filepath}"; then
+      log "- Executing ${postinst_filepath}..."
+      sudo sh -x ${postinst_filepath}
+      log "  done"
+    fi
+  fi  
 done
 log "done"

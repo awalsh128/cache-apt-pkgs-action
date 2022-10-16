@@ -1,13 +1,12 @@
 #!/bin/bash
 
-# Sort these packages by name and split on commas.
-#######################################
+###############################################################################
 # Sorts given packages by name and split on commas.
 # Arguments:
 #   The comma delimited list of packages.
 # Returns:
 #   Sorted list of space delimited packages.
-#######################################
+###############################################################################
 function normalize_package_list {
   local stripped=$(echo "${1}" | sed 's/,//g')
   # Remove extraneous spaces at the middle, beginning, and end.
@@ -16,14 +15,14 @@ function normalize_package_list {
   echo "${sorted}"  
 }
 
-#######################################
+###############################################################################
 # Gets a list of installed packages from a Debian package installation log.
 # Arguments:
 #   The filepath of the Debian install log.
 # Returns:
 #   The list of space delimited pairs with each pair colon delimited.
 #   <name>:<version> <name:version>...
-#######################################
+###############################################################################
 function get_installed_packages {   
   install_log_filepath="${1}"
   local regex="^Unpacking ([^ :]+)([^ ]+)? (\[[^ ]+\]\s)?\(([^ )]+)"  
@@ -43,13 +42,13 @@ function get_installed_packages {
   fi
 }
 
-#######################################
+###############################################################################
 # Splits a fully qualified package into name and version.
 # Arguments:
 #   The colon delimited package pair or just the package name.
 # Returns:
 #   The package name and version pair.
-#######################################
+###############################################################################
 function get_package_name_ver {
   IFS=\: read name ver <<< "${1}"
   # If version not found in the fully qualified package value.
@@ -59,19 +58,50 @@ function get_package_name_ver {
   echo "${name}" "${ver}"
 }
 
-#######################################
+###############################################################################
+# Gets the package name from the cached package filepath in the
+# path/to/cache/dir/<name>:<version>.tar format.
+# Arguments:
+#   Filepath to the cached packaged.
+# Returns:
+#   The package name.
+###############################################################################
+function get_package_name_from_cached_filepath {
+  basename ${cached_pkg_filepath} | awk -F\: '{print $1}'
+}
+
+###############################################################################
 # Gets the Debian postinst file location.
 # Arguments:
+#   Root directory to search from.
 #   Name of the unqualified package to search for.
 # Returns:
 #   Filepath of the postinst file, otherwise an empty string.
-#######################################
+###############################################################################
 function get_postinst_filepath {
-  filepath="/var/lib/dpkg/info/${1}"
+  filepath="${1}/var/lib/dpkg/info/${2}.postinst"
   if test -f "${filepath}"; then
     echo "${filepath}"
   else
     echo ""
+  fi
+}
+
+
+###############################################################################
+# Gets the relative filepath acceptable by Tar. Just removes the leading slash
+# that Tar disallows.
+# Arguments:
+#   Absolute filepath to archive.
+# Returns:
+#   The relative filepath to archive.
+###############################################################################
+function get_tar_relpath {
+  filepath=${1}
+  if test ${filepath:0:1} = "/"; then
+    echo "${filepath:1}"
+  else
+    echo "${filepath}"
   fi
 }
 
@@ -80,7 +110,7 @@ function log_err { >&2 echo "$(date +%H:%M:%S)" "${@}"; }
 
 function log_empty_line { echo ""; }
 
-#######################################
+###############################################################################
 # Writes the manifest to a specified file.
 # Arguments:
 #   Type of manifest being written.
@@ -88,7 +118,7 @@ function log_empty_line { echo ""; }
 #   File path of the manifest being written.
 # Returns:
 #   Log lines from write.
-#######################################
+###############################################################################
 function write_manifest {  
   if [ ${#2} -eq 0 ]; then 
     log "Skipped ${1} manifest write. No packages to install."
