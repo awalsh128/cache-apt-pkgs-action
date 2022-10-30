@@ -58,6 +58,6 @@ runs:
           "${{ steps.load-cache.outputs.cache-hit }}" \
           ${{ inputs.packages }}
         function create_list { local list=$(cat ~/cache-apt-pkgs/manifest_${1}.log | tr '\n' ','); echo ${list:0:-1}; };
-        echo "::set-output name=package-version-list::$(create_list main)"
-        echo "::set-output name=all-package-version-list::$(create_list all)"
+        echo "package-version-list=$(create_list main)" >> $GITHUB_OUTPUT
+        echo "all-package-version-list=$(create_list all)" >> $GITHUB_OUTPUT
       shell: bash
