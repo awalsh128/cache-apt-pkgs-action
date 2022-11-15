@@ -32,6 +32,13 @@ write_manifest "main" "${manifest_main}" "${cache_dir}/manifest_main.log"
 
 log_empty_line
 
+log "Installing apt-fast for optimized installs..."
+# Install apt-fast for optimized installs.
+/bin/bash -c "$(curl -sL https://git.io/vokNn)"
+log "done"
+
+log_empty_line
+
 log "Updating APT package list..."
 sudo apt-fast update > /dev/null
 log "done"

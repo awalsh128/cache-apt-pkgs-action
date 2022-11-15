@@ -37,13 +37,6 @@ log "done"
 
 log_empty_line
 
-log "Installing apt-fast for optimized installs..."
-# Install apt-fast for optimized installs.
-/bin/bash -c "$(curl -sL https://git.io/vokNn)"
-log "done"
-
-log_empty_line
-
 versioned_packages=""
 log "Verifying packages..."
 for package in ${packages}; do 
