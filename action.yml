@@ -70,6 +70,5 @@ runs:
     - id: upload-logs
       uses: actions/upload-artifact@v3
       with:
-        name: action-logs
-        path: |
-          ~/cache-apt-pkgs/*.log
+        name: ${{ inputs.packages }}%${{ inputs.version }}
+        path: ~/cache-apt-pkgs/*.log
