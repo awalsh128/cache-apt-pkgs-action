@@ -66,3 +66,10 @@ runs:
         echo "name=package-version-list::$(create_list main)" >> $GITHUB_OUTPUT
         echo "name=all-package-version-list::$(create_list all)" >> $GITHUB_OUTPUT
       shell: bash
+
+    - id: upload-logs
+      uses: actions/upload-artifact@v3
+      with:
+        name: action-logs
+        path: |
+          ~/cache-apt-pkgs/*.log
