@@ -36,7 +36,7 @@ if test -z "${packages}"; then
   exit 2
 fi
 
-if test "${execute_install_scripts}" != "true" -o "${execute_install_scripts}" != "false"; then
+if test "${execute_install_scripts}" != "true" -a "${execute_install_scripts}" != "false"; then
   log "aborted"
   log "execute_install_scripts value '${execute_install_scripts}' must be either true or false (case sensitive)."
   exit 3
