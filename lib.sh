@@ -8,7 +8,7 @@
 #   Installation script extension (preinst, postinst).
 #   Parameter to pass to the installation script.
 # Returns:
-#   Filepath of the postinst file, otherwise an empty string.
+#   Filepath of the install script, otherwise an empty string.
 ###############################################################################
 function execute_install_script {
   local package_name=$(basename ${2} | awk -F\: '{print $1}')  
