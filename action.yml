@@ -20,7 +20,10 @@ inputs:
     default: 'false'
   refresh:
     description: 'OBSOLETE, use version instead.'
-
+  debug:
+    description: 'Debug issues with action. Minor performance penalty.'
+    required: false
+    default: 'false'
 
 outputs:
   cache-hit:
@@ -68,6 +71,7 @@ runs:
       shell: bash
 
     - id: upload-logs
+      if: ${{ inputs.debug }} == "true"
       uses: actions/upload-artifact@v3
       with:
         name: ${{ inputs.packages }}%${{ inputs.version }}
