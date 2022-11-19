@@ -13,9 +13,10 @@ cache_dir="${1}"
 # Root directory to untar the cached packages to.
 # Typically filesystem root '/' but can be changed for testing.
 cache_restore_root="${2}"
+test -d ${cache_restore_root} || mkdir ${cache_restore_root}
 
 # Cache and execute post install scripts on restore.
-execute_postinst="${3}"
+execute_install_scripts="${3}"
 
 cache_filepaths="$(ls -1 "${cache_dir}" | sort)"
 log "Found $(echo ${cache_filepaths} | wc -w) files in the cache."
@@ -44,15 +45,12 @@ for cached_pkg_filepath in ${cached_pkg_filepaths}; do
   sudo tar -xf "${cached_pkg_filepath}" -C "${cache_restore_root}" > /dev/null
   log "  done"
 
-  # Execute post install script if available.    
-  if test "${execute_postinst}" == "true"; then
-    package_name=$(get_package_name_from_cached_filepath ${package_name})
-    postinst_filepath=$(get_postinst_filepath "${cache_restore_root}" "${package_name}")
-    if test ! -z "${postinst_filepath}"; then
-      log "- Executing ${postinst_filepath}..."
-      sudo sh -x ${postinst_filepath}
-      log "  done"
-    fi
-  fi  
+  # Execute install scripts if available.    
+  if test "${execute_install_scripts}" == "true"; then
+    # May have to add more handling for extracting pre-install script before extracting all files.
+    # Keeping it simple for now.
+    execute_install_script "${cache_restore_root}" "${cached_pkg_filepath}" preinst install
+    execute_install_script "${cache_restore_root}" "${cached_pkg_filepath}" postinst configure
+  fi
 done
 log "done"

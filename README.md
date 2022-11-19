@@ -20,6 +20,7 @@ Create a workflow `.yml` file in your repositories `.github/workflows` directory
 
 * `packages` - Space delimited list of packages to install.
 * `version` - Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
+* `execute_install_scripts` - Execute Debian package pre and post install script upon restore. See [Caveats / Non-file Dependencies](#non-file-dependencies) for more information.
 
 ### Outputs
 
@@ -74,6 +75,34 @@ jobs:
           version: 1.0
 ```
 
-## Cache Limits
+## Caveats
+
+### Non-file Dependencies
+
+This action is based on the principle that most packages can be cached as a fileset. There are situations though where this is not enough.
+
+* Pre and post installation scripts needs to be ran from `/var/lib/dpkg/info/{package name}.[preinst, postinst]`.
+* The Debian package database needs to be queried for scripts above (i.e. `dpkg-query`).
+
+The `execute_install_scripts` argument can be used to attempt to execute the install scripts but they are no guaranteed to resolve the issue.
+
+```yaml
+- uses: awalsh128/cache-apt-pkgs-action@latest
+  with:
+    packages: mypackage
+    version: 1.0
+    execute_install_scripts: true
+```
+
+If this does not solve your issue, you will need to run `apt-get install` as a separate step for that particular package unfortunately.
+
+```yaml
+run: apt-get install mypackage
+shell: bash
+```
+
+Please reach out if you have found a workaround for your scenario and it can be generalized. There is only so much this action can do and can't get into the area of reverse engineering Debian package manager. It would be beyond the scope of this action and may result in a lot of extended support and brittleness. Also, it would be better to contribute to Debian packager instead at that point.
+
+### Cache Limits
 
 A repository can have up to 5GB of caches. Once the 5GB limit is reached, older caches will be evicted based on when the cache was last accessed.  Caches that are not accessed within the last week will also be evicted.

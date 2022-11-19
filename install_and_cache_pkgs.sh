@@ -10,11 +10,8 @@ source "${script_dir}/lib.sh"
 # Directory that holds the cached packages.
 cache_dir="${1}"
 
-# Cache and execute post install scripts on restore.
-execute_postinst="${2}"
-
 # List of the packages to use.
-input_packages="${@:3}"
+input_packages="${@:2}"
 
 # Trim commas, excess spaces, and sort.
 normalized_packages="$(normalize_package_list "${input_packages}")"
@@ -74,8 +71,10 @@ for installed_package in ${installed_packages}; do
     read installed_package_name installed_package_ver < <(get_package_name_ver "${installed_package}")
     log "  * Caching ${installed_package_name} to ${cache_filepath}..."
 
-    # Pipe all package files (no folders) and postinst control data to Tar.
-    { dpkg -L "${installed_package_name}" & get_postinst_filepath "${package_name}"; } |
+    # Pipe all package files (no folders) and installation control data to Tar.
+    { dpkg -L "${installed_package_name}" \
+      & get_install_filepath "" "${package_name}" "preinst" \
+      & get_install_filepath "" "${package_name}" "postinst"; } |
       while IFS= read -r f; do test -f "${f}" -o -L "${f}" && get_tar_relpath "${f}"; done |
       sudo xargs tar -cf "${cache_filepath}" -C /
 

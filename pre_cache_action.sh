@@ -10,8 +10,11 @@ cache_dir="${1}"
 # Version of the cache to create or load.
 version="${2}"
 
+# Execute post-installation script.
+execute_postinst="${3}"
+
 # List of the packages to use.
-input_packages="${@:3}"
+input_packages="${@:4}"
 
 # Trim commas, excess spaces, and sort.
 packages="$(normalize_package_list "${input_packages}")"
@@ -33,6 +36,12 @@ if test -z "${packages}"; then
   exit 2
 fi
 
+if test "${execute_postinst}" != "true" -o "${execute_postinst}" != "false"; then
+  log "aborted"
+  log "execute_postinst value '${execute_postinst}' must be either true or false (case sensitive)."
+  exit 3
+fi
+
 log "done"
 
 log_empty_line
@@ -50,7 +59,7 @@ for package in ${packages}; do
   if test ! "$(apt-cache show "${package}")"; then
     echo "aborted"
     log "Package '${package}' not found." >&2
-    exit 3
+    exit 4
   fi
   read package_name package_ver < <(get_package_name_ver "${package}")
   versioned_packages=""${versioned_packages}" "${package_name}"="${package_ver}""

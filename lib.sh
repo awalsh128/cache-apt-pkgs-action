@@ -1,18 +1,25 @@
 #!/bin/bash
 
 ###############################################################################
-# Sorts given packages by name and split on commas.
+# Execute the Debian install script.
 # Arguments:
-#   The comma delimited list of packages.
+#   Root directory to search from.
+#   File path to cached package archive.
+#   Installation script extension (preinst, postinst).
+#   Parameter to pass to the installation script.
 # Returns:
-#   Sorted list of space delimited packages.
+#   Filepath of the postinst file, otherwise an empty string.
 ###############################################################################
-function normalize_package_list {
-  local stripped=$(echo "${1}" | sed 's/,//g')
-  # Remove extraneous spaces at the middle, beginning, and end.
-  local trimmed="$(echo "${stripped}" | sed 's/\s\+/ /g; s/^\s\+//g; s/\s\+$//g')"
-  local sorted="$(echo ${trimmed} | tr ' ' '\n' | sort | tr '\n' ' ')"
-  echo "${sorted}"  
+function execute_install_script {
+  local package_name=$(basename ${2} | awk -F\: '{print $1}')  
+  local install_script_filepath=$(get_install_filepath "${1}" "${package_name}" "${3}")
+  if test ! -z "${install_script_filepath}"; then
+    log "- Executing ${install_script_filepath}..."
+    # Don't abort on errors; dpkg-trigger will error normally since it is outside 
+    # its run environment.
+    sudo sh -x ${install_script_filepath} ${4} || true
+    log "  done"
+  fi
 }
 
 ###############################################################################
@@ -24,9 +31,9 @@ function normalize_package_list {
 #   <name>:<version> <name:version>...
 ###############################################################################
 function get_installed_packages {   
-  install_log_filepath="${1}"
+  local install_log_filepath="${1}"
   local regex="^Unpacking ([^ :]+)([^ ]+)? (\[[^ ]+\]\s)?\(([^ )]+)"  
-  dep_packages=""  
+  local dep_packages=""  
   while read -r line; do
     if [[ "${line}" =~ ${regex} ]]; then
       dep_packages="${dep_packages}${BASH_REMATCH[1]}:${BASH_REMATCH[4]} "      
@@ -71,22 +78,20 @@ function get_package_name_from_cached_filepath {
 }
 
 ###############################################################################
-# Gets the Debian postinst file location.
+# Gets the Debian install script file location.
 # Arguments:
 #   Root directory to search from.
 #   Name of the unqualified package to search for.
+#   Extension of the installation script (preinst, postinst)
 # Returns:
-#   Filepath of the postinst file, otherwise an empty string.
+#   Filepath of the script file, otherwise an empty string.
 ###############################################################################
-function get_postinst_filepath {
-  filepath="${1}/var/lib/dpkg/info/${2}.postinst"
-  if test -f "${filepath}"; then
-    echo "${filepath}"
-  else
-    echo ""
-  fi
+function get_install_filepath {
+  local error_on_exit=$(shopt -op | grep errexit)  
+  # Filename includes arch (e.g. amd64).
+  local filepath="$(ls -1 ${1}/var/lib/dpkg/info/${2}:*.${3} 2> /dev/null | head -1 || true)"
+  test "${filepath}" && echo "${filepath}"
 }
-
 
 ###############################################################################
 # Gets the relative filepath acceptable by Tar. Just removes the leading slash
@@ -97,7 +102,7 @@ function get_postinst_filepath {
 #   The relative filepath to archive.
 ###############################################################################
 function get_tar_relpath {
-  filepath=${1}
+  local filepath=${1}
   if test ${filepath:0:1} = "/"; then
     echo "${filepath:1}"
   else
@@ -109,6 +114,21 @@ function log { echo "$(date +%H:%M:%S)" "${@}"; }
 function log_err { >&2 echo "$(date +%H:%M:%S)" "${@}"; }
 
 function log_empty_line { echo ""; }
+
+###############################################################################
+# Sorts given packages by name and split on commas.
+# Arguments:
+#   The comma delimited list of packages.
+# Returns:
+#   Sorted list of space delimited packages.
+###############################################################################
+function normalize_package_list {
+  local stripped=$(echo "${1}" | sed 's/,//g')
+  # Remove extraneous spaces at the middle, beginning, and end.
+  local trimmed="$(echo "${stripped}" | sed 's/\s\+/ /g; s/^\s\+//g; s/\s\+$//g')"
+  local sorted="$(echo ${trimmed} | tr ' ' '\n' | sort | tr '\n' ' ')"
+  echo "${sorted}"  
+}
 
 ###############################################################################
 # Writes the manifest to a specified file.
