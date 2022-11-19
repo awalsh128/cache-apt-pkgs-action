@@ -11,7 +11,7 @@ cache_dir="${1}"
 version="${2}"
 
 # Execute post-installation script.
-execute_postinst="${3}"
+execute_install_scripts="${3}"
 
 # List of the packages to use.
 input_packages="${@:4}"
@@ -36,9 +36,9 @@ if test -z "${packages}"; then
   exit 2
 fi
 
-if test "${execute_postinst}" != "true" -o "${execute_postinst}" != "false"; then
+if test "${execute_install_scripts}" != "true" -o "${execute_install_scripts}" != "false"; then
   log "aborted"
-  log "execute_postinst value '${execute_postinst}' must be either true or false (case sensitive)."
+  log "execute_install_scripts value '${execute_install_scripts}' must be either true or false (case sensitive)."
   exit 3
 fi
 
