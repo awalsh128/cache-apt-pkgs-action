@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # Fail on any error.
 set -e
@@ -46,7 +46,7 @@ for cached_pkg_filepath in ${cached_pkg_filepaths}; do
   log "  done"
 
   # Execute install scripts if available.    
-  if test "${execute_install_scripts}" == "true"; then
+  if test ${execute_install_scripts} == "true"; then
     # May have to add more handling for extracting pre-install script before extracting all files.
     # Keeping it simple for now.
     execute_install_script "${cache_restore_root}" "${cached_pkg_filepath}" preinst install

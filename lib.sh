@@ -12,7 +12,8 @@
 ###############################################################################
 function execute_install_script {
   local package_name=$(basename ${2} | awk -F\: '{print $1}')  
-  local install_script_filepath=$(get_install_filepath "${1}" "${package_name}" "${3}")
+  local install_script_filepath=$(\
+    get_install_filepath "${1}" "${package_name}" "${3}")
   if test ! -z "${install_script_filepath}"; then
     log "- Executing ${install_script_filepath}..."
     # Don't abort on errors; dpkg-trigger will error normally since it is outside 
@@ -87,9 +88,10 @@ function get_package_name_from_cached_filepath {
 #   Filepath of the script file, otherwise an empty string.
 ###############################################################################
 function get_install_filepath {
-  local error_on_exit=$(shopt -op | grep errexit)  
   # Filename includes arch (e.g. amd64).
-  local filepath="$(ls -1 ${1}/var/lib/dpkg/info/${2}:*.${3} 2> /dev/null | head -1 || true)"
+  local filepath="$(\
+    ls -1 ${1}var/lib/dpkg/info/${2}*.${3} \
+    | grep -E ${2}'(:.*)?.'${3} | head -1)"
   test "${filepath}" && echo "${filepath}"
 }
 
@@ -125,7 +127,9 @@ function log_empty_line { echo ""; }
 function normalize_package_list {
   local stripped=$(echo "${1}" | sed 's/,//g')
   # Remove extraneous spaces at the middle, beginning, and end.
-  local trimmed="$(echo "${stripped}" | sed 's/\s\+/ /g; s/^\s\+//g; s/\s\+$//g')"
+  local trimmed="$(\
+    echo "${stripped}" \
+    | sed 's/\s\+/ /g; s/^\s\+//g; s/\s\+$//g')"
   local sorted="$(echo ${trimmed} | tr ' ' '\n' | sort | tr '\n' ' ')"
   echo "${sorted}"  
 }
