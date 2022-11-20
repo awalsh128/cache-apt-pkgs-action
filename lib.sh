@@ -135,6 +135,23 @@ function normalize_package_list {
 }
 
 ###############################################################################
+# Validates an argument to be of a boolean value.
+# Arguments:
+#   Argument to validate.
+#   Variable name of the argument.
+#   Exit code if validation fails.
+# Returns:
+#   Sorted list of space delimited packages.
+###############################################################################
+function validate_bool {
+  if test "${1}" != "true" -a "${1}" != "false"; then
+    log "aborted"
+    log "${2} value '${1}' must be either true or false (case sensitive)."
+    exit ${3}
+  fi
+}
+
+###############################################################################
 # Writes the manifest to a specified file.
 # Arguments:
 #   Type of manifest being written.

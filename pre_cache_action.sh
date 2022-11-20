@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Debug mode for diagnosing issues.
+# Setup first before other operations.
+debug="${4}"
+validate_bool "${debug}" debug 1
+test ${debug} == "true" && set -x
+
 # Include library.
 script_dir="$(dirname -- "$(realpath -- "${0}")")"
 source "${script_dir}/lib.sh"
@@ -13,8 +19,11 @@ version="${2}"
 # Execute post-installation script.
 execute_install_scripts="${3}"
 
+# Debug mode for diagnosing issues.
+debug="${4}"
+
 # List of the packages to use.
-input_packages="${@:4}"
+input_packages="${@:5}"
 
 # Trim commas, excess spaces, and sort.
 packages="$(normalize_package_list "${input_packages}")"
@@ -26,21 +35,17 @@ log "Validating action arguments (version='${version}', packages='${packages}').
 if grep -q " " <<< "${version}"; then
   log "aborted" 
   log "Version value '${version}' cannot contain spaces." >&2
-  exit 1
+  exit 2
 fi
 
 # Is length of string zero?
 if test -z "${packages}"; then
   log "aborted"
   log "Packages argument cannot be empty." >&2
-  exit 2
-fi
-
-if test "${execute_install_scripts}" != "true" -a "${execute_install_scripts}" != "false"; then
-  log "aborted"
-  log "execute_install_scripts value '${execute_install_scripts}' must be either true or false (case sensitive)."
   exit 3
 fi
+
+validate_bool "${execute_install_scripts}" execute_install_scripts 4
 
 log "done"
 
@@ -59,7 +64,7 @@ for package in ${packages}; do
   if test ! "$(apt-cache show "${package}")"; then
     echo "aborted"
     log "Package '${package}' not found." >&2
-    exit 4
+    exit 5
   fi
   read package_name package_ver < <(get_package_name_ver "${package}")
   versioned_packages=""${versioned_packages}" "${package_name}"="${package_ver}""

@@ -3,6 +3,11 @@
 # Fail on any error.
 set -e
 
+# Debug mode for diagnosing issues.
+# Setup first before other operations.
+debug="${4}"
+test ${debug} == "true" && set -x
+
 # Include library.
 script_dir="$(dirname -- "$(realpath -- "${0}")")"
 source "${script_dir}/lib.sh"

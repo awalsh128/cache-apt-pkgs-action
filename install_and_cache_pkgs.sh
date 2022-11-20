@@ -3,6 +3,11 @@
 # Fail on any error.
 set -e
 
+# Debug mode for diagnosing issues.
+# Setup first before other operations.
+debug="${2}"
+test ${debug} == "true" && set -x
+
 # Include library.
 script_dir="$(dirname -- "$(realpath -- "${0}")")"
 source "${script_dir}/lib.sh"
@@ -11,7 +16,7 @@ source "${script_dir}/lib.sh"
 cache_dir="${1}"
 
 # List of the packages to use.
-input_packages="${@:2}"
+input_packages="${@:3}"
 
 # Trim commas, excess spaces, and sort.
 normalized_packages="$(normalize_package_list "${input_packages}")"
@@ -33,8 +38,13 @@ write_manifest "main" "${manifest_main}" "${cache_dir}/manifest_main.log"
 log_empty_line
 
 log "Updating APT package list..."
-sudo apt-fast update > /dev/null
-log "done"
+last_update_delta_s=$(($(date +%s) - $(date +%s -r /var/cache/apt/pkgcache.bin)))
+if test $last_update_delta_s -gt 300; then
+  sudo apt-fast update > /dev/null
+  log "done"
+else
+  log "skipped (fresh by ${last_update_delta_s} seconds)"
+fi
 
 log_empty_line
 

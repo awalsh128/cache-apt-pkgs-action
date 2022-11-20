@@ -21,15 +21,17 @@ cache_hit="${3}"
 # Cache and execute post install scripts on restore.
 execute_install_scripts="${4}"
 
-# List of the packages to use.
-packages="${@:5}"
+# Debug mode for diagnosing issues.
+debug="${5}"
+test ${debug} == "true" && set -x
 
-script_dir="$(dirname -- "$(realpath -- "${0}")")"
+# List of the packages to use.
+packages="${@:6}"
 
 if [ "$cache_hit" == true ]; then
-  ${script_dir}/restore_pkgs.sh "${cache_dir}" "${cache_restore_root}" "${execute_install_scripts}"
+  ${script_dir}/restore_pkgs.sh "${cache_dir}" "${cache_restore_root}" "${execute_install_scripts}" "${debug}"
 else
-  ${script_dir}/install_and_cache_pkgs.sh "${cache_dir}" ${packages}
+  ${script_dir}/install_and_cache_pkgs.sh "${cache_dir}" "${debug}" ${packages}
 fi
 
 log_empty_line
