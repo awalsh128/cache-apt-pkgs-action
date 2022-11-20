@@ -12,20 +12,26 @@ cache_dir="${1}"
 
 # Root directory to untar the cached packages to.
 # Typically filesystem root '/' but can be changed for testing.
+# WARNING: If non-root, this can cause errors during install script execution.
 cache_restore_root="${2}"
 
 # Indicates that the cache was found.
 cache_hit="${3}"
 
-# List of the packages to use.
-packages="${@:4}"
+# Cache and execute post install scripts on restore.
+execute_install_scripts="${4}"
 
-script_dir="$(dirname -- "$(realpath -- "${0}")")"
+# Debug mode for diagnosing issues.
+debug="${5}"
+test ${debug} == "true" && set -x
+
+# List of the packages to use.
+packages="${@:6}"
 
 if [ "$cache_hit" == true ]; then
-  ${script_dir}/restore_pkgs.sh ~/cache-apt-pkgs "${cache_restore_root}"
+  ${script_dir}/restore_pkgs.sh "${cache_dir}" "${cache_restore_root}" "${execute_install_scripts}" "${debug}"
 else
-  ${script_dir}/install_and_cache_pkgs.sh ~/cache-apt-pkgs ${packages}
+  ${script_dir}/install_and_cache_pkgs.sh "${cache_dir}" "${debug}" ${packages}
 fi
 
 log_empty_line

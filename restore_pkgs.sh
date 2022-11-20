@@ -3,6 +3,11 @@
 # Fail on any error.
 set -e
 
+# Debug mode for diagnosing issues.
+# Setup first before other operations.
+debug="${4}"
+test ${debug} == "true" && set -x
+
 # Include library.
 script_dir="$(dirname -- "$(realpath -- "${0}")")"
 source "${script_dir}/lib.sh"
@@ -13,6 +18,10 @@ cache_dir="${1}"
 # Root directory to untar the cached packages to.
 # Typically filesystem root '/' but can be changed for testing.
 cache_restore_root="${2}"
+test -d ${cache_restore_root} || mkdir ${cache_restore_root}
+
+# Cache and execute post install scripts on restore.
+execute_install_scripts="${3}"
 
 cache_filepaths="$(ls -1 "${cache_dir}" | sort)"
 log "Found $(echo ${cache_filepaths} | wc -w) files in the cache."
@@ -31,12 +40,22 @@ log "done"
 log_empty_line
 
 # Only search for archived results. Manifest and cache key also live here.
-cached_pkg_filepaths=$(ls -1 "${cache_dir}"/*.tar.gz | sort)
+cached_pkg_filepaths=$(ls -1 "${cache_dir}"/*.tar | sort)
 cached_pkg_filecount=$(echo ${cached_pkg_filepaths} | wc -w)
+
 log "Restoring ${cached_pkg_filecount} packages from cache..."
 for cached_pkg_filepath in ${cached_pkg_filepaths}; do
+
   log "- $(basename "${cached_pkg_filepath}") restoring..."
   sudo tar -xf "${cached_pkg_filepath}" -C "${cache_restore_root}" > /dev/null
   log "  done"
+
+  # Execute install scripts if available.    
+  if test ${execute_install_scripts} == "true"; then
+    # May have to add more handling for extracting pre-install script before extracting all files.
+    # Keeping it simple for now.
+    execute_install_script "${cache_restore_root}" "${cached_pkg_filepath}" preinst install
+    execute_install_script "${cache_restore_root}" "${cached_pkg_filepath}" postinst configure
+  fi
 done
 log "done"

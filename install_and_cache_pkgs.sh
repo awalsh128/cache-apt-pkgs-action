@@ -3,6 +3,11 @@
 # Fail on any error.
 set -e
 
+# Debug mode for diagnosing issues.
+# Setup first before other operations.
+debug="${2}"
+test ${debug} == "true" && set -x
+
 # Include library.
 script_dir="$(dirname -- "$(realpath -- "${0}")")"
 source "${script_dir}/lib.sh"
@@ -11,7 +16,7 @@ source "${script_dir}/lib.sh"
 cache_dir="${1}"
 
 # List of the packages to use.
-input_packages="${@:2}"
+input_packages="${@:3}"
 
 # Trim commas, excess spaces, and sort.
 normalized_packages="$(normalize_package_list "${input_packages}")"
@@ -40,8 +45,13 @@ log "done"
 log_empty_line
 
 log "Updating APT package list..."
-sudo apt-fast update > /dev/null
-log "done"
+last_update_delta_s=$(($(date +%s) - $(date +%s -r /var/cache/apt/pkgcache.bin)))
+if test $last_update_delta_s -gt 300; then
+  sudo apt-fast update > /dev/null
+  log "done"
+else
+  log "skipped (fresh by ${last_update_delta_s} seconds)"
+fi
 
 log_empty_line
 
@@ -71,18 +81,20 @@ log_empty_line
 installed_package_count=$(wc -w <<< "${installed_packages}")
 log "Caching ${installed_package_count} installed packages..."
 for installed_package in ${installed_packages}; do
-  cache_filepath="${cache_dir}/${installed_package}.tar.gz"
+  cache_filepath="${cache_dir}/${installed_package}.tar"
 
   # Sanity test in case APT enumerates duplicates.
   if test ! -f "${cache_filepath}"; then
     read installed_package_name installed_package_ver < <(get_package_name_ver "${installed_package}")
     log "  * Caching ${installed_package_name} to ${cache_filepath}..."
-    # Pipe all package files (no folders) to Tar.
-    dpkg -L "${installed_package_name}" |
-      while IFS= read -r f; do     
-        if test -f $f || test -L $f; then echo "${f:1}"; fi;  #${f:1} removes the leading slash that Tar disallows
-      done |
-      xargs tar -czf "${cache_filepath}" -C /      
+
+    # Pipe all package files (no folders) and installation control data to Tar.
+    { dpkg -L "${installed_package_name}" \
+      & get_install_filepath "" "${package_name}" "preinst" \
+      & get_install_filepath "" "${package_name}" "postinst"; } |
+      while IFS= read -r f; do test -f "${f}" -o -L "${f}" && get_tar_relpath "${f}"; done |
+      sudo xargs tar -cf "${cache_filepath}" -C /
+
     log "    done (compressed size $(du -h "${cache_filepath}" | cut -f1))."
   fi
 
