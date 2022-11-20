@@ -16,8 +16,8 @@ function execute_install_script {
     get_install_filepath "${1}" "${package_name}" "${3}")
   if test ! -z "${install_script_filepath}"; then
     log "- Executing ${install_script_filepath}..."
-    # Don't abort on errors; dpkg-trigger will error normally since it is outside 
-    # its run environment.
+    # Don't abort on errors; dpkg-trigger will error normally since it is
+    # outside its run environment.
     sudo sh -x ${install_script_filepath} ${4} || true
     log "  done"
   fi
@@ -90,8 +90,8 @@ function get_package_name_from_cached_filepath {
 function get_install_filepath {
   # Filename includes arch (e.g. amd64).
   local filepath="$(\
-    ls -1 ${1}var/lib/dpkg/info/${2}*.${3} \
-    | grep -E ${2}'(:.*)?.'${3} | head -1)"
+    ls -1 ${1}var/lib/dpkg/info/${2}*.${3} 2> /dev/null \
+    | grep -E ${2}'(:.*)?.'${3} | head -1 || true)"
   test "${filepath}" && echo "${filepath}"
 }
 
