@@ -16,6 +16,17 @@ This action is a composition of [actions/cache](https://github.com/actions/cache
 
 Create a workflow `.yml` file in your repositories `.github/workflows` directory. An [example workflow](#example-workflow) is available below. For more information, reference the GitHub Help Documentation for [Creating a workflow file](https://help.github.com/en/articles/configuring-a-workflow#creating-a-workflow-file).
 
+### Versions
+
+There are three kinds of version labels you can use.
+
+* `@latest` - This will give you the latest release.
+* `@v#` - Major only will give you the latest release for that major version only (e.g. `v1`).
+* Branch
+  * `@master` - Most recent manual and automated tested code. Possibly unstable since it is pre-release.
+  * `@staging` - Most recent automated tested code and can sometimes contain experimental features. Is pulled from dev stable code.
+  * `@dev` - Very unstable and contains experimental features. Automated testing may not show breaks since CI is also updated based on code in dev.
+
 ### Inputs
 
 * `packages` - Space delimited list of packages to install.
