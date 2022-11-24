@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Debug mode for diagnosing issues.
 # Setup first before other operations.
 debug="${4}"
