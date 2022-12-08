@@ -43,7 +43,7 @@ runs:
   steps:
     - id: pre-cache
       run: |
-        ${{ github.action_path }}/pre_cache_action.sh \
+        ${GITHUB_ACTION_PATH}/pre_cache_action.sh \
           ~/cache-apt-pkgs \
           "${{ inputs.version }}" \
           "${{ inputs.execute_install_scripts }}" \
@@ -60,7 +60,7 @@ runs:
 
     - id: post-cache
       run: |      
-        ${{ github.action_path }}/post_cache_action.sh \
+        ${GITHUB_ACTION_PATH}/post_cache_action.sh \
           ~/cache-apt-pkgs \
           / \
           "${{ steps.load-cache.outputs.cache-hit }}" \
