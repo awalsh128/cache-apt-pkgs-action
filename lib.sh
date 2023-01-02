@@ -118,19 +118,20 @@ function log_err { >&2 echo "$(date +%H:%M:%S)" "${@}"; }
 function log_empty_line { echo ""; }
 
 ###############################################################################
-# Sorts given packages by name and split on commas.
+# Sorts given list by name and split on commas.
 # Arguments:
-#   The comma delimited list of packages.
+#   The comma delimited list.
 # Returns:
-#   Sorted list of space delimited packages.
+#   Sorted list of space delimited elements.
 ###############################################################################
-function normalize_package_list {
-  local stripped=$(echo "${1}" | sed 's/,//g')
+function normalize_list {
+  local stripped=$(echo "${1}" | sed 's/\s*,\s*/ /g' | sed 's/\s+/ /g')
   # Remove extraneous spaces at the middle, beginning, and end.
   local trimmed="$(\
     echo "${stripped}" \
     | sed 's/\s\+/ /g; s/^\s\+//g; s/\s\+$//g')"
-  local sorted="$(echo ${trimmed} | tr ' ' '\n' | sort | tr '\n' ' ')"
+  local sorted="$(echo ${trimmed} | tr ' ' '\n' | sort)"
+  # Echos as an inlined list (not newlines).
   echo "${sorted}"  
 }
 

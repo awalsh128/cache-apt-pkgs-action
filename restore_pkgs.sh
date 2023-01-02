@@ -3,25 +3,27 @@
 # Fail on any error.
 set -e
 
-# Debug mode for diagnosing issues.
-# Setup first before other operations.
-debug="${4}"
-test ${debug} == "true" && set -x
-
 # Include library.
 script_dir="$(dirname -- "$(realpath -- "${0}")")"
 source "${script_dir}/lib.sh"
 
+# Debug mode for diagnosing issues.
+# Setup first before other operations.
+debug="${1}"
+validate_bool "${debug}" debug 1
+test ${debug} == "true" && set -x
+
 # Directory that holds the cached packages.
-cache_dir="${1}"
+cache_dir="${2}"
 
 # Root directory to untar the cached packages to.
 # Typically filesystem root '/' but can be changed for testing.
-cache_restore_root="${2}"
+# WARNING: If non-root, this can cause errors during install script execution.
+cache_restore_root="${3}"
 test -d ${cache_restore_root} || mkdir ${cache_restore_root}
 
 # Cache and execute post install scripts on restore.
-execute_install_scripts="${3}"
+execute_install_scripts="${4}"
 
 cache_filepaths="$(ls -1 "${cache_dir}" | sort)"
 log "Found $(echo ${cache_filepaths} | wc -w) files in the cache."

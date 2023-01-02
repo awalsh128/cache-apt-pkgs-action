@@ -24,6 +24,10 @@ inputs:
     description: 'Enable debugging when there are issues with action. Minor performance penalty.'
     required: false
     default: 'false'
+  add-repositories:
+    description: 'Space delimited list of additional repositories to use. See README.md for a list of examples.'
+    required: false
+    default: ''
 
 outputs:
   cache-hit:
@@ -44,10 +48,11 @@ runs:
     - id: pre-cache
       run: |
         ${GITHUB_ACTION_PATH}/pre_cache_action.sh \
+          "${{ inputs.debug }}" \
           ~/cache-apt-pkgs \
           "${{ inputs.version }}" \
-          "${{ inputs.execute_install_scripts }}" \
-          "${{ inputs.debug }}" \
+          "${{ inputs.add-repositories }}" \
+          "${{ inputs.execute_install_scripts }}" \      
           ${{ inputs.packages }}
         echo "CACHE_KEY=$(cat ~/cache-apt-pkgs/cache_key.md5)" >> $GITHUB_ENV
       shell: bash
@@ -61,11 +66,12 @@ runs:
     - id: post-cache
       run: |      
         ${GITHUB_ACTION_PATH}/post_cache_action.sh \
+          "${{ inputs.debug }}" \
           ~/cache-apt-pkgs \
           / \
           "${{ steps.load-cache.outputs.cache-hit }}" \
-          "${{ inputs.execute_install_scripts }}" \
-          "${{ inputs.debug }}" \
+          "${{ inputs.add-repositories }}" \
+          "${{ inputs.execute_install_scripts }}" \                  
           ${{ inputs.packages }}
         function create_list { local list=$(cat ~/cache-apt-pkgs/manifest_${1}.log | tr '\n' ','); echo ${list:0:-1}; };
         echo "package-version-list=$(create_list main)" >> $GITHUB_OUTPUT

@@ -31,6 +31,18 @@ There are three kinds of version labels you can use.
 
 * `packages` - Space delimited list of packages to install.
 * `version` - Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
+* `add-repositories` - Space delimited list of additional repositories to pull from. Examples of potential inputs.
+
+  ```sh
+  'deb http://myserver/path/to/repo stable myrepo'
+  'http://myserver/path/to/repo myrepo'
+  'https://packages.medibuntu.org free non-free'
+  http://extras.ubuntu.com/ubuntu
+  ppa:user/repository
+  ppa:user/distro/repository
+  multiverse
+  ```
+
 * `execute_install_scripts` - Execute Debian package pre and post install script upon restore. See [Caveats / Non-file Dependencies](#non-file-dependencies) for more information.
 
 ### Outputs

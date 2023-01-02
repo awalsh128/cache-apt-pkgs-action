@@ -3,23 +3,30 @@
 # Fail on any error.
 set -e
 
-# Debug mode for diagnosing issues.
-# Setup first before other operations.
-debug="${2}"
-test ${debug} == "true" && set -x
-
 # Include library.
 script_dir="$(dirname -- "$(realpath -- "${0}")")"
 source "${script_dir}/lib.sh"
 
-# Directory that holds the cached packages.
-cache_dir="${1}"
+# Debug mode for diagnosing issues.
+# Setup first before other operations.
+debug="${1}"
+validate_bool "${debug}" debug 1
+test ${debug} == "true" && set -x
 
-# List of the packages to use.
-input_packages="${@:3}"
+# Directory that holds the cached packages.
+cache_dir="${2}"
+
+# Additional repositories to use for installation.
+add_repositories="${3}"
 
 # Trim commas, excess spaces, and sort.
-normalized_packages="$(normalize_package_list "${input_packages}")"
+normalized_repositories="$(normalize_list "${add_repositories}")"
+
+# List of the packages to use.
+input_packages="${@:4}"
+
+# Trim commas, excess spaces, and sort.
+normalized_packages="$(normalize_list "${input_packages}")"
 
 package_count=$(wc -w <<< "${normalized_packages}")
 log "Clean installing and caching ${package_count} package(s)."
@@ -55,6 +62,26 @@ fi
 
 log_empty_line
 
+# Is length of string greater than zero?
+if test -z "${normalized_repositories}"; then
+  log "Installing software-properties-common package to add repositories..."
+  sudo DEBIAN_FRONTEND=noninteractive apt-fast --yes install software-properties-common > /dev/null
+  log "done"
+
+  log "Verifying and adding additional repositories..."
+  for repository in ${normalized_repositories}; do
+    add-apt-repository ${repository}
+  done
+  log "done"
+
+  repositories_filepath="${cache_dir}/repositories.log"
+  log "Writing added repositories list to ${repositories_filepath}"
+  echo "${normalized_repositories}" | tr ' ' '\n' > ${repositories_filepath}
+  log "done"
+fi
+
+log_empty_line
+
 # Strictly contains the requested packages.
 manifest_main=""
 # Contains all packages including dependencies.
@@ -64,7 +91,7 @@ install_log_filepath="${cache_dir}/install.log"
 
 log "Clean installing ${package_count} packages..."
 # Zero interaction while installing or upgrading the system via apt.
-sudo DEBIAN_FRONTEND=noninteractive apt-fast --yes install ${normalized_packages} > "${install_log_filepath}"
+sudo DEBIAN_FRONTEND=noninteractive apt-fast --yes install ${normalized_packages} >> "${install_log_filepath}"
 log "done"
 log "Installation log written to ${install_log_filepath}"
 
