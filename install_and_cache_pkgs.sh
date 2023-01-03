@@ -93,6 +93,7 @@ for installed_package in ${installed_packages}; do
       & get_install_filepath "" "${package_name}" "preinst" \
       & get_install_filepath "" "${package_name}" "postinst"; } |
       while IFS= read -r f; do test -f "${f}" -o -L "${f}" && get_tar_relpath "${f}"; done |
+      xargs -I {} echo \"{}\" |
       sudo xargs tar -cf "${cache_filepath}" -C /
 
     log "    done (compressed size $(du -h "${cache_filepath}" | cut -f1))."
