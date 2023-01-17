@@ -73,7 +73,7 @@ runs:
       shell: bash
 
     - id: upload-logs
-      if: ${{ inputs.debug }} == "true"
+      if: ${{ inputs.debug == 'true' }}
       uses: actions/upload-artifact@v3
       with:
         name: cache-apt-pkgs-logs%${{ inputs.packages }}%${{ inputs.version }}
