@@ -30,7 +30,7 @@ manifest_main=""
 log "Package list:"
 for package in ${normalized_packages}; do
   read package_name package_ver < <(get_package_name_ver "${package}")
-  manifest_main="${manifest_main}${package_name}:${package_ver},"  
+  manifest_main="${manifest_main}${package_name}:${package_ver},"
   log "- ${package_name}:${package_ver}"
 done
 write_manifest "main" "${manifest_main}" "${cache_dir}/manifest_main.log"
@@ -45,12 +45,11 @@ log "done"
 log_empty_line
 
 log "Updating APT package list..."
-last_update_delta_s=$(($(date +%s) - $(date +%s -r /var/cache/apt/pkgcache.bin)))
-if test $last_update_delta_s -gt 300; then
+if [[ -z "$(find -H /var/lib/apt/lists -maxdepth 0 -mmin -5)" ]]; then
   sudo apt-fast update > /dev/null
   log "done"
 else
-  log "skipped (fresh by ${last_update_delta_s} seconds)"
+  log "skipped (fresh within at least 5 minutes)"
 fi
 
 log_empty_line
