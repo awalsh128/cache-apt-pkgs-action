@@ -86,5 +86,5 @@ runs:
       if: ${{ inputs.debug == 'true' }}
       uses: actions/upload-artifact@v3
       with:
-        name: cache-apt-pkgs-logs%${{ inputs.packages }}%${{ inputs.version }}
+        name: cache-apt-pkgs-logs_${{ env.CACHE_KEY }}
         path: ~/cache-apt-pkgs/*.log
