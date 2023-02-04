@@ -77,7 +77,11 @@ log "Creating cache key..."
 normalized_versioned_packages="$(normalize_package_list "${versioned_packages}")"
 log "- Normalized package list is '${normalized_versioned_packages}'."
 
-value="${normalized_versioned_packages} @ ${version}"
+# Forces an update in cases where an accidental breaking change was introduced
+# and a global cache reset is required.
+force_update_inc="0"
+
+value="${normalized_versioned_packages} @ ${version} ${force_update_inc}"
 log "- Value to hash is '${value}'."
 
 key="$(echo "${value}" | md5sum | cut -f1 -d' ')"
