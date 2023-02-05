@@ -19,7 +19,8 @@ inputs:
     required: false
     default: 'false'
   refresh:
-    description: 'OBSOLETE, use version instead.'
+    description: 'OBSOLETE: Refresh is not used by the action, use version instead.'
+    deprecationMessage: 'Refresh is not used by the action, use version instead.'
   debug:
     description: 'Enable debugging when there are issues with action. Minor performance penalty.'
     required: false
