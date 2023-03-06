@@ -59,7 +59,7 @@ runs:
          PACKAGES: "${{ inputs.packages }}"
 
     - id: load-cache
-      uses: actions/cache@v3
+      uses: actions/cache/restore@v3
       with:
         path: ~/cache-apt-pkgs
         key: cache-apt-pkgs_${{ env.CACHE_KEY }}
@@ -82,6 +82,18 @@ runs:
          EXEC_INSTALL_SCRIPTS: "${{ inputs.execute_install_scripts }}"
          DEBUG: "${{ inputs.debug }}"
          PACKAGES: "${{ inputs.packages }}"
+
+    - id: save-cache
+      if: ${{ ! steps.load-cache.outputs.cache-hit }}
+      uses: actions/cache/save@v3
+      with:
+        path: ~/cache-apt-pkgs
+        key: ${{ steps.load-cache.outputs.cache-primary-key }}
+
+    - id: clean-cache
+      run: |
+        rm -rf ~/cache-apt-pkgs
+      shell: bash
 
     - id: upload-logs
       if: ${{ inputs.debug == 'true' }}
