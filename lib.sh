@@ -132,6 +132,8 @@ function normalize_package_list {
     echo "${stripped}" \
     | sed 's/\s\+/ /g; s/^\s\+//g; s/\s\+$//g')"
   local sorted="$(echo ${trimmed} | tr ' ' '\n' | sort | tr '\n' ' ')"
+  # Convert colon delimited package version pairs to APT syntax (i.e. <pkg>=<ver>).
+  local versioned="$(echo $sorted | sed 's/:/=/g')"
   echo "${sorted}"  
 }
 
