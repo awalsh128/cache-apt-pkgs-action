@@ -40,22 +40,22 @@ log "done"
 log_empty_line
 
 # Only search for archived results. Manifest and cache key also live here.
-cached_pkg_filepaths=$(ls -1 "${cache_dir}"/*.tar | sort)
-cached_pkg_filecount=$(echo ${cached_pkg_filepaths} | wc -w)
+cached_filepaths=$(ls -1 "${cache_dir}"/*.tar | sort)
+cached_filecount=$(echo ${cached_filepaths} | wc -w)
 
-log "Restoring ${cached_pkg_filecount} packages from cache..."
-for cached_pkg_filepath in ${cached_pkg_filepaths}; do
+log "Restoring ${cached_filecount} packages from cache..."
+for cached_filepath in ${cached_filepaths}; do
 
-  log "- $(basename "${cached_pkg_filepath}") restoring..."
-  sudo tar -xf "${cached_pkg_filepath}" -C "${cache_restore_root}" > /dev/null
+  log "- $(basename "${cached_filepath}") restoring..."
+  sudo tar -xf "${cached_filepath}" -C "${cache_restore_root}" > /dev/null
   log "  done"
 
   # Execute install scripts if available.    
   if test ${execute_install_scripts} == "true"; then
     # May have to add more handling for extracting pre-install script before extracting all files.
     # Keeping it simple for now.
-    execute_install_script "${cache_restore_root}" "${cached_pkg_filepath}" preinst install
-    execute_install_script "${cache_restore_root}" "${cached_pkg_filepath}" postinst configure
+    execute_install_script "${cache_restore_root}" "${cached_filepath}" preinst install
+    execute_install_script "${cache_restore_root}" "${cached_filepath}" postinst configure
   fi
 done
 log "done"
