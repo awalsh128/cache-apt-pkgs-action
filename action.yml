@@ -7,7 +7,7 @@ branding:
 
 inputs:
   packages:
-    description: 'Space delimited list of packages to install.'
+    description: 'Space delimited list of packages to install. Version can be specified optionally using APT command syntax of <name>=<version> (e.g. xdot=1.2-2).'
     required: true
     default: ''
   version:
@@ -33,10 +33,10 @@ outputs:
     # Need to output true and false instead of true and nothing.
     value: ${{ steps.load-cache.outputs.cache-hit || false }}
   package-version-list:
-    description: 'The main requested packages and versions that are installed. Represented as a comma delimited list with colon delimit on the package version (i.e. <package>:<version,<package>:<version>).'
+    description: 'The main requested packages and versions that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. <package>:<version,<package>:<version>).'
     value: ${{ steps.post-cache.outputs.package-version-list }}
   all-package-version-list:
-    description: 'All the pulled in packages and versions, including dependencies, that are installed. Represented as a comma delimited list with colon delimit on the package version (i.e. <package>:<version,<package>:<version>).'
+    description: 'All the pulled in packages and versions, including dependencies, that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. <package>:<version,<package>:<version>).'
     value: ${{ steps.post-cache.outputs.all-package-version-list }}
 
 runs:
@@ -65,7 +65,7 @@ runs:
         key: cache-apt-pkgs_${{ env.CACHE_KEY }}
 
     - id: post-cache
-      run: |      
+      run: |
         ${GITHUB_ACTION_PATH}/post_cache_action.sh \
           ~/cache-apt-pkgs \
           / \

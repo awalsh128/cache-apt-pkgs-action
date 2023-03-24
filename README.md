@@ -36,8 +36,8 @@ There are three kinds of version labels you can use.
 ### Outputs
 
 * `cache-hit` - A boolean value to indicate a cache was found for the packages requested.
-* `package-version-list` - The main requested packages and versions that are installed. Represented as a comma delimited list with colon delimit on the package version (i.e. \<package1>:<version1\>,\<package2>:\<version2>,...).
-* `all-package-version-list` - All the pulled in packages and versions, including dependencies, that are installed. Represented as a comma delimited list with colon delimit on the package version (i.e. \<package1>:<version1\>,\<package2>:\<version2>,...).
+* `package-version-list` - The main requested packages and versions that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. \<package1>=<version1\>,\<package2>=\<version2>,...).
+* `all-package-version-list` - All the pulled in packages and versions, including dependencies, that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. \<package1>=<version1\>,\<package2>=\<version2>,...).
 
 ### Cache scopes
 
