@@ -11,9 +11,9 @@
 #   Filepath of the install script, otherwise an empty string.
 ###############################################################################
 function execute_install_script {
-  local package_name=$(basename ${2} | awk -F\: '{print $1}')  
+  local package_name=$(basename ${2} | awk -F\= '{print $1}')  
   local install_script_filepath=$(\
-    get_install_filepath "${1}" "${package_name}" "${3}")
+    get_install_script_filepath "${1}" "${package_name}" "${3}")
   if test ! -z "${install_script_filepath}"; then
     log "- Executing ${install_script_filepath}..."
     # Don't abort on errors; dpkg-trigger will error normally since it is
@@ -24,20 +24,38 @@ function execute_install_script {
 }
 
 ###############################################################################
+# Gets the Debian install script filepath.
+# Arguments:
+#   Root directory to search from.
+#   Name of the unqualified package to search for.
+#   Extension of the installation script (preinst, postinst)
+# Returns:
+#   Filepath of the script file, otherwise an empty string.
+###############################################################################
+function get_install_script_filepath {
+  # Filename includes arch (e.g. amd64).
+  local filepath="$(\
+    ls -1 ${1}var/lib/dpkg/info/${2}*.${3} 2> /dev/null \
+    | grep -E ${2}'(:.*)?.'${3} | head -1 || true)"
+  test "${filepath}" && echo "${filepath}"
+}
+
+###############################################################################
 # Gets a list of installed packages from a Debian package installation log.
 # Arguments:
 #   The filepath of the Debian install log.
 # Returns:
-#   The list of space delimited pairs with each pair colon delimited.
-#   <name>:<version> <name:version>...
+#   The list of colon delimited action syntax pairs with each pair equals
+#   delimited. <name>:<version> <name>:<version>...
 ###############################################################################
 function get_installed_packages {   
   local install_log_filepath="${1}"
   local regex="^Unpacking ([^ :]+)([^ ]+)? (\[[^ ]+\]\s)?\(([^ )]+)"  
   local dep_packages=""  
   while read -r line; do
+    # ${regex} should be unquoted since it isn't a literal.
     if [[ "${line}" =~ ${regex} ]]; then
-      dep_packages="${dep_packages}${BASH_REMATCH[1]}:${BASH_REMATCH[4]} "      
+      dep_packages="${dep_packages}${BASH_REMATCH[1]}=${BASH_REMATCH[4]} "      
     else
       log_err "Unable to parse package name and version from \"${line}\""
       exit 2
@@ -51,48 +69,38 @@ function get_installed_packages {
 }
 
 ###############################################################################
-# Splits a fully qualified package into name and version.
+# Splits a fully action syntax APT package into the name and version.
 # Arguments:
-#   The colon delimited package pair or just the package name.
+#   The action syntax colon delimited package pair or just the package name.
 # Returns:
 #   The package name and version pair.
 ###############################################################################
 function get_package_name_ver {
-  IFS=\: read name ver <<< "${1}"
+  local ORIG_IFS="${IFS}"
+  IFS=\= read name ver <<< "${1}"
+  IFS="${ORIG_IFS}"
   # If version not found in the fully qualified package value.
   if test -z "${ver}"; then
     ver="$(grep "Version:" <<< "$(apt-cache show ${name})" | awk '{print $2}')"
   fi
-  echo "${name}" "${ver}"
+  echo "${name}" "${ver}"  
 }
 
 ###############################################################################
-# Gets the package name from the cached package filepath in the
-# path/to/cache/dir/<name>:<version>.tar format.
+# Sorts given packages by name and split on commas and/or spaces.
 # Arguments:
-#   Filepath to the cached packaged.
+#   The comma and/or space delimited list of packages.
 # Returns:
-#   The package name.
+#   Sorted list of space delimited packages.
 ###############################################################################
-function get_package_name_from_cached_filepath {
-  basename ${cached_pkg_filepath} | awk -F\: '{print $1}'
-}
-
-###############################################################################
-# Gets the Debian install script file location.
-# Arguments:
-#   Root directory to search from.
-#   Name of the unqualified package to search for.
-#   Extension of the installation script (preinst, postinst)
-# Returns:
-#   Filepath of the script file, otherwise an empty string.
-###############################################################################
-function get_install_filepath {
-  # Filename includes arch (e.g. amd64).
-  local filepath="$(\
-    ls -1 ${1}var/lib/dpkg/info/${2}*.${3} 2> /dev/null \
-    | grep -E ${2}'(:.*)?.'${3} | head -1 || true)"
-  test "${filepath}" && echo "${filepath}"
+function get_normalized_package_list {
+  # Remove commas, and block scalar folded backslashes.
+  local stripped=$(echo "${1}" | sed 's/[,\]/ /g')
+  # Remove extraneous spaces at the middle, beginning, and end.
+  local trimmed="$(\
+    echo "${stripped}" \
+    | sed 's/\s\+/ /g; s/^\s\+//g; s/\s\+$//g')"
+  echo ${trimmed} | tr ' ' '\n' | sort | tr '\n' ' '
 }
 
 ###############################################################################
@@ -116,24 +124,6 @@ function log { echo "$(date +%H:%M:%S)" "${@}"; }
 function log_err { >&2 echo "$(date +%H:%M:%S)" "${@}"; }
 
 function log_empty_line { echo ""; }
-
-###############################################################################
-# Sorts given packages by name and split on commas and/or spaces.
-# Arguments:
-#   The comma and/or space delimited list of packages.
-# Returns:
-#   Sorted list of space delimited packages.
-###############################################################################
-function normalize_package_list {
-  # Remove commas, and block scalar folded backslashes.
-  local stripped=$(echo "${1}" | sed 's/[,\]/ /g')
-  # Remove extraneous spaces at the middle, beginning, and end.
-  local trimmed="$(\
-    echo "${stripped}" \
-    | sed 's/\s\+/ /g; s/^\s\+//g; s/\s\+$//g')"
-  local sorted="$(echo ${trimmed} | tr ' ' '\n' | sort | tr '\n' ' ')"
-  echo "${sorted}"  
-}
 
 ###############################################################################
 # Validates an argument to be of a boolean value.

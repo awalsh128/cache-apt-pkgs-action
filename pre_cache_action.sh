@@ -28,7 +28,7 @@ debug="${4}"
 input_packages="${@:5}"
 
 # Trim commas, excess spaces, and sort.
-packages="$(normalize_package_list "${input_packages}")"
+packages="$(get_normalized_package_list "${input_packages}")"
 
 # Create cache directory so artifacts can be saved.
 mkdir -p ${cache_dir}
@@ -55,8 +55,8 @@ log_empty_line
 
 versioned_packages=""
 log "Verifying packages..."
-for package in ${packages}; do 
-  if test ! "$(apt-cache show "${package}")"; then
+for package in ${packages}; do  
+  if test ! "$(apt-cache show ${package})"; then
     echo "aborted"
     log "Package '${package}' not found." >&2
     exit 5
@@ -74,12 +74,12 @@ set -e
 log "Creating cache key..."
 
 # TODO Can we prove this will happen again?
-normalized_versioned_packages="$(normalize_package_list "${versioned_packages}")"
+normalized_versioned_packages="$(get_normalized_package_list "${versioned_packages}")"
 log "- Normalized package list is '${normalized_versioned_packages}'."
 
 # Forces an update in cases where an accidental breaking change was introduced
 # and a global cache reset is required.
-force_update_inc="0"
+force_update_inc="1"
 
 value="${normalized_versioned_packages} @ ${version} ${force_update_inc}"
 log "- Value to hash is '${value}'."
