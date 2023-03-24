@@ -1,18 +1,6 @@
 #!/bin/bash
 
 ###############################################################################
-# Convert the APT syntax package (= delimited) to action syntax package
-# (: delimited).
-# Arguments:
-#   APT syntax package, with or without version.
-# Returns:
-#   Action syntax package, with or without version.
-###############################################################################
-function convert_action_to_apt_syntax_packages() {
-  echo ${1} | sed 's/:/=/g'
-}
-
-###############################################################################
 # Execute the Debian install script.
 # Arguments:
 #   Root directory to search from.
@@ -23,7 +11,7 @@ function convert_action_to_apt_syntax_packages() {
 #   Filepath of the install script, otherwise an empty string.
 ###############################################################################
 function execute_install_script {
-  local package_name=$(basename ${2} | awk -F\: '{print $1}')  
+  local package_name=$(basename ${2} | awk -F\= '{print $1}')  
   local install_script_filepath=$(\
     get_install_script_filepath "${1}" "${package_name}" "${3}")
   if test ! -z "${install_script_filepath}"; then
@@ -67,7 +55,7 @@ function get_installed_packages {
   while read -r line; do
     # ${regex} should be unquoted since it isn't a literal.
     if [[ "${line}" =~ ${regex} ]]; then
-      dep_packages="${dep_packages}${BASH_REMATCH[1]}:${BASH_REMATCH[4]} "      
+      dep_packages="${dep_packages}${BASH_REMATCH[1]}=${BASH_REMATCH[4]} "      
     else
       log_err "Unable to parse package name and version from \"${line}\""
       exit 2
@@ -89,13 +77,13 @@ function get_installed_packages {
 ###############################################################################
 function get_package_name_ver {
   local ORIG_IFS="${IFS}"
-  IFS=\: read name ver <<< "${1}"
+  IFS=\= read name ver <<< "${1}"
+  IFS="${ORIG_IFS}"
   # If version not found in the fully qualified package value.
   if test -z "${ver}"; then
     ver="$(grep "Version:" <<< "$(apt-cache show ${name})" | awk '{print $2}')"
   fi
-  echo "${name}" "${ver}"
-  IFS="${ORIG_IFS}"
+  echo "${name}" "${ver}"  
 }
 
 ###############################################################################

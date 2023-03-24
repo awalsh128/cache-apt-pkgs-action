@@ -56,8 +56,7 @@ log_empty_line
 versioned_packages=""
 log "Verifying packages..."
 for package in ${packages}; do
-  apt_syntax_package=$(convert_action_to_apt_syntax_packages ${package})
-  if test ! "$(apt-cache show ${apt_syntax_package})"; then
+  if test ! "$(apt-cache show ${package})"; then
     echo "aborted"
     log "Package '${package}' not found." >&2
     exit 5
@@ -80,7 +79,7 @@ log "- Normalized package list is '${normalized_versioned_packages}'."
 
 # Forces an update in cases where an accidental breaking change was introduced
 # and a global cache reset is required.
-force_update_inc="0"
+force_update_inc="1"
 
 value="${normalized_versioned_packages} @ ${version} ${force_update_inc}"
 log "- Value to hash is '${value}'."
