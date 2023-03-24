@@ -55,11 +55,10 @@ log_empty_line
 
 versioned_packages=""
 log "Verifying packages..."
-for package in ${packages}; do
-  package_name=$(echo ${package} | awk -F\= '{print $1}')
-  if test ! "$(apt-cache show ${package_name})"; then
+for package in ${packages}; do  
+  if test ! "$(apt-cache show ${package})"; then
     echo "aborted"
-    log "Package '${package_name}' not found." >&2
+    log "Package '${package}' not found." >&2
     exit 5
   fi
   read package_name package_ver < <(get_package_name_ver "${package}")
