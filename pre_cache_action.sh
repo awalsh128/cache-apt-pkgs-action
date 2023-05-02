@@ -53,35 +53,16 @@ log "done"
 
 log_empty_line
 
-versioned_packages=""
-log "Verifying packages..."
-for package in ${packages}; do  
-  if test ! "$(apt-cache show ${package})"; then
-    echo "aborted"
-    log "Package '${package}' not found." >&2
-    exit 5
-  fi
-  read package_name package_ver < <(get_package_name_ver "${package}")
-  versioned_packages=""${versioned_packages}" "${package_name}"="${package_ver}""
-done
-log "done"
-
-log_empty_line
-
 # Abort on any failure at this point.
 set -e
 
 log "Creating cache key..."
 
-# TODO Can we prove this will happen again?
-normalized_versioned_packages="$(get_normalized_package_list "${versioned_packages}")"
-log "- Normalized package list is '${normalized_versioned_packages}'."
-
 # Forces an update in cases where an accidental breaking change was introduced
 # and a global cache reset is required.
 force_update_inc="1"
 
-value="${normalized_versioned_packages} @ ${version} ${force_update_inc}"
+value="${packages} @ ${version} ${force_update_inc}"
 log "- Value to hash is '${value}'."
 
 key="$(echo "${value}" | md5sum | cut -f1 -d' ')"

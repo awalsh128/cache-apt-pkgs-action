@@ -18,28 +18,6 @@ cache_dir="${1}"
 # List of the packages to use.
 input_packages="${@:3}"
 
-# Trim commas, excess spaces, sort, and version syntax.
-#
-# NOTE: Unless specified, all APT package listings of name and version use
-# colon delimited and not equals delimited syntax (i.e. <name>[:=]<ver>).
-packages="$(get_normalized_package_list "${input_packages}")"
-
-package_count=$(wc -w <<< "${packages}")
-log "Clean installing and caching ${package_count} package(s)."
-
-log_empty_line
-
-manifest_main=""
-log "Package list:"
-for package in ${packages}; do
-  read package_name package_ver < <(get_package_name_ver "${package}")
-  manifest_main="${manifest_main}${package_name}=${package_ver},"  
-  log "- ${package_name} (${package_ver})"
-done
-write_manifest "main" "${manifest_main}" "${cache_dir}/manifest_main.log"
-
-log_empty_line
-
 if ! apt-fast --version > /dev/null 2>&1; then
   log "Installing apt-fast for optimized installs..."
   # Install apt-fast for optimized installs.
@@ -56,6 +34,22 @@ if [[ -z "$(find -H /var/lib/apt/lists -maxdepth 0 -mmin -5)" ]]; then
 else
   log "skipped (fresh within at least 5 minutes)"
 fi
+
+log_empty_line
+
+packages="$(get_normalized_package_list "${input_packages}")"
+package_count=$(wc -w <<< "${packages}")
+log "Clean installing and caching ${package_count} package(s)."
+
+log_empty_line
+
+manifest_main=""
+log "Package list:"
+for package in ${packages}; do
+  manifest_main="${manifest_main}${package},"
+  log "- ${package}"
+done
+write_manifest "main" "${manifest_main}" "${cache_dir}/manifest_main.log"
 
 log_empty_line
 
