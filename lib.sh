@@ -82,7 +82,7 @@ function get_package_name_ver {
   # If version not found in the fully qualified package value.
   if test -z "${ver}"; then
     # This is a fallback and should not be used any more as its slow.
-    log_err "Unexpected version resolution for package '${name}'..."
+    log_err "Unexpected version resolution for package '${name}'"
     ver="$(apt-cache show ${name} | grep '^Version:' | awk '{print $2}')"
   fi
   echo "${name}" "${ver}"  
@@ -99,9 +99,9 @@ function get_normalized_package_list {
   # Remove commas, and block scalar folded backslashes,
   # extraneous spaces at the middle, beginning and end
   # then sort.
-  packages=$(echo "${1}" | \
-    sed 's/[,\]/ /g; s/\s\+/ /g; s/^\s\+//g; s/\s\+$//g' | \
-    sort -t' ')
+  packages=$(echo "${1}" \
+    | sed 's/[,\]/ /g; s/\s\+/ /g; s/^\s\+//g; s/\s\+$//g' \
+    | sort -t' ')
 
   # Validate package names and get versions.
   log_err "resolving package versions..."
@@ -113,29 +113,29 @@ function get_normalized_package_list {
   IFS=$'\n'
   declare -A missing
   local package_versions=''
-  local pkg='' sep=''
-  for v in ${data}; do
-    local key="${v%%: *}"
-    local val="${v##*: }"
+  local package='' separator=''
+  for key_value in ${data}; do
+    local key="${key_value%%: *}"
+    local value="${key_value##*: }"
 
     case $key in
       Package)
-        pkg=$val
+        package=$value
         ;;
       Version)
-        package_versions="${package_versions}${sep}"${pkg}=${val}""
-        sep=' '
+        package_versions="${package_versions}${separator}"${package}=${value}""
+        separator=' '
         ;;
       N)
         # Warning messages.
-        case $val in
+        case $value in
           'Unable to locate package '*)
-            pkg="${val#'Unable to locate package '}"
+            package="${value#'Unable to locate package '}"
             # Avoid duplicate messages.
-            if [ -z "${missing[$pkg]}" ]; then
-              pkg="${val#'Unable to locate package '}"
-              log "Package '${pkg}' not found." >&2
-              missing[$pkg]=1
+            if [ -z "${missing[$package]}" ]; then
+              package="${value#'Unable to locate package '}"
+              log_err "Package '${package}' not found."
+              missing[$package]=1
             fi
             ;;
         esac
