@@ -6,6 +6,9 @@
 
 This action allows caching of Advanced Package Tool (APT) package dependencies to improve workflow execution time instead of installing the packages on every run.
 
+> [!IMPORTANT]
+> Looking for co-maintainers to help review changes, and investigate issues. I haven't had as much time to stay on top of this action as I would like to and want to make sure it is still responsive and reliable for the community. If you are interested, please reach out.
+
 ## Documentation
 
 This action is a composition of [actions/cache](https://github.com/actions/cache/) and the `apt` utility. Some actions require additional APT based packages to be installed in order for other steps to be executed. Packages can be installed when ran but can consume much of the execution workflow time.
