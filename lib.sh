@@ -71,7 +71,7 @@ function get_installed_packages {
 ###############################################################################
 # Splits a fully action syntax APT package into the name and version.
 # Arguments:
-#   The action syntax colon delimited package pair or just the package name.
+#   The action syntax equals delimited package pair or just the package name.
 # Returns:
 #   The package name and version pair.
 ###############################################################################
@@ -81,7 +81,9 @@ function get_package_name_ver {
   IFS="${ORIG_IFS}"
   # If version not found in the fully qualified package value.
   if test -z "${ver}"; then
-    ver="$(grep "Version:" <<< "$(apt-cache show ${name})" | awk '{print $2}')"
+    # This is a fallback and should not be used any more as its slow.
+    log_err "Unexpected version resolution for package '${name}'"
+    ver="$(apt-cache show ${name} | grep '^Version:' | awk '{print $2}')"
   fi
   echo "${name}" "${ver}"  
 }
@@ -91,16 +93,63 @@ function get_package_name_ver {
 # Arguments:
 #   The comma and/or space delimited list of packages.
 # Returns:
-#   Sorted list of space delimited packages.
+#   Sorted list of space delimited package name=version pairs.
 ###############################################################################
 function get_normalized_package_list {
-  # Remove commas, and block scalar folded backslashes.
-  local stripped=$(echo "${1}" | sed 's/[,\]/ /g')
-  # Remove extraneous spaces at the middle, beginning, and end.
-  local trimmed="$(\
-    echo "${stripped}" \
-    | sed 's/\s\+/ /g; s/^\s\+//g; s/\s\+$//g')"
-  echo ${trimmed} | tr ' ' '\n' | sort | tr '\n' ' '
+  # Remove commas, and block scalar folded backslashes,
+  # extraneous spaces at the middle, beginning and end
+  # then sort.
+  packages=$(echo "${1}" \
+    | sed 's/[,\]/ /g; s/\s\+/ /g; s/^\s\+//g; s/\s\+$//g' \
+    | sort -t' ')
+
+  # Validate package names and get versions.
+  log_err "resolving package versions..."
+  data=$(apt-cache --quiet=0 --no-all-versions show ${packages} 2>&1 | \
+    grep -E '^(Package|Version|N):')
+  log_err "resolved"
+
+  local ORIG_IFS="${IFS}"
+  IFS=$'\n'
+  declare -A missing
+  local package_versions=''
+  local package='' separator=''
+  for key_value in ${data}; do
+    local key="${key_value%%: *}"
+    local value="${key_value##*: }"
+
+    case $key in
+      Package)
+        package=$value
+        ;;
+      Version)
+        package_versions="${package_versions}${separator}"${package}=${value}""
+        separator=' '
+        ;;
+      N)
+        # Warning messages.
+        case $value in
+          'Unable to locate package '*)
+            package="${value#'Unable to locate package '}"
+            # Avoid duplicate messages.
+            if [ -z "${missing[$package]}" ]; then
+              package="${value#'Unable to locate package '}"
+              log_err "Package '${package}' not found."
+              missing[$package]=1
+            fi
+            ;;
+        esac
+        ;;
+    esac
+  done
+  IFS="${ORIG_IFS}"
+
+  if [ ${#missing[@]} -gt 0 ]; then
+    echo "aborted"
+    exit 5
+  fi
+
+  echo "${package_versions}"
 }
 
 ###############################################################################
@@ -120,8 +169,8 @@ function get_tar_relpath {
   fi
 }
 
-function log { echo "$(date +%H:%M:%S)" "${@}"; }
-function log_err { >&2 echo "$(date +%H:%M:%S)" "${@}"; }
+function log { echo "$(date +%T.%3N)" "${@}"; }
+function log_err { >&2 echo "$(date +%T.%3N)" "${@}"; }
 
 function log_empty_line { echo ""; }
 
