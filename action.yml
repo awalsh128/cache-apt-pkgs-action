@@ -83,6 +83,13 @@ runs:
          DEBUG: "${{ inputs.debug }}"
          PACKAGES: "${{ inputs.packages }}"
 
+    - id: upload-logs
+      if: ${{ inputs.debug == 'true' }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: cache-apt-pkgs-logs_${{ env.CACHE_KEY }}
+        path: ~/cache-apt-pkgs/*.log
+
     - id: save-cache
       if: ${{ ! steps.load-cache.outputs.cache-hit }}
       uses: actions/cache/save@v3
@@ -94,10 +101,3 @@ runs:
       run: |
         rm -rf ~/cache-apt-pkgs
       shell: bash
-
-    - id: upload-logs
-      if: ${{ inputs.debug == 'true' }}
-      uses: actions/upload-artifact@v3
-      with:
-        name: cache-apt-pkgs-logs_${{ env.CACHE_KEY }}
-        path: ~/cache-apt-pkgs/*.log
