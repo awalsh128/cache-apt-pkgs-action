@@ -98,7 +98,7 @@ for installed_package in ${installed_packages}; do
       & get_install_script_filepath "" "${package_name}" "preinst" \
       & get_install_script_filepath "" "${package_name}" "postinst"; } |
       while IFS= read -r f; do test -f "${f}" -o -L "${f}" && get_tar_relpath "${f}"; done |
-      # Single quotes ensure literals like backslash get captured. Use \0 to avoid field separation.
+      # Single quotes ensure literals like backslash get captured. Use \0 to avoid field separation.   
       awk -F"\0" '{print "\x27"$1"\x27"}' |
       sudo xargs tar -cf "${cache_filepath}" -C /
 
