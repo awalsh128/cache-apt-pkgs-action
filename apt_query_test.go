@@ -1,4 +1,4 @@
-package apt_query
+package main
 
 import (
 	"bytes"

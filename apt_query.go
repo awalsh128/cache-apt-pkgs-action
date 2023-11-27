@@ -1,4 +1,4 @@
-package apt_query
+package main
 
 import (
 	"fmt"
@@ -29,6 +29,16 @@ type AptPackage struct {
 	Version string
 }
 
+type AptPackages []AptPackage
+
+func (ps *AptPackages) serialize() string {
+	tokens := []string{}
+	for _, p := range ps {
+		tokens = append(tokens, p.Name+"="+p.Version)
+	}
+	return strings.Join(tokens, " ")
+}
+
 // Executes a command and either returns the output or exits the programs and writes the output (including error) to STDERR.
 func execCommand(name string, arg ...string) string {
 	cmd := exec.Command(name, arg...)
@@ -41,11 +51,11 @@ func execCommand(name string, arg ...string) string {
 }
 
 // Gets the APT based packages as a sorted by name list (normalized).
-func getPackages(names []string) []AptPackage {
+func getPackages(names []string) AptPackages {
 	prefixArgs := []string{"--quiet=0", "--no-all-versions", "show"}
 	out := execCommand("apt-cache", append(prefixArgs, names...)...)
 
-	packages := []AptPackage{}
+	pkgs := []AptPackage{}
 	errorMessages := []string{}
 
 	for _, paragraph := range strings.Split(string(out), "\n\n") {
@@ -62,7 +72,7 @@ func getPackages(names []string) []AptPackage {
 			}
 		}
 		if pkg.Name != "" {
-			packages = append(packages, pkg)
+			pkgs = append(pkgs, pkg)
 		}
 	}
 
@@ -70,19 +80,11 @@ func getPackages(names []string) []AptPackage {
 		exitOnError("Errors encountered in apt-cache output (see below):\n%s", strings.Join(errorMessages, "\n"))
 	}
 
-	sort.Slice(packages, func(i, j int) bool {
-		return packages[i].Name < packages[j].Name
+	sort.Slice(pkgs, func(i, j int) bool {
+		return pkgs[i].Name < pkgs[j].Name
 	})
 
-	return packages
-}
-
-func serialize(packages []AptPackage) string {
-	tokens := []string{}
-	for _, pkg := range packages {
-		tokens = append(tokens, pkg.Name+"="+pkg.Version)
-	}
-	return strings.Join(tokens, " ")
+	return pkgs
 }
 
 func main() {
@@ -92,11 +94,12 @@ func main() {
 	}
 
 	command := os.Args[1]
-	packageNames := os.Args[2:]
+	pkgNames := os.Args[2:]
 
 	switch command {
 	case "normalized-list":
-		fmt.Println(serialize(getPackages(packageNames)))
+		pkgs := getPackages(pkgNames)
+		fmt.Println(pkgs.serialize())
 		break
 	default:
 		exitOnError("Command '%s' not recognized.", command)
