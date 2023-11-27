@@ -31,7 +31,7 @@ type AptPackage struct {
 
 type AptPackages []AptPackage
 
-func (ps *AptPackages) serialize() string {
+func (ps AptPackages) serialize() string {
 	tokens := []string{}
 	for _, p := range ps {
 		tokens = append(tokens, p.Name+"="+p.Version)
