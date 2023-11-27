@@ -31,14 +31,16 @@ func (r *RunResult) expectSuccessfulOut(expected string) {
 	if r.Stderr != "" {
 		r.TestContext.Errorf("Unexpected stderr messages found.\nExpected: none\nActual:\n'%s'", r.Stderr)
 	}
-	if r.Stdout != expected+"\n" { // Output will always have a end of output newline.
-		r.TestContext.Errorf("Unexpected stdout found.\nExpected:\n'%s'\nActual:\n'%s'", expected, r.Stdout)
+	fullExpected := expected + "\n" // Output will always have a end of output newline.
+	if r.Stdout != fullExpected {   // Output will always have a end of output newline.
+		r.TestContext.Errorf("Unexpected stdout found.\nExpected:\n'%s'\nActual:\n'%s'", fullExpected, r.Stdout)
 	}
 }
 
 func (r *RunResult) expectError(expected string) {
-	if r.Stderr != expected+"\n" { // Output will always have a end of output newline.
-		r.TestContext.Errorf("Unexpected stderr found.\nExpected:\n'%s'\nActual:\n'%s'", expected, r.Stderr)
+	fullExpected := expected + "\n" // Output will always have a end of output newline.
+	if r.Stderr != fullExpected {
+		r.TestContext.Errorf("Unexpected stderr found.\nExpected:\n'%s'\nActual:\n'%s'", fullExpected, r.Stderr)
 	}
 }
 
@@ -60,6 +62,11 @@ func TestNormalizedList_SamePackagesDifferentOrder_StdoutsMatch(t *testing.T) {
 func TestNormalizedList_SinglePackageExists_StdoutsSinglePackageNameVersionPair(t *testing.T) {
 	var result = run(t, "normalized-list", "xdot")
 	result.expectSuccessfulOut("xdot=1.2-3")
+}
+
+func TestNormalizedList_VersionContainsColon_StdoutsEntireVersion(t *testing.T) {
+	var result = run(t, "normalized-list", "default-jre")
+	result.expectSuccessfulOut("default-jre=2:1.17-74")
 }
 
 func TestNormalizedList_NonExistentPackageName_StderrsAptCacheErrors(t *testing.T) {

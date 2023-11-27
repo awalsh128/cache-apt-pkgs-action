@@ -62,10 +62,10 @@ func getPackages(names []string) AptPackages {
 		pkg := AptPackage{}
 		for _, line := range strings.Split(paragraph, "\n") {
 			if strings.HasPrefix(line, "Package: ") {
-				pkg.Name = strings.TrimSpace(strings.Split(line, ":")[1])
+				pkg.Name = strings.TrimSpace(strings.SplitN(line, ":", 2)[1])
 			} else if strings.HasPrefix(line, "Version: ") {
-				pkg.Version = strings.TrimSpace(strings.Split(line, ":")[1])
-			} else if strings.HasPrefix(line, "N: Unable to locate package ") || strings.HasPrefix(line, "E: ") {
+				pkg.Version = strings.TrimSpace(strings.SplitN(line, ":", 2)[1])
+			} else if strings.HasPrefix(line, "N: ") || strings.HasPrefix(line, "E: ") {
 				if !contains(errorMessages, line) {
 					errorMessages = append(errorMessages, line)
 				}
