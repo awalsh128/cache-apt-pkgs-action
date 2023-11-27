@@ -23,5 +23,5 @@ jobs:
           version: v1.54
       - name: Build and test
         run: |
-          go build -v
+          go build -v ./...
           go test -v ./...
