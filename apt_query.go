@@ -86,8 +86,6 @@ func serialize(packages []AptPackage) string {
 }
 
 func main() {
-	const usageText string = "Usage: apt_query.go [normalized-list] <package names>"
-
 	if len(os.Args) < 3 {
 		exitOnError("Expected at least 2 arguments but found %d.", len(os.Args)-1)
 		return
