@@ -44,7 +44,7 @@ func execCommand(name string, arg ...string) string {
 	cmd := exec.Command(name, arg...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("Error code %d encountered while running %s\n%s", cmd.ProcessState.ExitCode(), strings.Join(cmd.Args, " "), string(out)))
+		fmt.Fprintf(os.Stderr, "Error code %d encountered while running %s\n%s\n", cmd.ProcessState.ExitCode(), strings.Join(cmd.Args, " "), string(out))
 		os.Exit(2)
 	}
 	return string(out)
@@ -97,10 +97,11 @@ func main() {
 	pkgNames := os.Args[2:]
 
 	switch command {
+
 	case "normalized-list":
 		pkgs := getPackages(pkgNames)
 		fmt.Println(pkgs.serialize())
-		break
+
 	default:
 		exitOnError("Command '%s' not recognized.", command)
 	}

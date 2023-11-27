@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 jobs:
-  lint_build_test:
+  integrate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -18,12 +18,12 @@ jobs:
         with:
           go-version-file: "go.mod"
 
-      - name: Lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.52.2
-
       - name: Build and test
         run: |
           go build -v ./...
           go test -v ./...
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.52.2
