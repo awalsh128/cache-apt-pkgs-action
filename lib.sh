@@ -103,7 +103,7 @@ function get_normalized_package_list {
     | sed 's/[,\]/ /g; s/\s\+/ /g; s/^\s\+//g; s/\s\+$//g' \
     | sort -t' ')
   local script_dir="$(dirname -- "$(realpath -- "${0}")")"
-  go run ${script_dir}/apt_query.go normalized-list ${packages}
+  ${script_dir}/apt_query normalized-list ${packages}
 }
 
 ###############################################################################
