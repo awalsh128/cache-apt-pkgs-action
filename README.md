@@ -23,24 +23,24 @@ Create a workflow `.yml` file in your repositories `.github/workflows` directory
 
 There are three kinds of version labels you can use.
 
-* `@latest` - This will give you the latest release.
-* `@v#` - Major only will give you the latest release for that major version only (e.g. `v1`).
-* Branch
-  * `@master` - Most recent manual and automated tested code. Possibly unstable since it is pre-release.
-  * `@staging` - Most recent automated tested code and can sometimes contain experimental features. Is pulled from dev stable code.
-  * `@dev` - Very unstable and contains experimental features. Automated testing may not show breaks since CI is also updated based on code in dev.
+- `@latest` - This will give you the latest release.
+- `@v#` - Major only will give you the latest release for that major version only (e.g. `v1`).
+- Branch
+  - `@master` - Most recent manual and automated tested code. Possibly unstable since it is pre-release.
+  - `@staging` - Most recent automated tested code and can sometimes contain experimental features. Is pulled from dev stable code.
+  - `@dev` - Very unstable and contains experimental features. Automated testing may not show breaks since CI is also updated based on code in dev.
 
 ### Inputs
 
-* `packages` - Space delimited list of packages to install.
-* `version` - Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
-* `execute_install_scripts` - Execute Debian package pre and post install script upon restore. See [Caveats / Non-file Dependencies](#non-file-dependencies) for more information.
+- `packages` - Space delimited list of packages to install.
+- `version` - Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
+- `execute_install_scripts` - Execute Debian package pre and post install script upon restore. See [Caveats / Non-file Dependencies](#non-file-dependencies) for more information.
 
 ### Outputs
 
-* `cache-hit` - A boolean value to indicate a cache was found for the packages requested.
-* `package-version-list` - The main requested packages and versions that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. \<package1>=<version1\>,\<package2>=\<version2>,...).
-* `all-package-version-list` - All the pulled in packages and versions, including dependencies, that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. \<package1>=<version1\>,\<package2>=\<version2>,...).
+- `cache-hit` - A boolean value to indicate a cache was found for the packages requested.
+- `package-version-list` - The main requested packages and versions that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. \<package1>=<version1\>,\<package2>=\<version2>,...).
+- `all-package-version-list` - All the pulled in packages and versions, including dependencies, that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. \<package1>=<version1\>,\<package2>=\<version2>,...).
 
 ### Cache scopes
 
@@ -54,7 +54,6 @@ This was a motivating use case for creating this action.
 name: Create Documentation
 on: push
 jobs:
-  
   build_and_deploy_docs:
     runs-on: ubuntu-latest
     name: Build Doxygen documentation and deploy
@@ -65,7 +64,7 @@ jobs:
           packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
           version: 1.0
 
-      - name: Build        
+      - name: Build
         run: |
           cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}      
           cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
@@ -78,15 +77,16 @@ jobs:
 ```
 
 ```yaml
-...
-  install_doxygen_deps:
-    runs-on: ubuntu-latest    
-    steps:
-      - uses: actions/checkout@v2
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
-          version: 1.0
+
+---
+install_doxygen_deps:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v2
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
+        version: 1.0
 ```
 
 ## Caveats
@@ -95,8 +95,8 @@ jobs:
 
 This action is based on the principle that most packages can be cached as a fileset. There are situations though where this is not enough.
 
-* Pre and post installation scripts needs to be ran from `/var/lib/dpkg/info/{package name}.[preinst, postinst]`.
-* The Debian package database needs to be queried for scripts above (i.e. `dpkg-query`).
+- Pre and post installation scripts needs to be ran from `/var/lib/dpkg/info/{package name}.[preinst, postinst]`.
+- The Debian package database needs to be queried for scripts above (i.e. `dpkg-query`).
 
 The `execute_install_scripts` argument can be used to attempt to execute the install scripts but they are no guaranteed to resolve the issue.
 
@@ -121,4 +121,4 @@ For more context and information see [issue #57](https://github.com/awalsh128/ca
 
 ### Cache Limits
 
-A repository can have up to 5GB of caches. Once the 5GB limit is reached, older caches will be evicted based on when the cache was last accessed.  Caches that are not accessed within the last week will also be evicted.
+A repository can have up to 5GB of caches. Once the 5GB limit is reached, older caches will be evicted based on when the cache was last accessed. Caches that are not accessed within the last week will also be evicted. To get more information on how to access and manage your actions's caches, see [GitHub Actions / Using workflows / Cache dependencies](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#viewing-cache-entries).
