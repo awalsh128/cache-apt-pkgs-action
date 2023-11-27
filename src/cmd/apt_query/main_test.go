@@ -16,7 +16,7 @@ type RunResult struct {
 func run(t *testing.T, command string, pkgNames ...string) RunResult {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
-	cmd := exec.Command("go", append([]string{"run", "apt_query.go", command}, pkgNames...)...)
+	cmd := exec.Command("go", append([]string{"run", "main.go", command}, pkgNames...)...)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	err := cmd.Run()

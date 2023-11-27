@@ -20,7 +20,7 @@ func contains(arr []string, element string) bool {
 // Writes a message to STDERR and exits with status 1.
 func exitOnError(format string, arg ...any) {
 	fmt.Fprintln(os.Stderr, fmt.Errorf(format+"\n", arg...))
-	fmt.Println("Usage: apt_query.go normalized-list <package names>")
+	fmt.Println("Usage: apt_query normalized-list <package names>")
 	os.Exit(1)
 }
 
