@@ -65,7 +65,7 @@ func getPackages(names []string) AptPackages {
 				pkg.Name = strings.TrimSpace(strings.Split(line, ":")[1])
 			} else if strings.HasPrefix(line, "Version: ") {
 				pkg.Version = strings.TrimSpace(strings.Split(line, ":")[1])
-			} else if strings.HasPrefix(line, "N: ") || strings.HasPrefix(line, "E: ") {
+			} else if strings.HasPrefix(line, "N: Unable to locate package ") || strings.HasPrefix(line, "E: ") {
 				if !contains(errorMessages, line) {
 					errorMessages = append(errorMessages, line)
 				}

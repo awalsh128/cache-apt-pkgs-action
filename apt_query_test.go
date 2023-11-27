@@ -28,6 +28,9 @@ func (r *RunResult) expectSuccessfulOut(expected string) {
 		r.TestContext.Errorf("Error running command: %v", r.Err)
 		return
 	}
+	if r.Stderr != "" {
+		r.TestContext.Errorf("Unexpected stderr messages found.\nExpected: none\nActual:\n'%s'", r.Stderr)
+	}
 	if r.Stdout != expected+"\n" { // Output will always have a end of output newline.
 		r.TestContext.Errorf("Unexpected stdout found.\nExpected:\n'%s'\nActual:\n'%s'", expected, r.Stdout)
 	}
