@@ -25,7 +25,7 @@ func run(t *testing.T, command string, pkgNames ...string) RunResult {
 
 func (r *RunResult) expectSuccessfulOut(expected string) {
 	if r.Err != nil {
-		r.TestContext.Errorf("Error running command: %v", r.Err)
+		r.TestContext.Errorf("Error running command: %v\n%s", r.Err, r.Stderr)
 		return
 	}
 	if r.Stderr != "" {
@@ -57,6 +57,11 @@ func TestNormalizedList_SamePackagesDifferentOrder_StdoutsMatch(t *testing.T) {
 
 	result = run(t, "normalized-list", "xdot", "rolldice")
 	result.expectSuccessfulOut(expected)
+}
+
+func TestNormalizedList_MultiVersionWarning_StdoutSingleVersion(t *testing.T) {
+	var result = run(t, "normalized-list", "libosmesa6-dev", "libgl1-mesa-dev")
+	result.expectSuccessfulOut("libgl1-mesa-dev=23.0.4-0ubuntu1~23.04.1 libosmesa6-dev=23.0.4-0ubuntu1~23.04.1")
 }
 
 func TestNormalizedList_SinglePackageExists_StdoutsSinglePackageNameVersionPair(t *testing.T) {
