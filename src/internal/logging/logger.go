@@ -42,7 +42,7 @@ func DebugLazy(getLine func() string) {
 
 func Debug(format string, a ...any) {
 	if logger.Debug {
-		logger.wrapped.Println(fmt.Sprintf(format, a...))
+		logger.wrapped.Printf(format, a...)
 	}
 }
 
@@ -53,5 +53,5 @@ func Fatal(err error) {
 
 func Fatalf(format string, a ...any) {
 	fmt.Fprintf(os.Stderr, format+"\n", a...)
-	logger.wrapped.Fatal(fmt.Sprintf(format, a...))
+	logger.wrapped.Fatalf(format, a...)
 }

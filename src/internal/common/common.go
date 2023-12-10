@@ -7,7 +7,10 @@ import (
 )
 
 func AppendFile(source string, destination string) error {
-	createDirectoryIfNotPresent(filepath.Dir(destination))
+	err := createDirectoryIfNotPresent(filepath.Dir(destination))
+	if err != nil {
+		return err
+	}
 	in, err := os.Open(source)
 	if err != nil {
 		return err
@@ -34,7 +37,10 @@ func AppendFile(source string, destination string) error {
 }
 
 func CopyFile(source string, destination string) error {
-	createDirectoryIfNotPresent(filepath.Dir(destination))
+	err := createDirectoryIfNotPresent(filepath.Dir(destination))
+	if err != nil {
+		return err
+	}
 	in, err := os.Open(source)
 	if err != nil {
 		return err
@@ -61,7 +67,10 @@ func CopyFile(source string, destination string) error {
 }
 
 func MoveFile(source string, destination string) error {
-	createDirectoryIfNotPresent(filepath.Dir(destination))
+	err := createDirectoryIfNotPresent(filepath.Dir(destination))
+	if err != nil {
+		return err
+	}
 	return os.Rename(source, destination)
 }
 
