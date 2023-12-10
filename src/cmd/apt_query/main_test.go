@@ -1,94 +1,65 @@
 package main
 
 import (
-	"bytes"
-	"os/exec"
+	"flag"
 	"testing"
+
+	"awalsh128.com/cache-apt-pkgs-action/src/internal/cmdtesting"
 )
 
-type RunResult struct {
-	TestContext *testing.T
-	Stdout      string
-	Stderr      string
-	Err         error
+var createReplayLogs bool = false
+
+func init() {
+	flag.BoolVar(&createReplayLogs, "createreplaylogs", false, "Execute the test commands, save the command output for future replay and skip the tests themselves.")
 }
 
-func run(t *testing.T, command string, pkgNames ...string) RunResult {
-	stdout := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
-	cmd := exec.Command("go", append([]string{"run", "main.go", command}, pkgNames...)...)
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	err := cmd.Run()
-	return RunResult{TestContext: t, Stdout: stdout.String(), Stderr: stderr.String(), Err: err}
-}
-
-func (r *RunResult) expectSuccessfulOut(expected string) {
-	if r.Err != nil {
-		r.TestContext.Errorf("Error running command: %v\n%s", r.Err, r.Stderr)
-		return
-	}
-	if r.Stderr != "" {
-		r.TestContext.Errorf("Unexpected stderr messages found.\nExpected: none\nActual:\n'%s'", r.Stderr)
-	}
-	fullExpected := expected + "\n" // Output will always have a end of output newline.
-	if r.Stdout != fullExpected {   // Output will always have a end of output newline.
-		r.TestContext.Errorf("Unexpected stdout found.\nExpected:\n'%s'\nActual:\n'%s'", fullExpected, r.Stdout)
-	}
-}
-
-func (r *RunResult) expectError(expected string) {
-	fullExpected := expected + "\n" // Output will always have a end of output newline.
-	if r.Stderr != fullExpected {
-		r.TestContext.Errorf("Unexpected stderr found.\nExpected:\n'%s'\nActual:\n'%s'", fullExpected, r.Stderr)
-	}
+func TestMain(m *testing.M) {
+	cmdtesting.TestMain(m)
 }
 
 func TestNormalizedList_MultiplePackagesExists_StdoutsAlphaSortedPackageNameVersionPairs(t *testing.T) {
-	result := run(t, "normalized-list", "xdot", "rolldice")
-	result.expectSuccessfulOut("rolldice=1.16-1build1 xdot=1.2-3")
+	result := cmdtesting.New(t, createReplayLogs).Run("normalized-list", "xdot", "rolldice")
+	result.ExpectSuccessfulOut("rolldice=1.16-1build1 xdot=1.2-3")
 }
 
 func TestNormalizedList_SamePackagesDifferentOrder_StdoutsMatch(t *testing.T) {
 	expected := "rolldice=1.16-1build1 xdot=1.2-3"
 
-	result := run(t, "normalized-list", "rolldice", "xdot")
-	result.expectSuccessfulOut(expected)
+	ct := cmdtesting.New(t, createReplayLogs)
 
-	result = run(t, "normalized-list", "xdot", "rolldice")
-	result.expectSuccessfulOut(expected)
+	result := ct.Run("normalized-list", "rolldice", "xdot")
+	result.ExpectSuccessfulOut(expected)
+
+	result = ct.Run("normalized-list", "xdot", "rolldice")
+	result.ExpectSuccessfulOut(expected)
 }
 
 func TestNormalizedList_MultiVersionWarning_StdoutSingleVersion(t *testing.T) {
-	var result = run(t, "normalized-list", "libosmesa6-dev", "libgl1-mesa-dev")
-	result.expectSuccessfulOut("libgl1-mesa-dev=23.0.4-0ubuntu1~23.04.1 libosmesa6-dev=23.0.4-0ubuntu1~23.04.1")
+	var result = cmdtesting.New(t, createReplayLogs).Run("normalized-list", "libosmesa6-dev", "libgl1-mesa-dev")
+	result.ExpectSuccessfulOut("libgl1-mesa-dev=23.0.4-0ubuntu1~23.04.1 libosmesa6-dev=23.0.4-0ubuntu1~23.04.1")
 }
 
 func TestNormalizedList_SinglePackageExists_StdoutsSinglePackageNameVersionPair(t *testing.T) {
-	var result = run(t, "normalized-list", "xdot")
-	result.expectSuccessfulOut("xdot=1.2-3")
+	var result = cmdtesting.New(t, createReplayLogs).Run("normalized-list", "xdot")
+	result.ExpectSuccessfulOut("xdot=1.2-3")
 }
 
 func TestNormalizedList_VersionContainsColon_StdoutsEntireVersion(t *testing.T) {
-	var result = run(t, "normalized-list", "default-jre")
-	result.expectSuccessfulOut("default-jre=2:1.17-74")
+	var result = cmdtesting.New(t, createReplayLogs).Run("normalized-list", "default-jre")
+	result.ExpectSuccessfulOut("default-jre=2:1.17-74")
 }
 
 func TestNormalizedList_NonExistentPackageName_StderrsAptCacheErrors(t *testing.T) {
-	var result = run(t, "normalized-list", "nonexistentpackagename")
-	result.expectError(
-		`Error code 100 encountered while running apt-cache --quiet=0 --no-all-versions show nonexistentpackagename
+	var result = cmdtesting.New(t, createReplayLogs).Run("normalized-list", "nonexistentpackagename")
+	result.ExpectError(
+		`Error encountered running apt-cache --quiet=0 --no-all-versions show nonexistentpackagename
+Exited with status code 100; see combined output below:
 N: Unable to locate package nonexistentpackagename
 N: Unable to locate package nonexistentpackagename
-E: No packages found
-
-exit status 2`)
+E: No packages found`)
 }
 
 func TestNormalizedList_NoPackagesGiven_StderrsArgMismatch(t *testing.T) {
-	var result = run(t, "normalized-list")
-	result.expectError(
-		`Expected at least 2 arguments but found 1.
-
-exit status 1`)
+	var result = cmdtesting.New(t, createReplayLogs).Run("normalized-list")
+	result.ExpectError("Expected at least 2 non-flag arguments but found 1.")
 }
