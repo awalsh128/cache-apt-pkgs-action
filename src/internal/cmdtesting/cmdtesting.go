@@ -53,7 +53,10 @@ func (t *CmdTesting) Run(command string, pkgNames ...string) RunResult {
 	combinedout, err := cmd.CombinedOutput()
 
 	if t.createReplayLogs {
-		common.AppendFile(binaryName+".log", t.replayFilename)
+		err := common.AppendFile(binaryName+".log", t.replayFilename)
+		if err != nil {
+			t.T.Fatalf("Error encountered appending log file.\n%s", err.Error())
+		}
 	}
 
 	return RunResult{Testing: t, Combinedout: string(combinedout), Err: err}
