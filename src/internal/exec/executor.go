@@ -34,7 +34,10 @@ func (e *Execution) Error() error {
 
 func DeserializeExecution(payload string) *Execution {
 	var execution Execution
-	json.Unmarshal([]byte(payload), &execution)
+	err := json.Unmarshal([]byte(payload), &execution)
+	if err != nil {
+		logging.Fatalf("Error encountered deserializing Execution object.\n%s", err)
+	}
 	return &execution
 }
 
