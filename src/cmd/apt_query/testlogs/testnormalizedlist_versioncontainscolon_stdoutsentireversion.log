@@ -1,0 +1,9 @@
+2023/12/10 14:09:18 Debug log created at /home/awalsh128/code/cache-apt-pkgs-action/src/cmd/apt_query/apt_query.log
+2023/12/10 14:09:19 EXECUTION-OBJ-START
+{
+ "Cmd": "apt-cache --quiet=0 --no-all-versions show default-jre",
+ "Stdout": "Package: default-jre\nArchitecture: amd64\nVersion: 2:1.17-74\nPriority: optional\nSection: interpreters\nSource: java-common (0.74)\nOrigin: Ubuntu\nMaintainer: Ubuntu Developers \u003cubuntu-devel-discuss@lists.ubuntu.com\u003e\nOriginal-Maintainer: Debian Java Maintainers \u003cpkg-java-maintainers@lists.alioth.debian.org\u003e\nBugs: https://bugs.launchpad.net/ubuntu/+filebug\nInstalled-Size: 6\nProvides: java-runtime (= 17), java10-runtime, java11-runtime, java12-runtime, java13-runtime, java14-runtime, java15-runtime, java16-runtime, java17-runtime, java2-runtime, java5-runtime, java6-runtime, java7-runtime, java8-runtime, java9-runtime\nDepends: default-jre-headless (= 2:1.17-74), openjdk-17-jre\nFilename: pool/main/j/java-common/default-jre_1.17-74_amd64.deb\nSize: 912\nMD5sum: e1c24f152396655f96dbaa749bd9cd2e\nSHA1: b1eeca19c6a29448ecc81df249bafdedbe49ee04\nSHA256: 02b1e27de90f05af42d61af927c35f17f7ba1ffe19bf64598ec68216075f623f\nSHA512: 81577c1e4b6920a3fb296a2cdb301131283762efa9fa371e6aa8bc31c7ee1292bbbc442984b2e2ce5d8788507f396eb3e03c1ff8c4dda671f329ac08ec0b2057\nHomepage: https://wiki.debian.org/Java/\nDescription-en: Standard Java or Java compatible Runtime\n This dependency package points to the Java runtime, or Java compatible\n runtime recommended for this architecture, which is\n openjdk-17-jre for amd64.\nDescription-md5: e747dcb24f92ffabcbdfba1db72f26e8\nTask: edubuntu-desktop-gnome\nCnf-Extra-Commands: java,jexec\n\n",
+ "Stderr": "",
+ "ExitCode": 0
+}
+EXECUTION-OBJ-END

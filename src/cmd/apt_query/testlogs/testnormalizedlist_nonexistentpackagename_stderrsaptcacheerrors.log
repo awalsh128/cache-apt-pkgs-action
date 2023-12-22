@@ -1,0 +1,14 @@
+2023/12/10 14:09:19 Debug log created at /home/awalsh128/code/cache-apt-pkgs-action/src/cmd/apt_query/apt_query.log
+2023/12/10 14:09:20 EXECUTION-OBJ-START
+{
+ "Cmd": "apt-cache --quiet=0 --no-all-versions show nonexistentpackagename",
+ "Stdout": "",
+ "Stderr": "N: Unable to locate package nonexistentpackagename\nN: Unable to locate package nonexistentpackagename\nE: No packages found\n",
+ "ExitCode": 100
+}
+EXECUTION-OBJ-END
+2023/12/10 14:09:20 Error encountered running apt-cache --quiet=0 --no-all-versions show nonexistentpackagename
+Exited with status code 100; see combined output below:
+N: Unable to locate package nonexistentpackagename
+N: Unable to locate package nonexistentpackagename
+E: No packages found

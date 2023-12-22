@@ -28,7 +28,9 @@ debug="${4}"
 input_packages="${@:5}"
 
 # Trim commas, excess spaces, and sort.
+log "Normalizing package list..."
 packages="$(get_normalized_package_list "${input_packages}")"
+log "done"
 
 # Create cache directory so artifacts can be saved.
 mkdir -p ${cache_dir}
