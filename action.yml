@@ -59,7 +59,7 @@ runs:
          PACKAGES: "${{ inputs.packages }}"
 
     - id: load-cache
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       with:
         path: ~/cache-apt-pkgs
         key: cache-apt-pkgs_${{ env.CACHE_KEY }}
