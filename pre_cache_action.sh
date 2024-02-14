@@ -62,7 +62,7 @@ log "Creating cache key..."
 
 # Forces an update in cases where an accidental breaking change was introduced
 # and a global cache reset is required, or change in cache action requiring reload.
-force_update_inc="2"
+force_update_inc="3"
 
 value="${packages} @ ${version} ${force_update_inc}"
 log "- Value to hash is '${value}'."
