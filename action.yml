@@ -92,7 +92,7 @@ runs:
 
     - id: save-cache
       if: ${{ ! steps.load-cache.outputs.cache-hit }}
-      uses: actions/cache/save@v3
+      uses: actions/cache/save@v4
       with:
         path: ~/cache-apt-pkgs
         key: ${{ steps.load-cache.outputs.cache-primary-key }}
