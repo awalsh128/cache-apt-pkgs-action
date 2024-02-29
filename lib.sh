@@ -106,7 +106,7 @@ function get_normalized_package_list {
 
   local architecture=$(dpkg --print-architecture)
   if [ "${architecture}" == "arm64" ]; then
-    ${script_dir}/apt_query_arm64 normalized-list ${packages}
+    ${script_dir}/apt_query-arm64 normalized-list ${packages}
   else
     ${script_dir}/apt_query normalized-list ${packages}
   fi
