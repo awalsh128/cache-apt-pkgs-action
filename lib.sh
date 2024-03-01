@@ -103,7 +103,13 @@ function get_normalized_package_list {
     | sed 's/[,\]/ /g; s/\s\+/ /g; s/^\s\+//g; s/\s\+$//g' \
     | sort -t' ')
   local script_dir="$(dirname -- "$(realpath -- "${0}")")"
-  ${script_dir}/apt_query normalized-list ${packages}
+
+  local architecture=$(dpkg --print-architecture)
+  if [ "${architecture}" == "arm64" ]; then
+    ${script_dir}/apt_query-arm64 normalized-list ${packages}
+  else
+    ${script_dir}/apt_query normalized-list ${packages}
+  fi
 }
 
 ###############################################################################
