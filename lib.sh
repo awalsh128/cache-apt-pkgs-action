@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Don't fail on error. We use the exit status as a conditional.
+#
+# This is the default behavior but can be overriden by the caller in the 
+# SHELLOPTS env var.
+set +e
+
 ###############################################################################
 # Execute the Debian install script.
 # Arguments:
