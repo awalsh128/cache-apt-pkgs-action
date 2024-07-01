@@ -59,7 +59,7 @@ runs:
          PACKAGES: "${{ inputs.packages }}"
 
     - id: load-cache
-      uses: actions/cache/restore@v4
+      uses: WarpBuilds/cache/restore@v1
       with:
         path: ~/cache-apt-pkgs
         key: cache-apt-pkgs_${{ env.CACHE_KEY }}
@@ -83,16 +83,9 @@ runs:
          DEBUG: "${{ inputs.debug }}"
          PACKAGES: "${{ inputs.packages }}"
 
-    - id: upload-logs
-      if: ${{ inputs.debug == 'true' }}
-      uses: actions/upload-artifact@v3
-      with:
-        name: cache-apt-pkgs-logs_${{ env.CACHE_KEY }}
-        path: ~/cache-apt-pkgs/*.log
-
     - id: save-cache
       if: ${{ ! steps.load-cache.outputs.cache-hit }}
-      uses: actions/cache/save@v4
+      uses: WarpBuilds/cache/save@v1
       with:
         path: ~/cache-apt-pkgs
         key: ${{ steps.load-cache.outputs.cache-primary-key }}
