@@ -28,10 +28,6 @@ test "${debug}" = "true" && set -x
 # List of the packages to use.
 packages="${@:6}"
 
-if test "${cache_hit}" = "true"; then
-  ${script_dir}/restore_pkgs.sh "${cache_dir}" "${cache_restore_root}" "${execute_install_scripts}" "${debug}"
-else
-  ${script_dir}/install_and_cache_pkgs.sh "${cache_dir}" "${debug}" ${packages}
-fi
+([ "${cache_hit}" = "true" ] && ${script_dir}/restore_pkgs.sh "${cache_dir}" "${cache_restore_root}" "${execute_install_scripts}" "${debug}") || ${script_dir}/install_and_cache_pkgs.sh "${cache_dir}" "${debug}" ${packages}
 
 log_empty_line
