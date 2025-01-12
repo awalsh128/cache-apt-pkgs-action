@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # Fail on any error.
-set -e
+set -eET -o pipefail
+
+trap 'exit -1' ERR
 
 # Debug mode for diagnosing issues.
 # Setup first before other operations.
@@ -50,7 +52,7 @@ for cached_filepath in ${cached_filepaths}; do
   sudo tar -xf "${cached_filepath}" -C "${cache_restore_root}" > /dev/null
   log "  done"
 
-  # Execute install scripts if available.    
+  # Execute install scripts if available.
   if test ${execute_install_scripts} == "true"; then
     # May have to add more handling for extracting pre-install script before extracting all files.
     # Keeping it simple for now.
