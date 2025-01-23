@@ -88,13 +88,10 @@ for installed_package in ${installed_packages}; do
     log "  * Caching ${package_name} to ${cache_filepath}..."
 
     # Pipe all package files (no folders) and installation control data to Tar.
-    { dpkg -L "${package_name}" \
-      & get_install_script_filepath "" "${package_name}" "preinst" \
-      & get_install_script_filepath "" "${package_name}" "postinst"; } |
-      while IFS= read -r f; do test -f "${f}" -o -L "${f}" && get_tar_relpath "${f}"; done |
-      # Single quotes ensure literals like backslash get captured. Use \0 to avoid field separation.   
-      awk -F"\0" '{print "\x27"$1"\x27"}' |
-      sudo xargs tar -cf "${cache_filepath}" -C /
+    tar -cf "${cache_filepath}" -C / --verbatim-files-from --files-from <( { dpkg -L "${package_name}" &&
+      get_install_script_filepath "" "${package_name}" "preinst" &&
+      get_install_script_filepath "" "${package_name}" "postinst" ;} |
+      while IFS= read -r f; do test -f "${f}" -o -L "${f}" && get_tar_relpath "${f}"; done )
 
     log "    done (compressed size $(du -h "${cache_filepath}" | cut -f1))."
   fi
