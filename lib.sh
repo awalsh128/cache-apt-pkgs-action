@@ -135,8 +135,8 @@ function get_tar_relpath {
   fi
 }
 
-function log { echo "$(date +%T.%3N)" "${@}"; }
-function log_err { >&2 echo "$(date +%T.%3N)" "${@}"; }
+function log { echo "${@}"; }
+function log_err { >&2 echo "${@}"; }
 
 function log_empty_line { echo ""; }
 
