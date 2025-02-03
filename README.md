@@ -58,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build Doxygen documentation and deploy
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
@@ -82,7 +82,7 @@ jobs:
 install_doxygen_deps:
   runs-on: ubuntu-latest
   steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - uses: awalsh128/cache-apt-pkgs-action@latest
       with:
         packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
