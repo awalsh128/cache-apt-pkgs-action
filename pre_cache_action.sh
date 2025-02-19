@@ -64,7 +64,18 @@ log "Creating cache key..."
 # and a global cache reset is required, or change in cache action requiring reload.
 force_update_inc="3"
 
+# Force a different cache key for different architectures (currently x86_64 and aarch64 are available on GitHub)
+cpu_arch="$(arch)"
+log "- CPU architecture is '${cpu_arch}'."
+
 value="${packages} @ ${version} ${force_update_inc}"
+
+# Don't invalidate existing caches for the standard Ubuntu runners
+if [ "${cpu_arch}" != "x86_64" ]; then
+  value="${value} ${cpu_arch}"
+  log "- Architecture '${cpu_arch}' added to value."
+fi
+
 log "- Value to hash is '${value}'."
 
 key="$(echo "${value}" | md5sum | cut -f1 -d' ')"
