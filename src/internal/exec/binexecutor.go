@@ -16,11 +16,9 @@ type BinExecutor struct{}
 func (c *BinExecutor) Exec(name string, arg ...string) *Execution {
 	cmd := exec.Command(name, arg...)
 
-	err := cmd.Run()
-
-	out, outErr := cmd.CombinedOutput()
-	if outErr != nil {
-		logging.Fatal(outErr)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		logging.Fatal(err)
 	}
 
 	execution := &Execution{
