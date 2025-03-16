@@ -2,7 +2,7 @@
 
 # Don't fail on error. We use the exit status as a conditional.
 #
-# This is the default behavior but can be overriden by the caller in the 
+# This is the default behavior but can be overridden by the caller in the 
 # SHELLOPTS env var.
 set +e
 
@@ -114,7 +114,7 @@ function get_normalized_package_list {
   if [ "${architecture}" == "arm64" ]; then
     ${script_dir}/apt_query-arm64 normalized-list ${packages}
   else
-    ${script_dir}/apt_query normalized-list ${packages}
+    ${script_dir}/apt_query-x86 normalized-list ${packages}
   fi
 }
 
