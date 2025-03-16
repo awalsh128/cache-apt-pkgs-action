@@ -1,7 +1,6 @@
 package exec
 
 import (
-	"bytes"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -17,18 +16,17 @@ type BinExecutor struct{}
 func (c *BinExecutor) Exec(name string, arg ...string) *Execution {
 	cmd := exec.Command(name, arg...)
 
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-
 	err := cmd.Run()
+
+	out, outErr := cmd.CombinedOutput()
+	if outErr != nil {
+		logging.Fatal(outErr)
+	}
+
 	execution := &Execution{
-		Cmd:      name + " " + strings.Join(arg, " "),
-		Stdout:   stdout.String(),
-		Stderr:   stderr.String(),
-		ExitCode: cmd.ProcessState.ExitCode(),
+		Cmd:         name + " " + strings.Join(arg, " "),
+		CombinedOut: string(out),
+		ExitCode:    cmd.ProcessState.ExitCode(),
 	}
 
 	logging.DebugLazy(func() string {

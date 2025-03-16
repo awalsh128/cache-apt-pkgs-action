@@ -19,11 +19,11 @@ func TestMain(m *testing.M) {
 
 func TestNormalizedList_MultiplePackagesExists_StdoutsAlphaSortedPackageNameVersionPairs(t *testing.T) {
 	result := cmdtesting.New(t, createReplayLogs).Run("normalized-list", "xdot", "rolldice")
-	result.ExpectSuccessfulOut("rolldice=1.16-1build1 xdot=1.2-3")
+	result.ExpectSuccessfulOut("rolldice=1.16-1build1 xdot=1.1-2")
 }
 
 func TestNormalizedList_SamePackagesDifferentOrder_StdoutsMatch(t *testing.T) {
-	expected := "rolldice=1.16-1build1 xdot=1.2-3"
+	expected := "rolldice=1.16-1build1 xdot=1.1-2"
 
 	ct := cmdtesting.New(t, createReplayLogs)
 
@@ -36,24 +36,24 @@ func TestNormalizedList_SamePackagesDifferentOrder_StdoutsMatch(t *testing.T) {
 
 func TestNormalizedList_MultiVersionWarning_StdoutSingleVersion(t *testing.T) {
 	var result = cmdtesting.New(t, createReplayLogs).Run("normalized-list", "libosmesa6-dev", "libgl1-mesa-dev")
-	result.ExpectSuccessfulOut("libgl1-mesa-dev=23.0.4-0ubuntu1~23.04.1 libosmesa6-dev=23.0.4-0ubuntu1~23.04.1")
+	result.ExpectSuccessfulOut("libgl1-mesa-dev=21.2.6-0ubuntu0.1~20.04.2 libosmesa6-dev=21.2.6-0ubuntu0.1~20.04.2")
 }
 
 func TestNormalizedList_SinglePackageExists_StdoutsSinglePackageNameVersionPair(t *testing.T) {
 	var result = cmdtesting.New(t, createReplayLogs).Run("normalized-list", "xdot")
-	result.ExpectSuccessfulOut("xdot=1.2-3")
+	result.ExpectSuccessfulOut("xdot=1.1-2")
 }
 
 func TestNormalizedList_VersionContainsColon_StdoutsEntireVersion(t *testing.T) {
 	var result = cmdtesting.New(t, createReplayLogs).Run("normalized-list", "default-jre")
-	result.ExpectSuccessfulOut("default-jre=2:1.17-74")
+	result.ExpectSuccessfulOut("default-jre=2:1.11-72")
 }
 
 func TestNormalizedList_NonExistentPackageName_StderrsAptCacheErrors(t *testing.T) {
 	var result = cmdtesting.New(t, createReplayLogs).Run("normalized-list", "nonexistentpackagename")
 	result.ExpectError(
 		`Error encountered running apt-cache --quiet=0 --no-all-versions show nonexistentpackagename
-Exited with status code 100; see combined output below:
+Exited with status code 100; see combined std[out,err] below:
 N: Unable to locate package nonexistentpackagename
 N: Unable to locate package nonexistentpackagename
 E: No packages found`)
@@ -62,4 +62,9 @@ E: No packages found`)
 func TestNormalizedList_NoPackagesGiven_StderrsArgMismatch(t *testing.T) {
 	var result = cmdtesting.New(t, createReplayLogs).Run("normalized-list")
 	result.ExpectError("Expected at least 2 non-flag arguments but found 1.")
+}
+
+func TestNormalizedList_VirtualPackagesExists_StdoutsConcretePackage(t *testing.T) {
+	result := cmdtesting.New(t, createReplayLogs).Run("normalized-list", "libvips")
+	result.ExpectSuccessfulOut("libvips42=8.9.1-2")
 }

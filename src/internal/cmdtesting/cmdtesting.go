@@ -28,7 +28,7 @@ func New(t *testing.T, createReplayLogs bool) *CmdTesting {
 
 type RunResult struct {
 	Testing     *CmdTesting
-	Combinedout string
+	CombinedOut string
 	Err         error
 }
 
@@ -50,7 +50,7 @@ func (t *CmdTesting) Run(command string, pkgNames ...string) RunResult {
 	}
 
 	cmd := exec.Command("./"+binaryName, append(append(flags, command), pkgNames...)...)
-	combinedout, err := cmd.CombinedOutput()
+	combinedOut, err := cmd.CombinedOutput()
 
 	if t.createReplayLogs {
 		err := common.AppendFile(binaryName+".log", t.replayFilename)
@@ -59,7 +59,7 @@ func (t *CmdTesting) Run(command string, pkgNames ...string) RunResult {
 		}
 	}
 
-	return RunResult{Testing: t, Combinedout: string(combinedout), Err: err}
+	return RunResult{Testing: t, CombinedOut: string(combinedOut), Err: err}
 }
 
 func (r *RunResult) ExpectSuccessfulOut(expected string) {
@@ -69,23 +69,23 @@ func (r *RunResult) ExpectSuccessfulOut(expected string) {
 	}
 
 	if r.Err != nil {
-		r.Testing.Errorf("Error running command: %v\n%s", r.Err, r.Combinedout)
+		r.Testing.Errorf("Error running command: %v\n%s", r.Err, r.CombinedOut)
 		return
 	}
 	fullExpected := expected + "\n" // Output will always have a end of output newline.
-	if r.Combinedout != fullExpected {
-		r.Testing.Errorf("Unexpected combined std[err,out] found.\nExpected:\n'%s'\nActual:\n'%s'", fullExpected, r.Combinedout)
+	if r.CombinedOut != fullExpected {
+		r.Testing.Errorf("Unexpected combined std[err,out] found.\nExpected:\n'%s'\nActual:\n'%s'", fullExpected, r.CombinedOut)
 	}
 }
 
-func (r *RunResult) ExpectError(expectedCombinedout string) {
+func (r *RunResult) ExpectError(expectedCombinedOut string) {
 	if r.Testing.createReplayLogs {
 		r.Testing.Log("Skipping test while creating replay logs.")
 		return
 	}
 
-	fullExpectedCombinedout := expectedCombinedout + "\n" // Output will always have a end of output newline.
-	if r.Combinedout != fullExpectedCombinedout {
-		r.Testing.Errorf("Unexpected combined std[err,out] found.\nExpected:\n'%s'\nActual:\n'%s'", fullExpectedCombinedout, r.Combinedout)
+	fullExpectedCombinedOut := expectedCombinedOut + "\n" // Output will always have a end of output newline.
+	if r.CombinedOut != fullExpectedCombinedOut {
+		r.Testing.Errorf("Unexpected combined std[err,out] found.\nExpected:\n'%s'\nActual:\n'%s'", fullExpectedCombinedOut, r.CombinedOut)
 	}
 }

@@ -13,10 +13,9 @@ type Executor interface {
 }
 
 type Execution struct {
-	Cmd      string
-	Stdout   string
-	Stderr   string
-	ExitCode int
+	Cmd         string
+	CombinedOut string
+	ExitCode    int
 }
 
 // Gets the error, if the command ran with a non-zero exit code.
@@ -25,10 +24,10 @@ func (e *Execution) Error() error {
 		return nil
 	}
 	return fmt.Errorf(
-		"Error encountered running %s\nExited with status code %d; see combined output below:\n%s",
+		"Error encountered running %s\nExited with status code %d; see combined std[out,err] below:\n%s",
 		e.Cmd,
 		e.ExitCode,
-		e.Stdout+e.Stderr,
+		e.CombinedOut,
 	)
 }
 
