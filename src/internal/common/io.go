@@ -74,15 +74,6 @@ func MoveFile(source string, destination string) error {
 	return os.Rename(source, destination)
 }
 
-func ContainsString(arr []string, element string) bool {
-	for _, x := range arr {
-		if x == element {
-			return true
-		}
-	}
-	return false
-}
-
 func createDirectoryIfNotPresent(path string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err := os.MkdirAll(path, 0755)
