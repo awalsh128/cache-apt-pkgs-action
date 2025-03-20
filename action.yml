@@ -18,6 +18,16 @@ inputs:
     description: 'Execute Debian package pre and post install script upon restore. See README.md caveats for more information.'
     required: false
     default: 'false'
+  empty_packages_behavior:
+    description: >
+      Desired behavior when the provided package list is empty.
+
+      Available Options:
+        error: Fail the action with an error message
+        warn: Output a warning without failing the action
+        ignore: Proceed silently without warnings or errors
+    required: false
+    default: 'error'
   refresh:
     description: 'OBSOLETE: Refresh is not used by the action, use version instead.'
     deprecationMessage: 'Refresh is not used by the action, use version instead.'
@@ -50,21 +60,28 @@ runs:
           "$EXEC_INSTALL_SCRIPTS" \
           "$DEBUG" \
           "$PACKAGES"
-        echo "CACHE_KEY=$(cat ~/cache-apt-pkgs/cache_key.md5)" >> $GITHUB_ENV
+        if [ -f ~/cache-apt-pkgs/cache_key.md5 ]; then
+          echo "CACHE_KEY=$(cat ~/cache-apt-pkgs/cache_key.md5)" >> $GITHUB_ENV
+        else
+          echo "CACHE_KEY=" >> $GITHUB_ENV
+        fi
       shell: bash
       env:
          VERSION: "${{ inputs.version }}"
          EXEC_INSTALL_SCRIPTS: "${{ inputs.execute_install_scripts }}"
+         EMPTY_PACKAGES_BEHAVIOR: "${{ inputs.empty_packages_behavior }}"
          DEBUG: "${{ inputs.debug }}"
          PACKAGES: "${{ inputs.packages }}"
 
     - id: load-cache
+      if: ${{ env.CACHE_KEY }}
       uses: actions/cache/restore@v4
       with:
         path: ~/cache-apt-pkgs
         key: cache-apt-pkgs_${{ env.CACHE_KEY }}
 
     - id: post-cache
+      if: ${{ env.CACHE_KEY }}
       run: |
         ${GITHUB_ACTION_PATH}/post_cache_action.sh \
           ~/cache-apt-pkgs \
@@ -84,14 +101,14 @@ runs:
          PACKAGES: "${{ inputs.packages }}"
 
     - id: upload-logs
-      if: ${{ inputs.debug == 'true' }}
+      if: ${{ env.CACHE_KEY && inputs.debug == 'true' }}
       uses: actions/upload-artifact@v4
       with:
         name: cache-apt-pkgs-logs_${{ env.CACHE_KEY }}
         path: ~/cache-apt-pkgs/*.log
 
     - id: save-cache
-      if: ${{ ! steps.load-cache.outputs.cache-hit }}
+      if: ${{ env.CACHE_KEY && ! steps.load-cache.outputs.cache-hit }}
       uses: actions/cache/save@v4
       with:
         path: ~/cache-apt-pkgs
