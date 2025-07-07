@@ -21,7 +21,7 @@ input_packages="${@:3}"
 if ! apt-fast --version > /dev/null 2>&1; then
   log "Installing apt-fast for optimized installs..."
   # Install apt-fast for optimized installs.
-  /bin/bash -c "$(curl -sL https://git.io/vokNn)"
+  /bin/bash -c "$(curl -sL https://raw.githubusercontent.com/ilikenwf/apt-fast/master/quick-install.sh)"
   log "done"
 
   log_empty_line
