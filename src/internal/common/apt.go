@@ -52,6 +52,10 @@ func getNonVirtualPackage(executor exec.Executor, name string) (pkg *AptPackage,
 func getPackage(executor exec.Executor, paragraph string) (pkg *AptPackage, err error) {
 	errMsgs := []string{}
 	for _, splitLine := range GetSplitLines(paragraph, ":", 2) {
+		if len(splitLine.Words) < 2 {
+			logging.Debug("Skipping invalid line: %+v\n", splitLine.Line)
+			continue
+		}
 		switch splitLine.Words[0] {
 		case "Package":
 			// Initialize since this will provide the first struct value if present.
