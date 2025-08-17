@@ -44,9 +44,20 @@ fi
 
 # Is length of string zero?
 if test -z "${packages}"; then
-  log "aborted"
-  log "Packages argument cannot be empty." >&2
-  exit 3
+  case "$EMPTY_PACKAGES_BEHAVIOR" in
+    ignore)
+      exit 0
+      ;;
+    warn)
+      echo "::warning::Packages argument is empty."
+      exit 0
+      ;;
+    *)
+      log "aborted"
+      log "Packages argument is empty." >&2
+      exit 3
+      ;;
+  esac
 fi
 
 validate_bool "${execute_install_scripts}" execute_install_scripts 4
