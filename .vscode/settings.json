@@ -1,0 +1,28 @@
+{
+  "[go]": {
+    "editor.defaultFormatter": "trunk.io",
+    "editor.formatOnSave": true
+  },
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true
+  },
+  "[shell]": {
+    "editor.defaultFormatter": "trunk.io",
+    "editor.formatOnSave": true
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "trunk.io",
+    "editor.formatOnSave": true
+  },
+  "cSpell.enabled": false,
+  "cSpell.caseSensitive": false,
+  "cSpell.import": [
+    ".vscode/cspell.json"
+  ],
+  "editor.formatOnSave": true
+}

@@ -1,0 +1,12 @@
+{
+    "linters": {
+        "enable": [
+            "gofmt",
+            "govet",
+            "staticcheck",
+            "errcheck",
+            "ineffassign",
+            "gocritic"
+        ]
+    }
+}

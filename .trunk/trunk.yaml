@@ -1,0 +1,49 @@
+# This file controls the behavior of Trunk: https://docs.trunk.io/cli
+# To learn more about the format of this file, see https://docs.trunk.io/reference/trunk-yaml
+version: 0.1
+cli:
+  version: 1.25.0
+plugins:
+  sources:
+    - id: trunk
+      ref: v1.7.1
+      uri: https://github.com/trunk-io/plugins
+runtimes:
+  enabled:
+    - go@1.21.0
+lint:
+  disabled:
+  enabled:
+    - cspell@9.2.0
+    - markdownlint@0.45.0
+    - actionlint@1.7.7
+    - gofmt@1.20.4
+    - golangci-lint@1.54.2
+    - shellcheck@0.10.0
+    - shfmt@3.6.0
+    - yamllint@1.37.1
+  definitions:
+    - name: golangci-lint
+      files: [go]
+      commands:
+        - name: golangci-lint
+          output: regex
+          parse_regex: "^(?P<path>.*?):(?P<line>\\d+):(?P<column>\\d+): (?P<message>.*)$"
+          run: golangci-lint run ${target}
+          success_codes: [0]
+          in_place: false
+    - name: shell
+      files: [shell]
+      commands:
+        - name: shellcheck
+          output: regex
+          parse_regex: "^(?P<path>.*?):(?P<line>\\d+):(?P<column>\\d+): (?P<level>.*?) (?P<message>.*)$"
+          run: shellcheck -f gcc ${target}
+          success_codes: [0]
+actions:
+  enabled:
+    - trunk-upgrade-available
+    - trunk-fmt-pre-commit
+  disabled:
+    - trunk-announce
+    - trunk-check-pre-push

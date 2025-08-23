@@ -1,8 +1,11 @@
 # cache-apt-pkgs-action
 
-[![License: Apache2](https://shields.io/badge/license-apache2-blue.svg)](https://github.com/awalsh128/fluentcpp/blob/master/LICENSE)
-[![Master Test status](https://github.com/awalsh128/cache-apt-pkgs-action-ci/actions/workflows/master_test.yml/badge.svg)](https://github.com/awalsh128/cache-apt-pkgs-action-ci/actions/workflows/master_test.yml)
-[![Dev Test status](https://github.com/awalsh128/cache-apt-pkgs-action-ci/actions/workflows/dev_test.yml/badge.svg)](https://github.com/awalsh128/cache-apt-pkgs-action-ci/actions/workflows/dev_test.yml)
+[![CI](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml)
+[![CI (dev-v2.0)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml/badge.svg?branch=dev-v2.0)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Adev-v2.0)
+[![Go Report Card](https://goreportcard.com/badge/github.com/awalsh128/cache-apt-pkgs-action)](https://goreportcard.com/report/github.com/awalsh128/cache-apt-pkgs-action)
+[![Go Reference](https://pkg.go.dev/badge/github.com/awalsh128/cache-apt-pkgs-action.svg)](https://pkg.go.dev/github.com/awalsh128/cache-apt-pkgs-action)
+[![License](https://img.shields.io/github/license/awalsh128/cache-apt-pkgs-action)](https://github.com/awalsh128/cache-apt-pkgs-action/blob/master/LICENSE)
+[![Release](https://img.shields.io/github/v/release/awalsh128/cache-apt-pkgs-action)](https://github.com/awalsh128/cache-apt-pkgs-action/releases)
 
 This action allows caching of Advanced Package Tool (APT) package dependencies to improve workflow execution time instead of installing the packages on every run.
 
@@ -17,7 +20,7 @@ This action is a composition of [actions/cache](https://github.com/actions/cache
 
 ### Pre-requisites
 
-Create a workflow `.yml` file in your repositories `.github/workflows` directory. An [example workflow](#example-workflow) is available below. For more information, reference the GitHub Help Documentation for [Creating a workflow file](https://help.github.com/en/articles/configuring-a-workflow#creating-a-workflow-file).
+Create a workflow `.yml` file in your repositories `.github/workflows` directory. [Example workflows](#example-workflows) are available below. For more information, reference the GitHub Help Documentation for [Creating a workflow file](https://help.github.com/en/articles/configuring-a-workflow#creating-a-workflow-file).
 
 ### Versions
 
@@ -46,9 +49,13 @@ There are three kinds of version labels you can use.
 
 The cache is scoped to the packages given and the branch. The default branch cache is available to other branches.
 
-### Example workflow
+### Example workflows
 
-This was a motivating use case for creating this action.
+Below are some example workflows showing how to use this action.
+
+#### Build and Deploy Doxygen Documentation
+
+This example shows how to cache dependencies for building and deploying Doxygen documentation:
 
 ```yaml
 name: Create Documentation
@@ -66,7 +73,7 @@ jobs:
 
       - name: Build
         run: |
-          cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}      
+          cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
           cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
       - name: Deploy
@@ -76,17 +83,21 @@ jobs:
           folder: ${{github.workspace}}/build/website
 ```
 
-```yaml
+#### Simple Package Installation
 
----
-install_doxygen_deps:
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v4
-    - uses: awalsh128/cache-apt-pkgs-action@latest
-      with:
-        packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
-        version: 1.0
+This example shows the minimal configuration needed to cache and install packages:
+
+```yaml
+name: Install Dependencies
+jobs:
+  install_doxygen_deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
+          version: 1.0
 ```
 
 ## Caveats
