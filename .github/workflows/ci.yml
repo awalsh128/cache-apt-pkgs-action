@@ -26,22 +26,10 @@ jobs:
     steps: 
       - uses: actions/checkout@v4
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
           version: latest
-
-      - name: Install cspell
-        run: npm install -g cspell
-
-      - name: Check spelling
-        run: cspell --config ./.vscode/cspell.json "**" --no-progress
 
       - name: Golang Lint
         run: golangci-lint run

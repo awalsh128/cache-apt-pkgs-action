@@ -48,6 +48,11 @@ linters:
     - bidichk # checks for dangerous unicode character sequences
     - bodyclose # checks whether HTTP response body is closed successfully
     - canonicalheader # checks whether net/http.Header uses canonical header
+    - govet # examines Go source code and reports suspicious constructs
+    - staticcheck # comprehensive checks for Go programs
+    - errcheck # checks for unchecked errors
+    - ineffassign # detects ineffective assignments
+    - gocritic # provides deep code analysis
     - copyloopvar # detects places where loop variables are copied (Go 1.22+)
     - cyclop # checks function and package cyclomatic complexity
     - depguard # checks if package imports are in a list of acceptable packages

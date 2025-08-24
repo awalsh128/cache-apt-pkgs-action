@@ -41,70 +41,63 @@ outputs:
 
 runs:
   using: "composite"
+  env:
+    CACHE_DIR: ~/cache-apt-pkgs
+    GLOBAL_VERSION: 20250824
   steps:
+    - id: install-aptfast
+      shell: bash
+      run: |
+        if ! apt-fast --version > /dev/null 2>&1; then
+          "Installing apt-fast for optimized installs and updates"
+          /bin/bash -c "$(curl -sL https://raw.githubusercontent.com/ilikenwf/apt-fast/master/quick-install.sh)"
+        fi
     - id: setup-binary
       shell: bash
       run: |
-        # Map runner architecture to binary name
-        case "${{ runner.arch }}" in
-          X64)
-            BINARY_NAME="cache-apt-pkgs-linux-amd64"
-            ;;
-          ARM64)
-            BINARY_NAME="cache-apt-pkgs-linux-arm64"
-            ;;
-          ARM)
-            BINARY_NAME="cache-apt-pkgs-linux-arm"
-            ;;
-          *)
-            echo "Unsupported architecture: ${{ runner.arch }}"
-            exit 1
-            ;;
-        esac
-        
-        # Use bundled binary from action's dist directory
-        BINARY_PATH="${{ github.action_path }}/dist/$BINARY_NAME"
+        BINARY_PATH="${{ github.action_path }}/tools/distribute.sh getbinpath ${{ runner.arch }}"
         if [ ! -f "$BINARY_PATH" ]; then
           echo "Error: Binary not found at $BINARY_PATH"
           echo "Please ensure the action has been properly built and binaries are included in the dist directory"
           exit 1
         fi
-        
-        # Create symlink to standardize binary name for other steps
-        ln -sf "$BINARY_PATH" "${{ github.action_path }}/cache-apt-pkgs"
-        chmod +x "${{ github.action_path }}/cache-apt-pkgs"
 
     - id: create-cache-key
-      shell: bash
+      shell: bash      
       run: |
         ${BINARY_PATH} createkey \
-          -cache-dir "$CACHE_DIR" \
+          -os-arch ${{ runner.arch }} \
+          -plaintext-path "${CACHE_DIR}/cache_key.txt" \
+          -ciphertext-path "${CACHE_DIR}/cache_key.md5" \
           -version "${{ inputs.version }}" \
-          -global-version "4" \
-          -exec-install-scripts ${{ inputs.execute_install_scripts }} \
+          -global-version "${GLOBAL_VERSION}" \          
           ${{ inputs.packages }}
         echo "cache-key=$(cat $CACHE_DIR/cache_key.md5)" >> $GITHUB_OUTPUT
 
     - id: load-cache
       uses: actions/cache/restore@v4
       with:
-        path: ~/cache-apt-pkgs
+        path: ${CACHE_DIR}
         key: cache-apt-pkgs_${{ steps.create-cache-key.outputs.cache-key }}
 
     - id: post-load-cache
+      # TODO get this implemented
+      # -exec-install-scripts ${{ inputs.execute_install_scripts }} \
       run: |
         if [ "$CACHE_HIT" == "true" ]; then
-          ${BINARY_PATH} restore
-            -cache-dir "~/cache-apt-pkgs" \
-            -exec-install-scripts "$EXEC_INSTALL_SCRIPTS" \
+          ${BINARY_PATH} restore \
+            -cache-dir "${CACHE_DIR}" \
             -restore-root "/" \
             "$PACKAGES"
         else
-          ${BINARY_PATH} install -cache-dir "~/cache-apt-pkgs"
-        fi
-        function create_list { local list=$(cat ~/cache-apt-pkgs/manifest_${1}.log | tr '\n' ','); echo ${list:0:-1}; };
-        echo "package-version-list=$(create_list main)" >> $GITHUB_OUTPUT
-        echo "all-package-version-list=$(create_list all)" >> $GITHUB_OUTPUT
+          ${BINARY_PATH} install \
+            -cache-dir "${CACHE_DIR}"
+            -version "${{ inputs.version }}" \
+            -global-version "${GLOBAL_VERSION}"
+            "$PACKAGES""
+        fi        
+        echo "package-version-list=$(cat "${CACHE_DIR}/pkgs_args.txt")" >> $GITHUB_OUTPUT
+        echo "all-package-version-list=$(cat "${CACHE_DIR}/pkgs_installed.txt")" >> $GITHUB_OUTPUT
       shell: bash
       env:
         CACHE_HIT: "${{ steps.load-cache.outputs.cache-hit }}"

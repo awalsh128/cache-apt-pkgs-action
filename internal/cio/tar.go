@@ -1,4 +1,5 @@
-package cache
+// Package cio provides common I/O operations for the application.
+package cio
 
 import (
 	"archive/tar"
@@ -8,36 +9,9 @@ import (
 	"path/filepath"
 )
 
-func MkDir(dir string) error {
-	if dir == "" {
-		return fmt.Errorf("directory path cannot be empty")
-	}
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %v", dir, err)
-	}
-	return nil
-}
-
-func WriteKey(filepath string, key Key) error {
-	// Write cache key to file
-	if err := os.WriteFile(filepath, []byte(key.Hash()), 0644); err != nil {
-		return fmt.Errorf("failed to write cache key to %s: %w", filepath, err)
-	}
-	return nil
-}
-
-// validateTarInputs checks if the input parameters for tar creation are valid
-func validateTarInputs(destPath string, files []string) error {
-	if destPath == "" {
-		return fmt.Errorf("destination path cannot be empty")
-	}
-	if len(files) == 0 {
-		return fmt.Errorf("no files provided")
-	}
-	return nil
-}
-
-// createTarWriter creates a new tar writer for the given destination path
+// createTarWriter creates and initializes a new tar archive writer.
+// It ensures the parent directory exists and opens the destination file.
+// Returns the tar writer, the underlying file (for later closing), and any error encountered.
 func createTarWriter(destPath string) (*tar.Writer, *os.File, error) {
 	// Create parent directory for destination file if it doesn't exist
 	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
@@ -55,7 +29,21 @@ func createTarWriter(destPath string) (*tar.Writer, *os.File, error) {
 	return tw, file, nil
 }
 
-// validateFileType checks if the file is a regular file or symlink
+// validateTarInputs checks if the tar archive parameters are valid.
+// Returns an error if the destination path is empty or if no files are provided.
+func validateTarInputs(destPath string, files []string) error {
+	if destPath == "" {
+		return fmt.Errorf("destination path cannot be empty")
+	}
+	if len(files) == 0 {
+		return fmt.Errorf("no files provided")
+	}
+	return nil
+}
+
+// validateFileType ensures the file is a supported type for archiving.
+// Currently supports regular files and symbolic links.
+// Returns an error for other file types (e.g., directories, devices).
 func validateFileType(info os.FileInfo, absPath string) error {
 	if !info.Mode().IsRegular() && info.Mode()&os.ModeSymlink == 0 {
 		return fmt.Errorf("file %s is not a regular file or symlink", absPath)
@@ -63,7 +51,9 @@ func validateFileType(info os.FileInfo, absPath string) error {
 	return nil
 }
 
-// createFileHeader creates a tar header for the given file info
+// createFileHeader generates a tar header with file metadata.
+// The header includes the file's name, size, mode, modification time,
+// and other attributes from the filesystem.
 func createFileHeader(info os.FileInfo, absPath string) (*tar.Header, error) {
 	header, err := tar.FileInfoHeader(info, "") // Empty link name for now
 	if err != nil {

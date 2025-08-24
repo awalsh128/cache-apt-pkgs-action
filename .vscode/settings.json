@@ -1,4 +1,5 @@
 {
+  "cSpell.enabled": false,
   "[go]": {
     "editor.defaultFormatter": "trunk.io",
     "editor.formatOnSave": true
@@ -19,10 +20,5 @@
     "editor.defaultFormatter": "trunk.io",
     "editor.formatOnSave": true
   },
-  "cSpell.enabled": false,
-  "cSpell.caseSensitive": false,
-  "cSpell.import": [
-    ".vscode/cspell.json"
-  ],
   "editor.formatOnSave": true
 }

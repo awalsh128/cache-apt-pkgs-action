@@ -18,13 +18,15 @@ on:
   push:
     branches: [dev-v2.0]  # Test on pushes to dev branch
     paths:
-      - src/**            # Only when action code changes
+      - cmd/**           # Only when action code changes
+      - internal/**      # Only when action code changes
       - action.yml
       - .github/workflows/test-action.yml
   pull_request:
     branches: [dev-v2.0]  # Test on PRs to dev branch
     paths:
-      - src/**           # Only when action code changes
+      - cmd/**          # Only when action code changes
+      - internal/**     # Only when action code changes
       - action.yml
       - .github/workflows/test-action.yml
 

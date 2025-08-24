@@ -13,8 +13,8 @@ runtimes:
     - go@1.21.0
 lint:
   disabled:
+    - cspell
   enabled:
-    - cspell@9.2.0
     - markdownlint@0.45.0
     - actionlint@1.7.7
     - gofmt@1.20.4
