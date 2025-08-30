@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [dev-v2.0]
+    tags: ['v*']  # Trigger on version tags
   pull_request:
     branches: [dev-v2.0]
   schedule:
@@ -26,19 +27,6 @@ jobs:
     steps: 
       - uses: actions/checkout@v4
 
-      - name: Install golangci-lint
-        uses: golangci/golangci-lint-action@v4
-        with:
-          version: latest
-
-      - name: Golang Lint
-        run: golangci-lint run
-
-      - name: trunk.io Lint
-        uses: trunk-io/trunk-action@v1
-        with:
-          arguments: check
-
       - name: Install Go
         uses: actions/setup-go@v5
         with:
@@ -50,6 +38,24 @@ jobs:
 
       - name: Build
         run: go build -v ./...
+        
+      - name: Check file encodings
+        run: |
+          ./scripts/check_utf8.sh
+          
+      - name: Check file encoding changes
+        id: git-check
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "::error::Some files are not in UTF-8 encoding. Please run ./scripts/check_utf8.sh locally and commit the changes."
+            git status --porcelain
+            exit 1
+          fi
+
+      - name: trunk.io Lint
+        uses: trunk-io/trunk-action@v1
+        with:
+          arguments: check
 
       - name: Test with coverage
         run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
@@ -59,4 +65,54 @@ jobs:
         with:
           files: ./coverage.txt
           fail_ci_if_error: true
+
+  validate-scripts:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check script syntax
+        run: |
+          for script in scripts/*.sh; do
+            echo "Checking syntax for $script"
+            bash -n "$script"
+          done
+
+      - name: Check scripts are executable
+        run: |
+          for script in scripts/*.sh; do
+            if [[ ! -x "$script" ]]; then
+              echo "::error::Script $script is not executable. Run 'chmod +x $script' and commit the changes."
+              exit 1
+            fi
+          done
+
+      - name: Check menu integration
+        run: |
+          echo "Checking if all scripts are integrated in menu.sh..."
+          for script in scripts/*.sh; do
+            # Skip menu.sh itself
+            if [[ "$(basename "$script")" == "menu.sh" ]]; then
+              continue
+            fi
+            # Look for the script path in menu.sh
+            if ! grep -q "\".*$(basename "$script")\"" scripts/menu.sh; then
+              echo "::error::Script $(basename "$script") is not integrated in menu.sh"
+              exit 1
+            fi
+          done
+
+      - name: Run script tests
+        run: |
+          if [[ -d "scripts/tests" ]]; then
+            for test in scripts/tests/*_test.sh; do
+              if [[ -f "$test" ]]; then
+                echo "Running test: $test"
+                bash "$test"
+              fi
+            done
+          fi
+
+
 

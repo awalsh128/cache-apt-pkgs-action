@@ -1,111 +1,164 @@
 package pkgs
 
 import (
-	"sort"
 	"testing"
 )
 
 func TestNewPackages(t *testing.T) {
-	packages := NewPackages()
-	if packages == nil {
-		t.Error("NewPackages() returned nil")
+	p := NewPackages()
+	if p == nil {
+		t.Fatal("NewPackages() returned nil")
 	}
-	if packages.Len() != 0 {
-		t.Errorf("NewPackages() returned non-empty Packages, got length %d", packages.Len())
+	if p.Len() != 0 {
+		t.Errorf("NewPackages() returned non-empty Packages, got length %d", p.Len())
 	}
 }
 
-func TestPackages_Add(t *testing.T) {
+func TestNewPackagesFromStrings(t *testing.T) {
 	tests := []struct {
-		name     string
-		initial  []string
-		add      string
-		expected []string
+		name        string
+		pkgs        []string
+		wantLen     int
+		wantOrdered []string // expected order after sorting
 	}{
 		{
-			name:     "Add to empty",
-			initial:  []string{},
-			add:      "xdot=1.3-1",
-			expected: []string{"xdot=1.3-1"},
+			name:        "Empty input",
+			pkgs:        []string{},
+			wantLen:     0,
+			wantOrdered: []string{},
 		},
 		{
-			name:     "Add duplicate",
-			initial:  []string{"xdot=1.3-1"},
-			add:      "xdot=1.3-1",
-			expected: []string{"xdot=1.3-1"},
+			name:        "Single package",
+			pkgs:        []string{"xdot=1.3-1"},
+			wantLen:     1,
+			wantOrdered: []string{"xdot=1.3-1"},
 		},
 		{
-			name:     "Add different version",
-			initial:  []string{"xdot=1.3-1"},
-			add:      "xdot=1.3-2",
-			expected: []string{"xdot=1.3-1", "xdot=1.3-2"},
+			name:        "Multiple packages unsorted",
+			pkgs:        []string{"zlib=1.2.3", "xdot=1.3-1", "apt=2.0.0"},
+			wantLen:     3,
+			wantOrdered: []string{"apt=2.0.0", "xdot=1.3-1", "zlib=1.2.3"},
+		},
+		{
+			name:        "Duplicate packages",
+			pkgs:        []string{"xdot=1.3-1", "xdot=1.3-1", "apt=2.0.0"},
+			wantLen:     2,
+			wantOrdered: []string{"apt=2.0.0", "xdot=1.3-1"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			packages := NewPackages()
-			for _, pkg := range tt.initial {
-				packages.Add(pkg)
-			}
-			packages.Add(tt.add)
+			p := NewPackagesFromStrings(tt.pkgs...)
 
-			// Convert to slice for comparison
-			got := make([]string, packages.Len())
-			for i := 0; i < packages.Len(); i++ {
-				got[i] = packages.Get(i)
+			// Test Len()
+			if got := p.Len(); got != tt.wantLen {
+				t.Errorf("Len() = %v, want %v", got, tt.wantLen)
 			}
 
-			// Sort both slices for comparison
-			sort.Strings(got)
-			sort.Strings(tt.expected)
-
-			if len(got) != len(tt.expected) {
-				t.Errorf("Packages.Add() resulted in wrong length, got %v, want %v", got, tt.expected)
-				return
+			// Test Get() and verify order
+			for i := 0; i < p.Len(); i++ {
+				if i >= len(tt.wantOrdered) {
+					t.Errorf(
+						"Too many packages in result, extra package at index %d: %s",
+						i,
+						p.Get(i),
+					)
+					continue
+				}
+				if got := p.Get(i); got != tt.wantOrdered[i] {
+					t.Errorf("Get(%d) = %v, want %v", i, got, tt.wantOrdered[i])
+				}
 			}
 
-			for i := range got {
-				if got[i] != tt.expected[i] {
-					t.Errorf("Packages.Add() = %v, want %v", got, tt.expected)
-					break
+			// Test String()
+			wantString := ""
+			if len(tt.wantOrdered) > 0 {
+				for i, pkg := range tt.wantOrdered {
+					if i > 0 {
+						wantString += ","
+					}
+					wantString += pkg
+				}
+			}
+			if got := p.String(); got != wantString {
+				t.Errorf("String() = %v, want %v", got, wantString)
+			}
+
+			// Test StringArray()
+			gotArray := p.StringArray()
+			if len(gotArray) != len(tt.wantOrdered) {
+				t.Errorf("StringArray() length = %v, want %v", len(gotArray), len(tt.wantOrdered))
+			} else {
+				for i, want := range tt.wantOrdered {
+					if gotArray[i] != want {
+						t.Errorf("StringArray()[%d] = %v, want %v", i, gotArray[i], want)
+					}
 				}
 			}
 		})
 	}
 }
 
-func TestPackages_String(t *testing.T) {
+func TestPackages_Add(t *testing.T) {
 	tests := []struct {
-		name     string
-		packages []string
-		want     string
+		name        string
+		initial     []string
+		toAdd       []string
+		wantOrdered []string
 	}{
 		{
-			name:     "Empty packages",
-			packages: []string{},
-			want:     "",
+			name:        "Add to empty",
+			initial:     []string{},
+			toAdd:       []string{"xdot=1.3-1"},
+			wantOrdered: []string{"xdot=1.3-1"},
 		},
 		{
-			name:     "Single package",
-			packages: []string{"xdot=1.3-1"},
-			want:     "xdot=1.3-1",
+			name:        "Add multiple maintaining order",
+			initial:     []string{"apt=2.0.0"},
+			toAdd:       []string{"zlib=1.2.3", "xdot=1.3-1"},
+			wantOrdered: []string{"apt=2.0.0", "xdot=1.3-1", "zlib=1.2.3"},
 		},
 		{
-			name:     "Multiple packages",
-			packages: []string{"xdot=1.3-1", "rolldice=1.16-1build3"},
-			want:     "xdot=1.3-1,rolldice=1.16-1build3",
+			name:        "Add duplicate",
+			initial:     []string{"xdot=1.3-1"},
+			toAdd:       []string{"xdot=1.3-1"},
+			wantOrdered: []string{"xdot=1.3-1"},
+		},
+		{
+			name:        "Add same package different version",
+			initial:     []string{"xdot=1.3-1"},
+			toAdd:       []string{"xdot=1.3-2"},
+			wantOrdered: []string{"xdot=1.3-1", "xdot=1.3-2"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPackages()
-			for _, pkg := range tt.packages {
+			p := NewPackagesFromStrings(tt.initial...)
+
+			// Add packages one by one to test Add method
+			for _, pkg := range tt.toAdd {
 				p.Add(pkg)
 			}
-			if got := p.String(); got != tt.want {
-				t.Errorf("Packages.String() = %v, want %v", got, tt.want)
+
+			// Verify length
+			if got := p.Len(); got != len(tt.wantOrdered) {
+				t.Errorf("After Add(), Len() = %v, want %v", got, len(tt.wantOrdered))
+			}
+
+			// Verify order using Get
+			for i := 0; i < p.Len(); i++ {
+				if got := p.Get(i); got != tt.wantOrdered[i] {
+					t.Errorf("After Add(), Get(%d) = %v, want %v", i, got, tt.wantOrdered[i])
+				}
+			}
+
+			// Verify Contains for all added packages
+			for _, pkg := range tt.toAdd {
+				if !p.Contains(pkg) {
+					t.Errorf("After Add(), Contains(%v) = false, want true", pkg)
+				}
 			}
 		})
 	}
@@ -126,26 +179,35 @@ func TestPackages_Contains(t *testing.T) {
 		},
 		{
 			name:     "Package exists",
-			packages: []string{"xdot=1.3-1", "rolldice=1.16-1build3"},
+			packages: []string{"apt=2.0.0", "xdot=1.3-1"},
 			check:    "xdot=1.3-1",
 			want:     true,
 		},
 		{
+			name:     "Package exists (different order)",
+			packages: []string{"xdot=1.3-1", "apt=2.0.0"},
+			check:    "apt=2.0.0",
+			want:     true,
+		},
+		{
 			name:     "Package doesn't exist",
-			packages: []string{"xdot=1.3-1", "rolldice=1.16-1build3"},
+			packages: []string{"xdot=1.3-1", "apt=2.0.0"},
 			check:    "nonexistent=1.0",
+			want:     false,
+		},
+		{
+			name:     "Similar package different version",
+			packages: []string{"xdot=1.3-1"},
+			check:    "xdot=1.3-2",
 			want:     false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPackages()
-			for _, pkg := range tt.packages {
-				p.Add(pkg)
-			}
+			p := NewPackagesFromStrings(tt.packages...)
 			if got := p.Contains(tt.check); got != tt.want {
-				t.Errorf("Packages.Contains() = %v, want %v", got, tt.want)
+				t.Errorf("Contains(%v) = %v, want %v", tt.check, got, tt.want)
 			}
 		})
 	}

@@ -5,8 +5,8 @@ go 1.23
 toolchain go1.23.4
 
 require (
-	github.com/bluet/syspkg v0.1.5
-	github.com/stretchr/testify v1.10.0
+	github.com/awalsh128/syspkg v0.1.5
+	github.com/stretchr/testify v1.11.0
 )
 
 require (
@@ -14,6 +14,3 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-// Replace the syspkg module with your local version
-replace github.com/bluet/syspkg => /home/awalsh128/syspkg

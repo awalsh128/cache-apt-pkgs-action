@@ -18,7 +18,11 @@ func GetRestoreCmd() *Cmd {
 		Flags:       flag.NewFlagSet("restore", flag.ExitOnError),
 		Run:         restore,
 	}
-	cmd.Flags.String("cache-dir", "", "Directory that holds the cached packages, JSON manifest and package lists in text format")
+	cmd.Flags.String(
+		"cache-dir",
+		"",
+		"Directory that holds the cached packages, JSON manifest and package lists in text format",
+	)
 	cmd.Flags.String("restore-root", "/", "Root directory to untar the cached packages to")
 	cmd.Flags.Bool("execute-scripts", false, "Execute APT post-install scripts on restore")
 	cmd.Examples = []string{

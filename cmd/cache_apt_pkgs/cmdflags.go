@@ -104,7 +104,14 @@ func (c *Cmd) help() {
 		return
 	}
 	for _, example := range c.Examples {
-		fmt.Fprintf(os.Stderr, "  %s %s %s %s\n", binaryName, c.Name, example, c.ExamplePackages.String())
+		fmt.Fprintf(
+			os.Stderr,
+			"  %s %s %s %s\n",
+			binaryName,
+			c.Name,
+			example,
+			c.ExamplePackages.String(),
+		)
 	}
 }
 
@@ -125,7 +132,11 @@ func printUsage(cmds Cmds) {
 		fmt.Fprintf(os.Stderr, "  %-*s  %s\n", maxLen, name, cmd.Description)
 	}
 
-	fmt.Fprintf(os.Stderr, "\nUse \"%s <command> --help\" for more information about a command\n", binaryName)
+	fmt.Fprintf(
+		os.Stderr,
+		"\nUse \"%s <command> --help\" for more information about a command\n",
+		binaryName,
+	)
 }
 
 func (c *Cmds) Parse() (*Cmd, pkgs.Packages) {

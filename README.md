@@ -1,4 +1,4 @@
-# cache-apt-pkgs-action
+# Cache APT Packages Action
 
 [![CI](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml/badge.svg?branch=dev-v2.0)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Adev-v2.0)
 [![Go Report Card](https://goreportcard.com/badge/github.com/awalsh128/cache-apt-pkgs-action)](https://goreportcard.com/report/github.com/awalsh128/cache-apt-pkgs-action)
@@ -6,38 +6,233 @@
 [![License](https://img.shields.io/github/license/awalsh128/cache-apt-pkgs-action)](https://github.com/awalsh128/cache-apt-pkgs-action/blob/dev-v2.0/LICENSE)
 [![Release](https://img.shields.io/github/v/release/awalsh128/cache-apt-pkgs-action)](https://github.com/awalsh128/cache-apt-pkgs-action/releases)
 
-This action allows caching of Advanced Package Tool (APT) package dependencies to improve workflow execution time instead of installing the packages on every run.
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [🚀 Quick Start](#-quick-start)
+- [✨ Features](#-features)
+- [📋 Requirements](#-requirements)
+- [🔧 Configuration](#-configuration)
+  - [Inputs](#inputs)
+  - [Outputs](#outputs)
+- [📝 Usage Guide](#-usage-guide)
+  - [Version Selection](#version-selection)
+  - [Basic Example](#basic-example)
+  - [Advanced Example](#advanced-example)
+- [🔍 Cache Details](#-cache-details)
+  - [Cache Scoping](#cache-scoping)
+  - [Cache Keys](#cache-keys)
+  - [Cache Invalidation](#cache-invalidation)
+- [🚨 Common Issues](#-common-issues)
+  - [Permission Issues](#permission-issues)
+  - [Missing Dependencies](#missing-dependencies)
+  - [Cache Misses](#cache-misses)
+- [🤝 Contributing](#-contributing)
+- [📜 License](#-license)
+- [🔄 Updates and Maintenance](#-updates-and-maintenance)
+- [🌟 Acknowledgements](#-acknowledgements)
+  - [Getting Started](#getting-started)
+    - [Workflow Setup](#workflow-setup)
+    - [Detailed Configuration](#detailed-configuration)
+  - [Cache scopes](#cache-scopes)
+  - [Example workflows](#example-workflows)
+    - [Build and Deploy Doxygen Documentation](#build-and-deploy-doxygen-documentation)
+    - [Simple Package Installation](#simple-package-installation)
+- [Caveats](#caveats)
+  - [Edge Cases](#edge-cases)
+  - [Non-file Dependencies](#non-file-dependencies)
+  - [Cache Limits](#cache-limits)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+Speed up your GitHub Actions workflows by caching APT package dependencies. This action integrates with [actions/cache](https://github.com/actions/cache/) to provide efficient package caching, significantly reducing workflow execution time by avoiding repeated package installations.
 
 > [!IMPORTANT]
-> Looking for co-maintainers to help review changes, and investigate issues. I haven't had as much time to stay on top of this action as I would like to and want to make sure it is still responsive and reliable for the community. If you are interested, please reach out.
+> We're looking for co-maintainers to help review changes and investigate issues. If you're interested in contributing to this project, please reach out.
 
-## Documentation
+## 🚀 Quick Start
 
-This action is a composition of [actions/cache](https://github.com/actions/cache/) and the `apt` utility. Some actions require additional APT based packages to be installed in order for other steps to be executed. Packages can be installed when ran but can consume much of the execution workflow time.
+```yaml
+steps:
+  - name: Cache APT Packages
+    uses: awalsh128/cache-apt-pkgs-action@v2
+    with:
+      packages: python3-dev cmake
+      version: 1.0
+```
 
-## Usage
+## ✨ Features
 
-### Pre-requisites
+- 📦 Efficient APT package caching
+- 🔄 Automatic dependency resolution
+- 🔍 Smart cache invalidation
+- 📊 Detailed cache statistics
+- 🛠️ Pre/post install script support
+
+## 📋 Requirements
+
+- GitHub Actions runner with APT support (Ubuntu/Debian)
+- Workflow permissions to read/write caches
+- Sufficient storage space for package caching
+
+## 🔧 Configuration
+
+### Inputs
+
+| Name                      | Description                      | Required | Default  |
+| ------------------------- | -------------------------------- | -------- | -------- |
+| `packages`                | Space-delimited list of packages | Yes      | -        |
+| `version`                 | Cache version identifier         | No       | `latest` |
+| `execute_install_scripts` | Run package install scripts      | No       | `false`  |
+
+### Outputs
+
+| Name                       | Description                              |
+| -------------------------- | ---------------------------------------- |
+| `cache-hit`                | Whether cache was found (`true`/`false`) |
+| `package-version-list`     | Main packages and versions installed     |
+| `all-package-version-list` | All packages including dependencies      |
+
+## 📝 Usage Guide
+
+### Version Selection
+
+Choose the appropriate version tag:
+
+- `@latest` - Latest stable release
+- `@v2` - Latest v2.x.x release
+- `@master` - Latest tested code (potentially unstable)
+- `@dev` - Experimental features
+
+### Basic Example
+
+```yaml
+name: Build
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Cache APT Packages
+        uses: awalsh128/cache-apt-pkgs-action@v2
+        with:
+          packages: python3-dev cmake
+          version: 1.0
+      
+      - name: Build Project
+        run: |
+          cmake .
+          make
+```
+
+### Advanced Example
+
+```yaml
+name: Complex Build
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Cache APT Packages
+        uses: awalsh128/cache-apt-pkgs-action@v2
+        id: apt-cache
+        with:
+          packages: python3-dev cmake libboost-all-dev
+          version: ${{ github.sha }}
+          execute_install_scripts: true
+      
+      - name: Cache Info
+        run: |
+          echo "Cache hit: ${{ steps.apt-cache.outputs.cache-hit }}"
+          echo "Installed packages: ${{ steps.apt-cache.outputs.package-version-list }}"
+```
+
+## 🔍 Cache Details
+
+### Cache Scoping
+
+Caches are scoped by:
+- Package list
+- Version string
+- Branch (default branch cache available to other branches)
+
+### Cache Keys
+
+The action generates cache keys based on:
+- Package names and versions
+- System architecture
+- Custom version string
+
+### Cache Invalidation
+
+Caches are invalidated when:
+- Package versions change
+- Custom version string changes
+- Branch cache is cleared
+
+## 🚨 Common Issues
+
+### Permission Issues
+
+```yaml
+permissions:
+  actions: read|write  # Required for cache operations
+```
+
+### Missing Dependencies
+
+- Ensure all required packages are listed
+- Check package names are correct
+- Verify package availability in repositories
+
+### Cache Misses
+
+- Check version string consistency
+- Verify branch cache settings
+- Ensure sufficient cache storage
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+## 📜 License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+## 🔄 Updates and Maintenance
+
+Stay updated:
+- Watch this repository for releases
+- Check the [CHANGELOG](CHANGELOG.md)
+- Follow the [security policy](SECURITY.md)
+
+## 🌟 Acknowledgements
+
+- [actions/cache](https://github.com/actions/cache/) team
+- All our [contributors](https://github.com/awalsh128/cache-apt-pkgs-action/graphs/contributors)
+
+### Getting Started
+
+#### Workflow Setup
 
 Create a workflow `.yml` file in your repositories `.github/workflows` directory. [Example workflows](#example-workflows) are available below. For more information, reference the GitHub Help Documentation for [Creating a workflow file](https://help.github.com/en/articles/configuring-a-workflow#creating-a-workflow-file).
 
-### Versions
+#### Detailed Configuration
 
-There are three kinds of version labels you can use.
-
-- `@latest` - This will give you the latest release.
-- `@v#` - Major only will give you the latest release for that major version only (e.g. `v1`).
-- Branch
-  - `@master` - Most recent manual and automated tested code. Possibly unstable since it is pre-release.
-  - `@dev` - Very unstable and contains experimental features. Automated testing may not show breaks since CI is also updated based on code in dev.
-
-### Inputs
+##### Input Parameters
 
 - `packages` - Space delimited list of packages to install.
 - `version` - Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
 - `execute_install_scripts` - Execute Debian package pre and post install script upon restore. See [Caveats / Non-file Dependencies](#non-file-dependencies) for more information.
 
-### Outputs
+##### Output Values
 
 - `cache-hit` - A boolean value to indicate a cache was found for the packages requested.
 - `package-version-list` - The main requested packages and versions that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. \<package1>=<version1\>,\<package2>=\<version2>,...).
@@ -45,7 +240,11 @@ There are three kinds of version labels you can use.
 
 ### Cache scopes
 
-The cache is scoped to the packages given and the branch. The default branch cache is available to other branches.
+The cache is scoped to:
+
+- Package list and versions
+- Branch settings
+- Default branch cache (available to other branches)
 
 ### Example workflows
 
@@ -99,6 +298,13 @@ jobs:
 ```
 
 ## Caveats
+
+### Edge Cases
+
+This action is able to speed up installs by skipping the number of steps that `apt` uses. 
+
+- This means there will be certain cases that it may not be able to handle like state management of other file configurations outside the package scope.
+- In cases that can't be immediately addressed or run counter to the approach of this action, the packages affected should go into their own action `step` and using the normal `apt` utility.
 
 ### Non-file Dependencies
 

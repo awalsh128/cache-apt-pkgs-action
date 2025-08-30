@@ -15,6 +15,7 @@ import (
 // a deterministic cache key.
 type Key struct {
 	// Packages is a sorted list of packages to be cached
+	// This is guaranteed by the pkgs.Packages interface
 	Packages pkgs.Packages
 	// Version is the user-specified cache version
 	Version string
@@ -33,8 +34,9 @@ func (k *Key) PlainText() string {
 
 // Hash generates a deterministic MD5 hash of the key's contents.
 // This hash is used as the actual cache key for storage and lookup.
-func (k *Key) Hash() [16]byte {
-	return md5.Sum([]byte(k.PlainText()))
+func (k *Key) Hash() []byte {
+	hash := md5.Sum([]byte(k.PlainText()))
+	return hash[:]
 }
 
 // Write stores both the plaintext and hashed versions of the cache key to files.

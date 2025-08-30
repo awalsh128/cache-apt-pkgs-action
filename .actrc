@@ -1,0 +1,3 @@
+-P ubuntu-latest=catthehacker/ubuntu:act-latest
+--env-file=.env.local
+-s GITHUB_TOKEN

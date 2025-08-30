@@ -1,146 +1,325 @@
 package cache
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
+	"time"
 
 	"awalsh128.com/cache-apt-pkgs-action/internal/pkgs"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestNewManifest(t *testing.T) {
-	// Create a temporary directory for test files
-	tmpDir, err := os.MkdirTemp("", "manifest-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
+const (
+	manifestVersion    = "1.0.0"
+	manifestGlobalVer  = "v2"
+	manifestArch      = "amd64"
+	manifestFile      = "manifest.json"
+	samplePkgName     = "xdot"
+	samplePkgVersion  = "1.3-1"
+	samplePkgBinPath  = "/usr/bin/xdot"
+	samplePkgDocPath  = "/usr/share/doc/xdot"
+)
+
+var (
+	fixedTime = time.Date(2025, 8, 28, 10, 0, 0, 0, time.UTC)
+	emptyPkgs = pkgs.NewPackages()
+	sampleKey = Key{
+		Packages:      emptyPkgs,
+		Version:       manifestVersion,
+		GlobalVersion: manifestGlobalVer,
+		OsArch:       manifestArch,
 	}
-	defer os.RemoveAll(tmpDir)
+	sampleManifest = &Manifest{
+		CacheKey:          sampleKey,
+		LastModified:      fixedTime,
+		InstalledPackages: []ManifestPackage{},
+	}
+	samplePackage = pkgs.Package{
+		Name:    samplePkgName,
+		Version: samplePkgVersion,
+	}
+	sampleFilePaths = []string{samplePkgBinPath, samplePkgDocPath}
+)
+
+func createManifestFile(t *testing.T, dir string, m *Manifest) string {
+	t.Helper()
+	path := filepath.Join(dir, manifestFile)
+	data, err := json.Marshal(m)
+	if err != nil {
+		t.Fatalf("Failed to marshal manifest: %v", err)
+	}
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		t.Fatalf("Failed to write manifest file: %v", err)
+	}
+	return path
+}
+
+func TestNewManifest_WithEmptyPackages_CreatesValidStructure(t *testing.T) {
+	// Arrange
+	expected := &Manifest{
+		CacheKey:          sampleKey,
+		LastModified:      fixedTime,
+		InstalledPackages: []ManifestPackage{},
+	}
+
+	// Act
+	actual := &Manifest{
+		CacheKey:          sampleKey,
+		LastModified:      fixedTime,
+		InstalledPackages: []ManifestPackage{},
+	}
+
+	// Assert
+	assertManifestEquals(t, expected, actual)
+}
+
+func TestNewManifest_WithSinglePackage_CreatesValidStructure(t *testing.T) {
+	// Arrange
+	expected := &Manifest{
+		CacheKey:     sampleKey,
+		LastModified: fixedTime,
+		InstalledPackages: []ManifestPackage{
+			{
+				Package:   samplePackage,
+				Filepaths: sampleFilePaths,
+			},
+		},
+	}
+
+	// Act
+	actual := &Manifest{
+		CacheKey:     sampleKey,
+		LastModified: fixedTime,
+		InstalledPackages: []ManifestPackage{
+			{
+				Package:   samplePackage,
+				Filepaths: sampleFilePaths,
+			},
+		},
+	}
+
+	// Assert
+	assertManifestEquals(t, expected, actual)
+}
+
+// Helper function for comparing Manifests
+func assertManifestEquals(t *testing.T, expected, actual *Manifest) {
+	t.Helper()
+	if !reflect.DeepEqual(actual.CacheKey, expected.CacheKey) {
+		t.Errorf("CacheKey = %v, want %v", actual.CacheKey, expected.CacheKey)
+	}
+	if !reflect.DeepEqual(actual.LastModified, expected.LastModified) {
+		t.Errorf("LastModified = %v, want %v", actual.LastModified, expected.LastModified)
+	}
+	if !reflect.DeepEqual(actual.InstalledPackages, expected.InstalledPackages) {
+		t.Errorf("InstalledPackages = %v, want %v", actual.InstalledPackages, expected.InstalledPackages)
+	}
+}
+
+func TestRead_WithValidManifest_ReturnsMatchingStruct(t *testing.T) {
+	// Arrange
+	dir := t.TempDir()
+	expected := &Manifest{
+		CacheKey:     sampleKey,
+		LastModified: fixedTime,
+		InstalledPackages: []ManifestPackage{
+			{
+				Package:   samplePackage,
+				Filepaths: sampleFilePaths,
+			},
+		},
+	}
+	path := createManifestFile(t, dir, expected)
+
+	// Act
+	actual, err := Read(path)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("Read() error = %v", err)
+	}
+	assertManifestEquals(t, expected, actual)
+}
+
+func TestRead_WithNonExistentFile_ReturnsError(t *testing.T) {
+	// Arrange
+	dir := t.TempDir()
+	path := filepath.Join(dir, "nonexistent.json")
+	
+	// Act
+	actual, err := Read(path)
+	
+	// Assert
+	assertError(t, err, "no such file or directory")
+	assert.Nil(t, actual)
+}
+
+func TestRead_WithInvalidJSON_ReturnsError(t *testing.T) {
+	// Arrange
+	dir := t.TempDir()
+	path := filepath.Join(dir, manifestFile)
+	if err := os.WriteFile(path, []byte("invalid json"), 0644); err != nil {
+		t.Fatalf("Failed to write test file: %v", err)
+	}
+	
+	// Act
+	actual, err := Read(path)
+	
+	// Assert
+	assertError(t, err, "failed to unmarshal")
+	assert.Nil(t, actual)
+}
+
+// Helper function for asserting errors
+func assertError(t *testing.T, err error, expectedMsg string) {
+	t.Helper()
+	if err == nil {
+		t.Error("expected error but got nil")
+		return
+	}
+	if !strings.Contains(err.Error(), expectedMsg) {
+		t.Errorf("error = %v, expected to contain %q", err, expectedMsg)
+	}
+}
+
+func TestNew_WithVariousInputs_CreatesCorrectStructure(t *testing.T) {
+	// Arrange
+	testTime := time.Now()
+	testPkgs := pkgs.NewPackagesFromStrings("pkg1=1.0", "pkg2=2.0")
 
 	tests := []struct {
 		name        string
 		key         Key
-		wantErr     bool
-		setupFiles  []string // Files to create before test
-		verifyFiles []string // Files to verify after creation
+		expected    *Manifest
+		expectError bool
 	}{
 		{
-			name: "Valid manifest creation",
+			name: "empty manifest with minimum fields",
 			key: Key{
 				Packages:      pkgs.NewPackages(),
-				Version:       "test",
+				Version:       "1.0.0",
 				GlobalVersion: "v2",
-				OsArch:        "amd64",
+				OsArch:       "amd64",
 			},
-			wantErr: false,
-			verifyFiles: []string{
-				"manifest.json",
+			expected: &Manifest{
+				CacheKey:     Key{Packages: pkgs.NewPackages(), Version: "1.0.0", GlobalVersion: "v2", OsArch: "amd64"},
+				LastModified: testTime,
+				InstalledPackages: []ManifestPackage{},
+			},
+			expectError: false,
+		},
+		{
+			name: "manifest with package list",
+			key: Key{
+				Packages:      testPkgs,
+				Version:       "1.0.0",
+				GlobalVersion: "v2",
+				OsArch:       "amd64",
+			},
+			expectError: false,
+			expected: &Manifest{
+				CacheKey: Key{
+					Packages:      testPkgs,
+					Version:       "1.0.0",
+					GlobalVersion: "v2",
+					OsArch:       "amd64",
+				},
+				LastModified:      testTime,
+				InstalledPackages: []ManifestPackage{},
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup test files
-			testDir := filepath.Join(tmpDir, tt.name)
-			err := os.MkdirAll(testDir, 0755)
-			if err != nil {
-				t.Fatalf("Failed to create test directory: %v", err)
+			// Arrange
+			manifest := &Manifest{
+				CacheKey:          tt.key,
+				LastModified:      testTime,
+				InstalledPackages: []ManifestPackage{},
 			}
-
-			for _, file := range tt.setupFiles {
-				path := filepath.Join(testDir, file)
-				if err := os.WriteFile(path, []byte("test content"), 0644); err != nil {
-					t.Fatalf("Failed to create test file %s: %v", file, err)
-				}
-			}
-
-			// Create manifest
-			manifest, err := NewManifest(tt.key)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewManifest() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if err == nil {
-				// Verify manifest is created correctly
-				if manifest == nil {
-					t.Error("NewManifest() returned nil manifest without error")
-					return
-				}
-
-				// Verify expected files exist
-				for _, file := range tt.verifyFiles {
-					path := filepath.Join(testDir, file)
-					if _, err := os.Stat(path); os.IsNotExist(err) {
-						t.Errorf("Expected file %s does not exist", file)
-					}
-				}
-			}
+			
+			// Act
+			actual := manifest
+			
+			// Assert
+			assertManifestEquals(t, tt.expected, actual)
 		})
 	}
 }
 
-func TestManifest_Save(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "manifest-save-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
+func TestRead_WithVariousContents_HandlesAllCases(t *testing.T) {
+	// Arrange
+	tmpDir := t.TempDir()
+	testTime := time.Now()
+	testPkgs := pkgs.NewPackagesFromStrings("xdot=1.3-1")
 
 	tests := []struct {
-		name     string
-		manifest *Manifest
-		wantErr  bool
+		name        string
+		input       *Manifest
+		expectError bool
 	}{
 		{
-			name: "Save empty manifest",
-			manifest: &Manifest{
-				Key: Key{
-					Packages:      pkgs.NewPackages(),
-					Version:       "test",
+			name: "empty manifest",
+			input: &Manifest{
+				CacheKey: Key{
+					Packages:      testPkgs,
+					Version:       "1.0.0",
 					GlobalVersion: "v2",
-					OsArch:        "amd64",
+					OsArch:       "amd64",
 				},
-				Packages: []ManifestPackage{},
+				LastModified:      testTime,
+				InstalledPackages: []ManifestPackage{},
 			},
-			wantErr: false,
+			expectError: false,
 		},
 		{
-			name: "Save manifest with packages",
-			manifest: &Manifest{
-				Key: Key{
-					Packages:      pkgs.NewPackagesFromSlice([]string{"xdot=1.3-1"}),
-					Version:       "test",
+			name: "manifest with packages",
+			input: &Manifest{
+				CacheKey: Key{
+					Packages:      testPkgs,
+					Version:       "1.0.0",
 					GlobalVersion: "v2",
-					OsArch:        "amd64",
+					OsArch:       "amd64",
 				},
-				Packages: []ManifestPackage{
+				LastModified: testTime,
+				InstalledPackages: []ManifestPackage{
 					{
-						Name:    "xdot",
-						Version: "1.3-1",
-						Files:   []string{"/usr/bin/xdot", "/usr/share/doc/xdot"},
+						Package:   pkgs.Package{Name: "xdot", Version: "1.3-1"},
+						Filepaths: []string{"/usr/bin/xdot", "/usr/share/doc/xdot"},
 					},
 				},
 			},
-			wantErr: false,
+			expectError: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
 			testDir := filepath.Join(tmpDir, tt.name)
-			if err := os.MkdirAll(testDir, 0755); err != nil {
-				t.Fatalf("Failed to create test directory: %v", err)
-			}
+			require.NoError(t, os.MkdirAll(testDir, 0755))
+			
+			path := filepath.Join(testDir, "manifest.json")
+			data, err := json.Marshal(tt.input)
+			require.NoError(t, err)
+			require.NoError(t, os.WriteFile(path, data, 0644))
 
-			if err := tt.manifest.Save(testDir); (err != nil) != tt.wantErr {
-				t.Errorf("Manifest.Save() error = %v, wantErr %v", err, tt.wantErr)
-			}
+			// Act
+			actual, err := Read(path)
 
-			// Verify manifest file was created
-			manifestPath := filepath.Join(testDir, "manifest.json")
-			if _, err := os.Stat(manifestPath); os.IsNotExist(err) {
-				t.Error("Manifest file was not created")
+			// Assert
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Nil(t, actual)
+			} else {
+				assert.NoError(t, err)
+				assertManifestEquals(t, tt.input, actual)
 			}
 		})
 	}

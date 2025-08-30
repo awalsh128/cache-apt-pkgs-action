@@ -1,0 +1,23 @@
+name: Release Version
+
+on:
+  push:
+    tags: ['v2.*']  # Trigger on version tags >= 2.0.0
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to update on pkg.go.dev (e.g. v2.0.0)'
+        required: true
+        type: string
+
+jobs:
+  update-pkg-go-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update pkg.go.dev
+        run: |
+          VERSION=${{ github.ref_name || github.event.inputs.version }}
+          echo "Updating pkg.go.dev for version $VERSION"
+          curl -i https://proxy.golang.org/github.com/awalsh128/cache-apt-pkgs-action/@v/$VERSION.info
+          # Trigger a package load
+          GOPROXY=https://proxy.golang.org GO111MODULE=on go get github.com/awalsh128/cache-apt-pkgs-action@$VERSION

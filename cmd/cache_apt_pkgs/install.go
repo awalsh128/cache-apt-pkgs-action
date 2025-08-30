@@ -67,14 +67,26 @@ func GetInstallCmd() *Cmd {
 		Flags:       flag.NewFlagSet("install", flag.ExitOnError),
 		Run:         install,
 	}
-	cmd.Flags.String("cache-dir", "", "Directory that holds the cached packages, JSON manifest and package lists in text format")
-	cmd.Flags.String("version", "", "Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.")
+	cmd.Flags.String(
+		"cache-dir",
+		"",
+		"Directory that holds the cached packages, JSON manifest and package lists in text format",
+	)
+	cmd.Flags.String(
+		"version",
+		"",
+		"Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.",
+	)
 	cmd.Flags.String(
 		"global-version",
 		"",
 		"Unique version to force cache invalidation globally across all action callers\n"+
 			"Used to fix corrupted caches or bugs from the action itself")
-	cmd.Flags.String("manifest-path", "", "File path that holds the package install manifest in JSON format")
+	cmd.Flags.String(
+		"manifest-path",
+		"",
+		"File path that holds the package install manifest in JSON format",
+	)
 	cmd.Examples = []string{
 		"--cache-dir ~/cache_dir --version userver1 --global-version 20250812",
 		"--cache-dir /tmp/cache_dir --version what_ever --global-version whatever_too",

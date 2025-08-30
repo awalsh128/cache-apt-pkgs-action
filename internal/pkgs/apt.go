@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"awalsh128.com/cache-apt-pkgs-action/internal/logging"
-	"github.com/bluet/syspkg"
-	"github.com/bluet/syspkg/manager"
+	"github.com/awalsh128/syspkg"
+	"github.com/awalsh128/syspkg/manager"
 )
 
 // Apt wraps the APT package manager functionality.
@@ -41,7 +41,10 @@ func NewApt() (*Apt, error) {
 // the input if some packages were already installed) and any error encountered.
 // The installation is performed with --assume-yes and verbose logging enabled.
 func (a *Apt) Install(pkgs Packages) (Packages, error) {
-	installedPkgs, err := a.manager.Install(pkgs.StringArray(), &manager.Options{AssumeYes: true, Debug: true, Verbose: true})
+	installedPkgs, err := a.manager.Install(
+		pkgs.StringArray(),
+		&manager.Options{AssumeYes: true, Debug: true, Verbose: true},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +61,11 @@ func (a *Apt) Install(pkgs Packages) (Packages, error) {
 func (a *Apt) ListInstalledFiles(pkg *Package) ([]string, error) {
 	files, err := a.manager.ListInstalledFiles(pkg.String())
 	if err != nil {
-		return nil, fmt.Errorf("error listing installed files for package %s: %v", pkg.String(), err)
+		return nil, fmt.Errorf(
+			"error listing installed files for package %s: %v",
+			pkg.String(),
+			err,
+		)
 	}
 	return files, nil
 }

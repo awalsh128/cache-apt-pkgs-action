@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"awalsh128.com/cache-apt-pkgs-action/internal/logging"
-	"github.com/bluet/syspkg/manager"
+	"github.com/awalsh128/syspkg/manager"
 )
 
 // packages is an unexported slice type that provides a stable, ordered collection of packages.
@@ -62,6 +62,18 @@ func NewPackagesFromSyspkg(pkgs []manager.PackageInfo) Packages {
 	items := packages{}
 	for _, pkg := range pkgs {
 		items = append(items, Package{Name: pkg.Name, Version: pkg.Version})
+	}
+	return NewPackages(items...)
+}
+
+func NewPackagesFromStrings(pkgs ...string) Packages {
+	items := packages{}
+	for _, pkgStr := range pkgs {
+		pkg, err := NewPackage(pkgStr)
+		if err != nil {
+			logging.Fatalf("error creating package from string %q: %v", pkgStr, err)
+		}
+		items = append(items, *pkg)
 	}
 	return NewPackages(items...)
 }

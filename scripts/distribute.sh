@@ -1,4 +1,29 @@
 #!/bin/bash
+
+#==============================================================================
+# distribute.sh
+#==============================================================================
+# 
+# DESCRIPTION:
+#   Manages distribution of compiled binaries for different architectures.
+#   Handles building, pushing, and retrieving binary paths for GitHub Actions.
+#
+# USAGE:
+#   ./scripts/distribute.sh <command> [architecture]
+#
+# COMMANDS:
+#   push              - Build and push all architecture binaries to dist directory
+#   getbinpath [ARCH] - Get binary path for specified architecture
+#
+# ARCHITECTURES:
+#   X86, X64, ARM, ARM64 - GitHub runner architectures
+#
+# DEPENDENCIES:
+#   - bash
+#   - go (for building)
+#   - git
+#==============================================================================
+
 set -e
 
 CMD="$1"
