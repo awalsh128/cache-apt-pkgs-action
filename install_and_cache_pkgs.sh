@@ -87,11 +87,23 @@ for installed_package in ${installed_packages}; do
     read package_name package_ver < <(get_package_name_ver "${installed_package}")
     log "  * Caching ${package_name} to ${cache_filepath}..."
 
-    # Pipe all package files (no folders) and installation control data to Tar.
-    tar -cf "${cache_filepath}" -C / --verbatim-files-from --files-from <( { dpkg -L "${package_name}" &&
-      get_install_script_filepath "" "${package_name}" "preinst" &&
-      get_install_script_filepath "" "${package_name}" "postinst" ;} |
-      while IFS= read -r f; do test -f "${f}" -o -L "${f}" && get_tar_relpath "${f}"; done )
+    # Pipe all package files (no folders), including symlinks, their targets, and installation control data to Tar.
+    tar -cf "${cache_filepath}" -C / --verbatim-files-from --files-from <(
+      { dpkg -L "${package_name}" &&
+        get_install_script_filepath "" "${package_name}" "preinst" &&
+        get_install_script_filepath "" "${package_name}" "postinst" ; } |
+      while IFS= read -r f; do
+        if test -f "${f}" -o -L "${f}"; then
+          get_tar_relpath "${f}"
+          if [ -L "${f}" ]; then
+            target="$(readlink -f "${f}")"
+            if [ -f "${target}" ]; then
+              get_tar_relpath "${target}"
+            fi
+          fi
+        fi
+      done
+    )
 
     log "    done (compressed size $(du -h "${cache_filepath}" | cut -f1))."
   fi
