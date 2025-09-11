@@ -9,39 +9,42 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [🚀 Quick Start](#-quick-start)
-- [✨ Features](#-features)
-- [📋 Requirements](#-requirements)
-- [🔧 Configuration](#-configuration)
-  - [Inputs](#inputs)
-  - [Outputs](#outputs)
-- [📝 Usage Guide](#-usage-guide)
-  - [Version Selection](#version-selection)
-  - [Basic Example](#basic-example)
-  - [Advanced Example](#advanced-example)
-- [🔍 Cache Details](#-cache-details)
-  - [Cache Scoping](#cache-scoping)
-  - [Cache Keys](#cache-keys)
-  - [Cache Invalidation](#cache-invalidation)
-- [🚨 Common Issues](#-common-issues)
-  - [Permission Issues](#permission-issues)
-  - [Missing Dependencies](#missing-dependencies)
-  - [Cache Misses](#cache-misses)
-- [🤝 Contributing](#-contributing)
-- [📜 License](#-license)
-- [🔄 Updates and Maintenance](#-updates-and-maintenance)
-- [🌟 Acknowledgements](#-acknowledgements)
-  - [Getting Started](#getting-started)
-    - [Workflow Setup](#workflow-setup)
-    - [Detailed Configuration](#detailed-configuration)
-  - [Cache scopes](#cache-scopes)
-  - [Example workflows](#example-workflows)
-    - [Build and Deploy Doxygen Documentation](#build-and-deploy-doxygen-documentation)
-    - [Simple Package Installation](#simple-package-installation)
-- [Caveats](#caveats)
-  - [Edge Cases](#edge-cases)
-  - [Non-file Dependencies](#non-file-dependencies)
-  - [Cache Limits](#cache-limits)
+- [Cache APT Packages Action](#cache-apt-packages-action)
+  - [🚀 Quick Start](#-quick-start)
+  - [✨ Features](#-features)
+  - [📋 Requirements](#-requirements)
+  - [🔧 Configuration](#-configuration)
+    - [Inputs](#inputs)
+    - [Outputs](#outputs)
+  - [📝 Usage Guide](#-usage-guide)
+    - [Version Selection](#version-selection)
+    - [Basic Example](#basic-example)
+    - [Advanced Example](#advanced-example)
+  - [🔍 Cache Details](#-cache-details)
+    - [Cache Scoping](#cache-scoping)
+    - [Cache Keys](#cache-keys)
+    - [Cache Invalidation](#cache-invalidation)
+  - [🚨 Common Issues](#-common-issues)
+    - [Permission Issues](#permission-issues)
+    - [Missing Dependencies](#missing-dependencies)
+    - [Cache Misses](#cache-misses)
+  - [🤝 Contributing](#-contributing)
+  - [📜 License](#-license)
+  - [🔄 Updates and Maintenance](#-updates-and-maintenance)
+  - [🌟 Acknowledgements](#-acknowledgements)
+    - [Getting Started](#getting-started)
+      - [Workflow Setup](#workflow-setup)
+      - [Detailed Configuration](#detailed-configuration)
+        - [Input Parameters](#input-parameters)
+        - [Output Values](#output-values)
+    - [Cache scopes](#cache-scopes)
+    - [Example workflows](#example-workflows)
+      - [Build and Deploy Doxygen Documentation](#build-and-deploy-doxygen-documentation)
+      - [Simple Package Installation](#simple-package-installation)
+  - [Caveats](#caveats)
+    - [Edge Cases](#edge-cases)
+    - [Non-file Dependencies](#non-file-dependencies)
+    - [Cache Limits](#cache-limits)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -115,13 +118,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Cache APT Packages
         uses: awalsh128/cache-apt-pkgs-action@v2
         with:
           packages: python3-dev cmake
           version: 1.0
-      
+
       - name: Build Project
         run: |
           cmake .
@@ -139,7 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Cache APT Packages
         uses: awalsh128/cache-apt-pkgs-action@v2
         id: apt-cache
@@ -147,7 +150,7 @@ jobs:
           packages: python3-dev cmake libboost-all-dev
           version: ${{ github.sha }}
           execute_install_scripts: true
-      
+
       - name: Cache Info
         run: |
           echo "Cache hit: ${{ steps.apt-cache.outputs.cache-hit }}"
@@ -159,6 +162,7 @@ jobs:
 ### Cache Scoping
 
 Caches are scoped by:
+
 - Package list
 - Version string
 - Branch (default branch cache available to other branches)
@@ -166,6 +170,7 @@ Caches are scoped by:
 ### Cache Keys
 
 The action generates cache keys based on:
+
 - Package names and versions
 - System architecture
 - Custom version string
@@ -173,6 +178,7 @@ The action generates cache keys based on:
 ### Cache Invalidation
 
 Caches are invalidated when:
+
 - Package versions change
 - Custom version string changes
 - Branch cache is cleared
@@ -183,7 +189,7 @@ Caches are invalidated when:
 
 ```yaml
 permissions:
-  actions: read|write  # Required for cache operations
+  actions: read|write # Required for cache operations
 ```
 
 ### Missing Dependencies
@@ -209,6 +215,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 ## 🔄 Updates and Maintenance
 
 Stay updated:
+
 - Watch this repository for releases
 - Check the [CHANGELOG](CHANGELOG.md)
 - Follow the [security policy](SECURITY.md)
@@ -301,7 +308,7 @@ jobs:
 
 ### Edge Cases
 
-This action is able to speed up installs by skipping the number of steps that `apt` uses. 
+This action is able to speed up installs by skipping the number of steps that `apt` uses.
 
 - This means there will be certain cases that it may not be able to handle like state management of other file configurations outside the package scope.
 - In cases that can't be immediately addressed or run counter to the approach of this action, the packages affected should go into their own action `step` and using the normal `apt` utility.

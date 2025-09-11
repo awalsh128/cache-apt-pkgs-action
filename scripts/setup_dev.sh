@@ -3,122 +3,162 @@
 #==============================================================================
 # setup_dev.sh
 #==============================================================================
-# 
+#
 # DESCRIPTION:
 #   Sets up the development environment for the cache-apt-pkgs-action project.
 #   Installs all necessary tools, configures Go environment, and sets up
 #   pre-commit hooks.
 #
 # USAGE:
-#   ./scripts/setup_dev.sh
+#   setup_dev.sh [options]
 #
-# DEPENDENCIES:
-#   - go
-#   - npm
-#   - git
+# OPTIONS:
+#   -v, --verbose    Enable verbose output
+#   -h, --help      Show this help message
 #==============================================================================
 
-set -e  # Exit on error
+source "$(git rev-parse --show-toplevel)/scripts/lib.sh"
 
-# Colors for output
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+parse_common_args "$@"
 
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
+#==============================================================================
+# Setup Functions
+#==============================================================================
+
+check_prerequisites() {
+  print_status "Checking prerequisites"
+
+  require_command go "Please install Go first (https://golang.org/dl/)"
+  require_command npm "Please install Node.js and npm first (https://nodejs.org/)"
+  require_command git "Please install git first"
+  require_command curl "Please install curl first"
+
+  log_success "All prerequisites are available"
 }
 
-# Function to check if an npm package is installed globally
-npm_package_installed() {
-    npm list -g "$1" >/dev/null 2>&1
+setup_go_environment() {
+  validate_go_project
+
+  print_status "Configuring Go environment"
+  go env -w GO111MODULE=auto
+
+  update_go_modules
 }
 
-# Function to print status messages
-print_status() {
-    echo -e "${GREEN}==>${NC} $1"
+install_development_tools() {
+  print_status "Installing development tools"
+
+  install_trunk
+  install_doctoc
+  install_go_tools
+
+  log_success "All development tools installed"
 }
 
-# Function to print error messages
-print_error() {
-    echo -e "${RED}Error:${NC} $1"
-    exit 1
-}
+setup_git_hooks() {
+  validate_git_repo
 
-# Check prerequisites
-print_status "Checking prerequisites..."
+  print_status "Setting up Git hooks"
 
-if ! command_exists go; then
-    print_error "Go is not installed. Please install Go first."
-fi
-
-if ! command_exists npm; then
-    print_error "npm is not installed. Please install Node.js and npm first."
-fi
-
-if ! command_exists git; then
-    print_error "git is not installed. Please install git first."
-fi
-
-# Configure Go environment
-print_status "Configuring Go environment..."
-go env -w GO111MODULE=auto
-
-# Verify Go modules
-print_status "Verifying Go modules..."
-go mod tidy
-go mod verify
-
-# Install development tools
-print_status "Installing development tools..."
-
-# Trunk for linting
-if ! command_exists trunk; then
-    print_status "Installing trunk..."
-    curl -fsSL https://get.trunk.io -o get-trunk.sh
-    bash get-trunk.sh
-    rm get-trunk.sh
-fi
-
-# doctoc for markdown TOC
-if ! npm_package_installed doctoc; then
-    print_status "Installing doctoc..."
-    npm install -g doctoc
-fi
-
-# Go tools
-print_status "Installing Go tools..."
-go install golang.org/x/tools/cmd/goimports@latest
-go install github.com/segmentio/golines@latest
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-
-# Set up Git hooks
-print_status "Setting up Git hooks..."
-if [ -d .git ]; then
-    # Initialize trunk
+  # Initialize trunk if not already done
+  if [[ ! -f .trunk/trunk.yaml ]]; then
+    log_info "Initializing trunk configuration"
     trunk init
+  fi
 
-    # Enable pre-commit hooks
-    git config core.hooksPath .git/hooks/
-else
-    print_error "Not a git repository"
-fi
+  # Configure git hooks
+  git config core.hooksPath .git/hooks/
 
-# Update markdown TOCs
-print_status "Updating markdown TOCs..."
-./scripts/update_md_tocs.sh
+  log_success "Git hooks configured"
+}
 
-# Initial trunk check
-print_status "Running initial trunk check..."
-trunk check
+update_project_documentation() {
+  print_status "Updating project documentation"
 
-# Final verification
-print_status "Verifying installation..."
-go test ./...
+  local update_script="${SCRIPT_DIR}/update_md_tocs.sh"
+  if [[ -x ${update_script} ]]; then
+    "${update_script}"
+  else
+    log_warn "Markdown TOC update script not found or not executable"
+  fi
+}
 
-print_status "Development environment setup complete!"
-echo "You can now:"
-echo "  1. Run tests: go test ./..."
-echo "  2. Run linting: trunk check"
-echo "  3. Update markdown TOCs: ./scripts/update_md_tocs.sh"
+run_initial_checks() {
+  print_status "Running initial project validation"
+
+  # Run trunk check
+  if command_exists trunk; then
+    run_with_status "Running initial linting" "trunk check --no-fix"
+  fi
+
+  # Run tests
+  run_tests
+
+  log_success "Initial validation completed"
+}
+
+display_completion_message() {
+  print_header "Development Environment Setup Complete!"
+
+  echo "Available commands:"
+  echo "  • Run tests:             go test ./..."
+  echo "  • Run linting:           trunk check"
+  echo "  • Update documentation:  ./scripts/update_md_tocs.sh"
+  echo "  • Interactive menu:      ./scripts/menu.sh"
+  echo
+  log_success "Ready for development!"
+}
+
+#==============================================================================
+# Main Setup Process
+#==============================================================================
+
+main() {
+  # Parse command line arguments first
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+    -v | --verbose)
+      export VERBOSE=true
+      ;;
+    -h | --help)
+      cat <<'EOF'
+USAGE:
+  setup_dev.sh [OPTIONS]
+
+DESCRIPTION:
+  Sets up the development environment for the cache-apt-pkgs-action project.
+  Installs all necessary tools, configures Go environment, and sets up
+  pre-commit hooks.
+
+OPTIONS:
+  -v, --verbose    Enable verbose output
+  -h, --help       Show this help message
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Use --help for usage information." >&2
+      exit 1
+      ;;
+    esac
+    shift
+  done
+
+  print_header "Setting up Development Environment"
+
+  # Run setup steps
+  check_prerequisites
+  setup_go_environment
+  install_development_tools
+  setup_git_hooks
+  update_project_documentation
+  run_initial_checks
+  display_completion_message
+}
+
+#==============================================================================
+# Entry Point
+#==============================================================================
+
+main "$@"

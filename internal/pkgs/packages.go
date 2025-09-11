@@ -58,6 +58,15 @@ func (p *packages) String() string {
 	return strings.Join(parts, " ")
 }
 
+// NewPackagesFromSyspkg creates a new Packages collection from system package information.
+// Converts system-specific package information into the internal Package format,
+// preserving name and version information.
+//
+// Parameters:
+//   - pkgs: Array of system package information structures
+//
+// Returns:
+//   - Packages: A new ordered collection of the converted packages
 func NewPackagesFromSyspkg(pkgs []manager.PackageInfo) Packages {
 	items := packages{}
 	for _, pkg := range pkgs {
@@ -66,6 +75,15 @@ func NewPackagesFromSyspkg(pkgs []manager.PackageInfo) Packages {
 	return NewPackages(items...)
 }
 
+// NewPackagesFromStrings creates a new Packages collection from package specification strings.
+// Each string should be in the format "name" or "name=version".
+// Fatally exits if any package string is invalid.
+//
+// Parameters:
+//   - pkgs: Variable number of package specification strings
+//
+// Returns:
+//   - Packages: A new ordered collection of the parsed packages
 func NewPackagesFromStrings(pkgs ...string) Packages {
 	items := packages{}
 	for _, pkgStr := range pkgs {
@@ -78,10 +96,28 @@ func NewPackagesFromStrings(pkgs ...string) Packages {
 	return NewPackages(items...)
 }
 
+// NewPackages creates a new Packages collection from Package instances.
+// Maintains a stable order by sorting packages by name and version.
+// Automatically deduplicates packages with identical name and version.
+//
+// Parameters:
+//   - pkgs: Variable number of Package instances
+//
+// Returns:
+//   - Packages: A new ordered collection of unique packages
 func NewPackages(pkgs ...Package) Packages {
 	// Create a new slice to avoid modifying the input
-	result := make(packages, len(pkgs))
-	copy(result, pkgs)
+	result := make(packages, 0, len(pkgs))
+
+	// Add packages, avoiding duplicates
+	seenPkgs := make(map[string]bool)
+	for _, pkg := range pkgs {
+		key := pkg.Name + "=" + pkg.Version
+		if !seenPkgs[key] {
+			seenPkgs[key] = true
+			result = append(result, pkg)
+		}
+	}
 
 	// Sort packages by name and version
 	slices.SortFunc(result, func(lhs, rhs Package) int {
@@ -103,7 +139,16 @@ func NewPackages(pkgs ...Package) Packages {
 	return &result
 }
 
-// ParsePackageArgs parses package arguments and returns a new Packages instance
+// ParsePackageArgs parses package arguments into a Packages collection.
+// Each argument should be a package specification in the format "name" or "name=version".
+// Invalid package specifications will cause an error to be returned.
+//
+// Parameters:
+//   - value: Array of package specification strings to parse
+//
+// Returns:
+//   - Packages: A new ordered collection of the parsed packages
+//   - error: Any error encountered while parsing package specifications
 func ParsePackageArgs(value []string) (Packages, error) {
 	var pkgs packages
 	for _, val := range value {

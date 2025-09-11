@@ -10,6 +10,7 @@
     - [3. Error Handling](#3-error-handling)
     - [4. API Design](#4-api-design)
     - [5. Documentation Practices](#5-documentation-practices)
+      - [Go Code Documentation Standards](#go-code-documentation-standards)
       - [Code Documentation](#code-documentation)
       - [Project Documentation](#project-documentation)
     - [6. Testing Strategy](#6-testing-strategy)
@@ -41,6 +42,10 @@
         - [Further Guidance](#further-guidance)
     - [Bash Scripts](#bash-scripts)
       - [Script Testing](#script-testing)
+        - [Test Framework Architecture Pattern](#test-framework-architecture-pattern)
+        - [Script Argument Parsing Pattern](#script-argument-parsing-pattern)
+        - [Centralized Configuration Management](#centralized-configuration-management)
+        - [Implementation Status](#implementation-status)
   - [Testing Principles](#testing-principles)
     - [1. Test Organization Strategy](#1-test-organization-strategy)
     - [2. Code Structure](#2-code-structure)
@@ -69,6 +74,7 @@
 
 ### 2. Code Style and Formatting
 
+- Use 2 spaces for indentation, never tabs
 - Consistent naming conventions (e.g., CamelCase for exported names)
 - Keep functions small and focused
 - Use meaningful variable names
@@ -85,14 +91,91 @@
 ### 4. API Design
 
 - Make zero values useful
-- Keep interfaces small and focused, observing the [single responsibility principle](https://en.wikipedia.org/wiki/Single-responsibility_principle)
-- Observe the [open-closed principle](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle) so that it is open for extension but closed to modification
-- Observe the [dependency inversion principle](https://en.wikipedia.org/wiki/Dependency_inversion_principle) to keep interfaces loosely coupled
+- Keep interfaces small and focused, observing the
+  [single responsibility principle](https://en.wikipedia.org/wiki/Single-responsibility_principle)
+- Observe the
+  [open-closed principle](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle)
+  so that it is open for extension but closed to modification
+- Observe the
+  [dependency inversion principle](https://en.wikipedia.org/wiki/Dependency_inversion_principle)
+  to keep interfaces loosely coupled
 - Design for composition over inheritance
 - Use option patterns for complex configurations
 - Make dependencies explicit
 
 ### 5. Documentation Practices
+
+#### Go Code Documentation Standards
+
+Following the official [Go Documentation Guidelines](https://go.dev/blog/godoc):
+
+1. **Package Documentation**
+   - Every package must have a doc comment immediately before the `package`
+     statement
+   - Format: `// Package xyz ...` (first sentence) followed by detailed
+     description
+   - First sentence should be a summary beginning with `Package xyz`
+   - Follow with a blank line and detailed documentation
+   - Include package-level examples if helpful
+
+2. **Exported Items Documentation**
+   - Document all exported (capitalized) names
+   - Comments must begin with the name being declared
+   - First sentence should be a summary
+   - Omit the subject when it's the thing being documented
+   - Use article "a" for types that could be one of many, "the" for singletons
+
+   Examples:
+
+   ```go
+   // List represents a singly-linked list.
+   // A zero List is valid and represents an empty list.
+   type List struct {}
+
+   // NewRing creates a new ring buffer with the given size.
+   func NewRing(size int) *Ring {}
+
+   // Append adds the elements to the list.
+   // Blocks if buffer is full.
+   func (l *List) Append(elems ...interface{}) {}
+   ```
+
+3. **Documentation Style**
+   - Write clear, complete sentences
+   - Begin comments with a capital letter
+   - End sentences with punctuation
+   - Keep comments up to date with code changes
+   - Focus on behavior users can rely on, not implementation
+   - Document synchronization assumptions for concurrent access
+   - Document any special error conditions or panics
+
+4. **Examples**
+   - Add examples for complex types or functions using `Example` functions
+   - Include examples in package docs for important usage patterns
+   - Make examples self-contained and runnable
+   - Use realistic data and common use cases
+   - Show output in comments when examples print output:
+
+     ```go
+     func ExampleHello() {
+         fmt.Println("Hello")
+         // Output: Hello
+     }
+     ```
+
+5. **Doc Comments Format**
+   - Use complete sentences and proper punctuation
+   - Add a blank line between paragraphs
+   - Use lists and code snippets for clarity
+   - Include links to related functions/types where helpful
+   - Document parameters and return values implicitly in the description
+   - Break long lines at 80 characters
+
+6. **Quality Control**
+   - Run `go doc` to verify how documentation will appear
+   - Review documentation during code reviews
+   - Keep examples up to date and passing
+   - Update docs when changing behavior
 
 #### Code Documentation
 
@@ -105,17 +188,23 @@
 Example:
 
 ```go
-// Package cache provides a caching mechanism for apt packages.
-// It supports both saving and restoring package states, making it
-// useful for CI/CD environments where package installation is expensive.
+// key.go
+//
+// Description:
+//
+// Provides types and functions for managing cache keys, including serialization, deserialization,
+//  and validation of package metadata.
+//
+// Package: cache
 //
 // Example usage:
 //
-//     cache := NewCache()
-//     err := cache.SavePackages(packages)
-//     if err != nil {
-//         // handle error
-//     }
+// // Create a new cache key
+// key := cache.NewKey(packages, "v1.0", "v2", "amd64")
+//
+// // Get the hash of the key
+// hash := key.Hash()
+// fmt.Printf("Key hash: %x\n", hash)
 package cache
 ```
 
@@ -202,7 +291,7 @@ func main() {
     defer f.Close()
     pprof.StartCPUProfile(f)
     defer pprof.StopCPUProfile()
-    
+
     // Your code here
 }
 ```
@@ -261,7 +350,7 @@ func main() {
     defer f.Close()
     trace.Start(f)
     defer trace.Stop()
-    
+
     // Your code here
 }
 ```
@@ -372,22 +461,27 @@ go tool pprof -http=:8080 cpu.prof
 
 - Minimize the amount of shell code and put complex logic in the Go code
 - Use clear step `id` names that use dashes between words and active verbs
-- Avoid hard-coded API URLs like https://api.github.com. Use environment variables (GITHUB_API_URL for REST API, GITHUB_GRAPHQL_URL for GraphQL) or the @actions/github toolkit for dynamic URL handling
+- Avoid hard-coded API URLs like <https://api.github.com>. Use environment
+  variables (GITHUB_API_URL for REST API, GITHUB_GRAPHQL_URL for GraphQL) or the
+  @actions/github toolkit for dynamic URL handling
 
 ##### Release Management
 
 - Use semantic versioning for releases (e.g., v1.0.0)
-- Recommend users reference major version tags (v1) instead of the default branch for stability.
+- Recommend users reference major version tags (v1) instead of the default
+  branch for stability.
 - Update major version tags to point to the latest release
 
 ##### Create a README File
 
-Include a detailed description, required/optional inputs and outputs, secrets, environment variables, and usage examples
+Include a detailed description, required/optional inputs and outputs, secrets,
+environment variables, and usage examples
 
 ##### Testing and Automation
 
 - Add workflows to test your action on feature branches and pull requests
-- Automate releases using workflows triggered by publishing or editing a release.
+- Automate releases using workflows triggered by publishing or editing a
+  release.
 
 ##### Community Engagement
 
@@ -398,24 +492,26 @@ Include a detailed description, required/optional inputs and outputs, secrets, e
 ##### Further Guidance
 
 For more details, visit:
-- https://docs.github.com/en/actions/how-tos/create-and-publish-actions/manage-custom-actions
-- https://docs.github.com/en/actions/how-tos/create-and-publish-actions/release-and-maintain-actions
+
+- <https://docs.github.com/en/actions/how-tos/create-and-publish-actions/manage-custom-actions>
+- <https://docs.github.com/en/actions/how-tos/create-and-publish-actions/release-and-maintain-actions>
 
 ### Bash Scripts
 
 Project scripts should follow these guidelines:
 
-- Create scripts in the `scripts` directory (not `tools`)
-- Add new functionality to the `scripts/menu.sh` script for easy access
+- Follow formatting rules in
+  [Shellcheck](https://github.com/koalaman/shellcheck/wiki)
+- Follow style guide rules in
+  [Google Bash Style Guide](https://google.github.io/styleguide/shellguide)
+- Include proper error handling and exit codes
+- Use `scripts/lib.sh` whenever for common functionality
 - Use imperative verb form for script names:
   - Good: `export_version.sh`, `build_package.sh`, `run_tests.sh`
   - Bad: `version_export.sh`, `package_builder.sh`, `test_runner.sh`
-- Follow consistent naming conventions:
-  - Use lowercase with underscores
-  - Start with a verb in imperative form
-  - Use clear, descriptive names
+- Create scripts in the `scripts` directory (not `tools`)
 - Make scripts executable (`chmod +x`)
-- Include proper error handling and exit codes
+- Add new functionality to the `scripts/menu.sh` script for easy access
 - Add usage information (viewable with `-h` or `--help`)
 
 Script Header Format:
@@ -424,7 +520,7 @@ Script Header Format:
 #==============================================================================
 # script_name.sh
 #==============================================================================
-# 
+#
 # DESCRIPTION:
 #   Brief description of what the script does.
 #   Additional details if needed.
@@ -440,7 +536,8 @@ Script Header Format:
 #==============================================================================
 ```
 
-Every script should include this header format at the top, with all sections filled out appropriately. The header provides:
+Every script should include this header format at the top, with all sections
+filled out appropriately. The header provides:
 
 - Clear identification of the script
 - Description of its purpose and functionality
@@ -450,7 +547,8 @@ Every script should include this header format at the top, with all sections fil
 
 #### Script Testing
 
-All scripts must have corresponding tests in the `scripts/tests` directory using the common test library:
+All scripts must have corresponding tests in the `scripts/tests` directory using
+the common test library:
 
 1. **Test File Structure**
    - Name test files as `<script_name>_test.sh`
@@ -458,215 +556,279 @@ All scripts must have corresponding tests in the `scripts/tests` directory using
    - Make test files executable (`chmod +x`)
    - Source the common test library (`test_lib.sh`)
 
-2. **Common Test Library**
-   The `test_lib.sh` library provides a standard test framework:
-   ```bash
-   # Source the test library
-   source "$(dirname "$0")/test_lib.sh"
-   
-   # Library provides:
-   - Color output (GREEN, RED, BLUE, NC, BOLD)
-   - Test counting (PASS, FAIL)
-   - Temporary directory management
-   - Standard argument parsing
-   - Common test functions
-   ```
-
-   Key Functions:
-   - `test_case "name" "command" "expected_output" "should_succeed"`
-   - `print_header "text"` - Print bold header
-   - `print_section "text"` - Print section header in blue
-   - `print_info "text"` - Print verbose info
-   - `setup_test_env` - Create temp directory
-   - `cleanup_test_env` - Clean up resources
-   - `create_test_file "path" "content" "mode"` - Create test file
-   - `is_command_available "cmd"` - Check if command exists
-   - `wait_for_condition "cmd" timeout interval` - Wait for condition
-   - `report_results` - Print test summary
+2. **Common Test Library** The `test_lib.sh` library provides a standard test
+   framework. See the `scripts/tests/template_test.sh` for examples of how to
+   set up one.
 
 3. **Test Organization**
    - Group related test cases into sections
    - Test each command/flag combination
    - Test error conditions explicitly
-   - Include setup and teardown if needed
-   - Use temporary directories for file operations
-   - Clean up resources in trap handlers
 
 4. **Test Coverage**
-   - Test main functionality
    - Test error conditions
    - Test input validation
    - Test edge cases
    - Test each supported flag/option
 
-Standard test framework:
-```bash
-#!/bin/bash
-
-# Colors for test output
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
-# Test counters
-PASS=0
-FAIL=0
-
-# Main test case function
-function test_case() {
-    local name=$1
-    local cmd=$2
-    local expected_output=$3
-    local should_succeed=${4:-true}
-
-    echo -n "Testing $name... "
-
-    # Run command and capture output
-    local output
-    if [[ $should_succeed == "true" ]]; then
-        output=$($cmd 2>&1)
-        local status=$?
-        if [[ $status -eq 0 && $output == *"$expected_output"* ]]; then
-            echo -e "${GREEN}PASS${NC}"
-            ((PASS++))
-            return 0
-        fi
-    else
-        output=$($cmd 2>&1) || true
-        if [[ $output == *"$expected_output"* ]]; then
-            echo -e "${GREEN}PASS${NC}"
-            ((PASS++))
-            return 0
-        fi
-    fi
-
-    echo -e "${RED}FAIL${NC}"
-    echo "  Expected output to contain: '$expected_output'"
-    echo "  Got: '$output'"
-    ((FAIL++))
-    return 0
-}
-
-# Create a temporary directory for test files
-TEMP_DIR=$(mktemp -d)
-trap 'rm -rf "$TEMP_DIR"' EXIT
-
-# Test sections should be organized like this:
-echo "Running script_name.sh tests..."
-echo "------------------------------"
-
-# Section 1: Input Validation
-test_case "no arguments provided" \
-    "./script_name.sh" \
-    "error: arguments required" \
-    false
-
-# Section 2: Main Functionality
-test_case "basic operation" \
-    "./script_name.sh arg1" \
-    "success" \
-    true
-
-# Report results
-echo
-echo "Test Results:"
-echo "Passed: $PASS"
-echo "Failed: $FAIL"
-exit $FAIL
-```
-
-Example test file structure:
-
-```bash
-#!/bin/bash
-
-# Test script for example_script.sh
-set -e
-
-# Get the directory containing this script
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
-
-# Create a temporary directory for test files
-TEMP_DIR=$(mktemp -d)
-trap 'rm -rf "$TEMP_DIR"' EXIT
-
-# Test helper functions
-setup_test_env() {
-    # Setup code here
-}
-
-teardown_test_env() {
-    # Cleanup code here
-}
-
-# Individual test cases
-test_main_functionality() {
-    echo "Testing main functionality..."
-    # Test code here
-}
-
-test_error_handling() {
-    echo "Testing error handling..."
-    # Test code here
-}
-
-# Run all tests
-echo "Running example_script.sh tests..."
-setup_test_env
-test_main_functionality
-test_error_handling
-teardown_test_env
-echo "All tests passed!"
-```
-
-1. **CI Integration**
+5. **CI Integration**
    - Tests run automatically in CI
    - Tests must pass before merge
    - Test execution is part of the validate-scripts job
    - Test failures block PR merges
 
-Example script structure:
+##### Test Framework Architecture Pattern
+
+The improved test framework follows this standardized pattern for all script
+tests:
+
+**Test File Template:**
+
 ```bash
 #!/bin/bash
 
-# Script Name: example_script.sh
-# Description: Brief description of what the script does
-# Usage: ./example_script.sh [options] <arguments>
-# Author: Your Name
-# Date: YYYY-MM-DD
+#==============================================================================
+# script_name_test.sh
+#==============================================================================
+#
+# DESCRIPTION:
+#   Test suite for script_name.sh functionality.
+#   Brief description of what aspects are tested.
+#
+# USAGE:
+#   script_name_test.sh [OPTIONS]
+#
+# OPTIONS:
+#   -v, --verbose        Enable verbose test output
+#   --stop-on-failure    Stop on first test failure
+#   -h, --help           Show this help message
+#
+#==============================================================================
 
-set -e  # Exit on error
+# Set up the script path we want to test
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+export SCRIPT_PATH="$SCRIPT_DIR/../script_name.sh"
 
-# Help function
-show_help() {
-    cat << EOF
-Usage: $(basename "$0") [options] <arguments>
+# Source the test framework
+source "$SCRIPT_DIR/test_lib.sh"
 
-Options:
-    -h, --help     Show this help message
-    -v, --version  Show version information
+# Define test functions
+run_tests() {
+  test_section "Help and Usage"
 
-Arguments:
-    <input>        Description of input argument
-EOF
+  test_case "shows help message" \
+    "--help" \
+    "USAGE:" \
+    true
+
+  test_case "shows error for invalid option" \
+    "--invalid-option" \
+    "Unknown option" \
+    false
+
+  test_section "Core Functionality"
+
+  # Add more test cases here
 }
 
-# Parse arguments
-while [[ $# -gt 0 ]]; do
+# Start the test framework and run tests
+start_tests "$@"
+run_tests
+```
+
+**Key Framework Features:**
+
+- **SCRIPT_PATH Setup**: Test files must set `SCRIPT_PATH` before sourcing
+  `test_lib.sh` to avoid variable conflicts
+- **Function-based Test Organization**: Tests are organized in a `run_tests()`
+  function called after framework initialization
+- **Consistent Test Sections**: Use `test_section` to group related tests with
+  descriptive headers
+- **Standard Test Case Pattern**:
+  `test_case "name" "args" "expected_output" "should_succeed"`
+- **Framework Integration**: Call `start_tests "$@"` before running tests to
+  handle argument parsing and setup
+
+##### Script Argument Parsing Pattern
+
+All scripts should implement consistent argument parsing following this pattern:
+
+```bash
+main() {
+  # Parse command line arguments first
+  while [[ $# -gt 0 ]]; do
     case $1 in
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        *)
-            # Handle other arguments
-            ;;
+    -v | --verbose)
+      export VERBOSE=true
+      ;;
+    -h | --help)
+      cat << 'EOF'
+USAGE:
+  script_name.sh [OPTIONS]
+
+DESCRIPTION:
+  Brief description of what the script does.
+  Additional details if needed.
+
+OPTIONS:
+  -v, --verbose    Enable verbose output
+  -h, --help       Show this help message
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Use --help for usage information." >&2
+      exit 1
+      ;;
     esac
     shift
-done
+  done
 
-# Main script logic here
+  # Script main logic here
+}
+
+main "$@"
+```
+
+**Key Argument Parsing Features:**
+
+- **Consistent Options**: All scripts support `-v/--verbose` and `-h/--help`
+- **Early Help Exit**: Help is displayed immediately without running script
+  logic
+- **Error Handling**: Unknown options produce helpful error messages
+- **Inline Help Text**: Help is embedded in the script using heredoc syntax
+
+##### Centralized Configuration Management
+
+The project implements centralized version management using the `.env` file as a
+single source of truth:
+
+**Configuration Structure:**
+
+```bash
+# .env file contents
+GO_VERSION=1.23.4
+GO_TOOLCHAIN=go1.23.4
+```
+
+**GitHub Actions Integration:**
+
+```yaml
+# .github/workflows/ci.yml pattern
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      go-version: ${{ steps.env.outputs.go-version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: env
+        run: |
+          source .env
+          echo "go-version=$GO_VERSION" >> $GITHUB_OUTPUT
+
+  dependent-job:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ needs.setup.outputs.go-version }}
+```
+
+**Synchronization Script Pattern:**
+
+- `scripts/sync_go_version.sh` reads `.env` and updates `go.mod` accordingly
+- Ensures consistency between environment configuration and Go module
+  requirements
+- Can be extended for other configuration synchronization needs
+
+##### Implementation Status
+
+**✅ Implemented Patterns:**
+
+The following scripts have been updated with the standardized patterns:
+
+1. **scripts/export_version.sh** - Complete implementation:
+   - ✅ Argument parsing with `--help` and `--verbose`
+   - ✅ Proper error handling and logging
+   - ✅ Comprehensive test suite in `scripts/tests/export_version_test.sh`
+   - ✅ Function-based test organization
+
+2. **scripts/setup_dev.sh** - Complete implementation:
+   - ✅ Argument parsing with `--help` and `--verbose`
+   - ✅ Script-specific help documentation
+   - ✅ Error handling for unknown options
+   - ✅ Comprehensive test suite in `scripts/tests/setup_dev_test.sh`
+   - ✅ Function-based test organization
+
+3. **scripts/tests/test_lib.sh** - Framework improvements:
+   - ✅ Reliable library loading with fallback paths
+   - ✅ Safe SCRIPT_PATH variable handling
+   - ✅ Arithmetic operations compatible with `set -e`
+   - ✅ Proper script name detection
+   - ✅ Lazy temporary directory initialization
+   - ✅ Comprehensive documentation and architecture notes
+
+4. **Centralized Configuration Management**:
+   - ✅ `.env` file as single source of truth for versions
+   - ✅ GitHub Actions CI integration with version propagation
+   - ✅ `scripts/sync_go_version.sh` for configuration synchronization
+
+**🔄 Remaining Scripts to Update:**
+
+These scripts need the same pattern implementations:
+
+- `scripts/distribute.sh` - Needs argument parsing and testing
+- `scripts/update_md_tocs.sh` - Needs argument parsing and testing
+- `scripts/check_and_fix_env.sh` - Needs argument parsing and testing
+- `scripts/template.sh` - Needs argument parsing and testing
+- `scripts/menu.sh` - Needs argument parsing and testing
+
+Example script structure:
+
+```bash
+#!/bin/bash
+
+#==============================================================================
+# fix_and_update.sh
+#==============================================================================
+#
+# DESCRIPTION:
+#   Runs lint fixes and checks for UTF-8 formatting issues in the project.
+#   Intended to help maintain code quality and formatting consistency.
+#
+# USAGE:
+#   ./scripts/fix_and_update.sh
+#
+# OPTIONS:
+#   -h, --help   Show this help message
+#
+# DEPENDENCIES:
+#   - trunk (for linting)
+#   - bash
+#   - ./scripts/check_utf8.sh
+#==============================================================================
+
+# Resolves to absolute path and loads library
+source "$(cd "$(dirname "$0")" && pwd)/lib.sh"
+
+main_menu() {
+  if false; then
+    show_help   # Uses the script header to output usage message
+  fi
+}
+
+# ...
+# Script logic, variables and functions.
+# ...
+
+# Parse common command line arguments and hand the remaining to the script
+remaining_args=$(parse_common_args "$@")
+
+# Run main menu
+main_menu
 ```
 
 ## Testing Principles
@@ -676,7 +838,8 @@ done
 We established a balanced approach to test organization:
 
 - Use table-driven tests for simple, repetitive cases without introducing logic
-- Use individual test functions for cases that require specific Arrange, Act, Assert steps that cannot be shared amongst other cases
+- Use individual test functions for cases that require specific Arrange, Act,
+  Assert steps that cannot be shared amongst other cases
 - Group related test cases that operate on the same API method / function
 
 ### 2. Code Structure
@@ -684,7 +847,6 @@ We established a balanced approach to test organization:
 #### Constants and Variables
 
 ```go
-
 const (
     manifestVersion = "1.0.0"
     manifestGlobalVer = "v2"
@@ -696,7 +858,8 @@ var (
 )
 ```
 
-- Define constants for fixed values where the prescence and format is only needed and the value content itself does not effect the behavior under test
+- Define constants for fixed values where the prescence and format is only
+  needed and the value content itself does not effect the behavior under test
 - Use variables for reusable test data
 - Group related constants and variables together
 - Do not prefix constants or variables with `test`
@@ -717,7 +880,8 @@ func assertValidJSON(t *testing.T, data string) {
 }
 ```
 
-Example of using functions to abstract away details not relevant to the behavior under test
+Example of using functions to abstract away details not relevant to the behavior
+under test
 
 ```go
 type Item struct {
@@ -737,7 +901,7 @@ func TestItem_Description(t *testing.T) {
     }
 
     AddPrefixToDescription(&item, "prefix: ")
-    
+
     if item.Description != "prefix: original description" {
         t.Errorf("got %q, want %q", item.Description, "prefix: original description")
     }
@@ -745,7 +909,7 @@ func TestItem_Description(t *testing.T) {
 
 // GOOD: Clear focus, reusable arrangement, proper assertions
 const (
-    defaultName        = "test item"
+    defaultName       = "test item"
     defaultVersion    = "1.0.0"
     defaultTimeStr    = "2025-01-01T00:00:00Z"
 )
@@ -756,7 +920,7 @@ func createTestItem(t *testing.T, description string) *Item {
     if err != nil {
         t.Fatalf("failed to parse default time: %v", err)
     }
-    
+
     return &Item{
         Name:         defaultName,
         Description:  description,
@@ -778,10 +942,12 @@ func TestAddPrefixToDescription_WithValidInput_AddsPrefix(t *testing.T) {
 }
 ```
 
-- Create helper functions to reduce duplication and keeps tests focused on the arrangement inputs and how they correspond to the expected output
+- Create helper functions to reduce duplication and keeps tests focused on the
+  arrangement inputs and how they correspond to the expected output
 - Use `t.Helper()` for proper test failure reporting
 - Keep helpers focused and single-purpose
-- Helper functions that require logic should go into their own file and have tests
+- Helper functions that require logic should go into their own file and have
+  tests
 
 ### 3. Test Case Patterns
 
@@ -792,10 +958,10 @@ func TestAddPrefixToDescription_WithValidInput_AddsPrefix(t *testing.T) {
 func TestFormatMessage_WithEmptyString_ReturnsError(t *testing.T) {
     // Arrange
     input := ""
-    
+
     // Act
     actual, err := FormatMessage(input)
-    
+
     // Assert
     assertFormatError(t, actual, err, "input cannot be empty")
 }
@@ -804,10 +970,10 @@ func TestFormatMessage_WithValidInput_ReturnsUpperCase(t *testing.T) {
     // Arrange
     input := "test message"
     expected := "TEST MESSAGE"
-    
+
     // Act
     actual, err := FormatMessage(input)
-    
+
     // Assert
     assertFormatSuccess(t, actual, err, expected)
 }
@@ -816,10 +982,10 @@ func TestFormatMessage_WithMultipleSpaces_PreservesSpacing(t *testing.T) {
     // Arrange
     input := "hello  world"
     expected := "HELLO  WORLD"
-    
+
     // Act
     actual, err := FormatMessage(input)
-    
+
     // Assert
     assertFormatSuccess(t, actual, err, expected)
 }
@@ -846,7 +1012,7 @@ func TestProcessTransaction_WithConcurrentUpdates_PreservesConsistency(t *testin
     // Arrange
     store := NewTestStore(t)
     defer store.Close()
-    
+
     const accountID = "test-account"
     initialBalance := decimal.NewFromInt(1000)
     arrangeErr := arrangeTestAccount(t, store, accountID, initialBalance)
@@ -854,7 +1020,7 @@ func TestProcessTransaction_WithConcurrentUpdates_PreservesConsistency(t *testin
 
     // Act
     actualBalance, err := executeConcurrentTransactions(t, store, accountID)
-    
+
     // Assert
     expected := initialBalance.Add(decimal.NewFromInt(100)) // 100 transactions of 1 unit each
     assertBalanceEquals(t, expected, actualBalance)
@@ -871,7 +1037,7 @@ func executeConcurrentTransactions(t *testing.T, store *Store, accountID string)
     const numTransactions = 100
     var wg sync.WaitGroup
     wg.Add(numTransactions)
-    
+
     for i := 0; i < numTransactions; i++ {
         go func() {
             defer wg.Done()
@@ -881,13 +1047,13 @@ func executeConcurrentTransactions(t *testing.T, store *Store, accountID string)
         }()
     }
     wg.Wait()
-    
+
     return store.GetBalance(accountID)
 }
 
 func assertBalanceEquals(t *testing.T, expected, actual decimal.Decimal) {
     t.Helper()
-    assert.True(t, expected.Equal(actual), 
+    assert.True(t, expected.Equal(actual),
         "balance should be %s, actual was %s", expected, actual)
 }
 ```
@@ -895,16 +1061,57 @@ func assertBalanceEquals(t *testing.T, expected, actual decimal.Decimal) {
 ### 4. Best Practices Applied
 
 1. **Clear Naming**
-   - Use descriptive test names
-   - Use test name formats
-   - `Test<function>_<arrangement>_<expectation>` for free functions, and
-   - `Test<interface><function>_<arrangement>_<expectation>` for interface functions.
    - Name test data clearly and meaningfully
    - Name by abstraction, not implementation
    - Use `expected` for expected values
    - Use `actual` for function results
    - Keep test variables consistent across all tests
    - Always use "Arrange", "Act", "Assert" as step comments in tests
+   - Use descriptive test name arrangement and expectation parts
+   - Use test name formats in a 3 part structure
+     - `Test<function>_<arrangement>_<expectation>` for free functions, and
+     - `Test<interface><function>_<arrangement>_<expectation>` for interface
+       functions.
+     - The module name is inferred
+     - Treat the first part as either the type function or the free function
+       under test
+
+   ```go
+   func Test<[type]<function>>_<arrangement>_<expectation>(t *testing.T) {
+     // Test body
+   }
+   ```
+
+   ```go
+   // Implementation
+
+   type Logger {
+     debug bool
+   }
+
+   var logger Logger
+   logger.debug = false
+
+   func (l* Logger) Log(msg string) {
+     // ...
+   }
+
+   func SetDebug(v bool) {
+     logger.debug = v
+   }
+   ```
+
+   ```go
+   // Test
+
+   func TestLoggerLog_EmptyMessage_NothingLogged(t *testing.T) {
+     // Test body
+   }
+
+   func TestSetDebug_PassFalseValue_DebugMessageNotLogged(t *testing.T) {
+     // Test body
+   }
+   ```
 
 2. **Test Structure**
    - Keep test body simple and linear
@@ -921,7 +1128,6 @@ func assertBalanceEquals(t *testing.T, expected, actual decimal.Decimal) {
 
 4. **Test Data Management**
    - Centralize test data definitions
-   - Use `<function>_<arrangement>_<artifact>` naming
    - Use constants for fixed values
    - Abstract complex data arrangement into helpers
 
@@ -942,7 +1148,7 @@ func assertBalanceEquals(t *testing.T, expected, actual decimal.Decimal) {
 #### Before
 
 ```go
-func TestFeature(t *testing.T) {
+func TestFeature_MixedArrangements_ExpectAlotOfDifferentThings(t *testing.T) {
     // Mixed arrangement and assertions
     // Duplicated code
     // Magic values
@@ -953,17 +1159,17 @@ func TestFeature(t *testing.T) {
 
 ```go
 // Before: Mixed concerns, unclear naming, magic values
-func TestValidateConfig(t *testing.T) {
+func TestValidateConfig_MissingFileAndEmptyPaths_ValidationFails(t *testing.T) {
     c := &Config{
         Path: "./testdata",
         Port: 8080,
         MaxRetries: 3,
     }
-    
+
     if err := c.Validate(); err != nil {
         t.Error("validation failed")
     }
-    
+
     c.Path = ""
     if err := c.Validate(); err == nil {
         t.Error("expected error for empty path")
@@ -972,7 +1178,7 @@ func TestValidateConfig(t *testing.T) {
 
 // After: Clear structure, meaningful constants, proper test naming
 const (
-    testConfigPath     = "./testdata"
+    testConfigPath    = "./testdata"
     defaultPort       = 8080
     defaultMaxRetries = 3
 )
@@ -984,10 +1190,10 @@ func TestValidateConfig_WithValidInputs_Succeeds(t *testing.T) {
         Port:       defaultPort,
         MaxRetries: defaultMaxRetries,
     }
-    
+
     // Act
     err := config.Validate()
-    
+
     // Assert
     assert.NoError(t, err, "valid config should pass validation")
 }
@@ -999,10 +1205,10 @@ func TestValidateConfig_WithEmptyPath_ReturnsError(t *testing.T) {
         Port:       defaultPort,
         MaxRetries: defaultMaxRetries,
     }
-    
+
     // Act
     err := config.Validate()
-    
+
     // Assert
     assert.Error(t, err)
     assert.Contains(t, err.Error(), "path cannot be empty")
@@ -1040,4 +1246,5 @@ These improvements make the test code:
 - More reliable
 - More efficient to extend
 
-The patterns and principles can be applied across different types of tests to create a consistent and effective testing strategy.
+The patterns and principles can be applied across different types of tests to
+create a consistent and effective testing strategy.

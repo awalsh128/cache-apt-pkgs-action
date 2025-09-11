@@ -1,4 +1,5 @@
-// Package cio provides common I/O operations for the application.
+// Package cio provides common I/O operations for the application,
+// including tar archive handling, JSON serialization, and stream capture.
 package cio
 
 import (
@@ -10,6 +11,8 @@ import (
 )
 
 // validateTarInputs performs basic validation of tar archive inputs.
+// It checks if the destination path is provided and at least one file is specified.
+// Returns an error if the validation fails.
 func validateTarInputs(destPath string, files []string) error {
 	if destPath == "" {
 		return fmt.Errorf("destination path is required")
@@ -20,8 +23,10 @@ func validateTarInputs(destPath string, files []string) error {
 	return nil
 }
 
-// createTarWriter creates a new tar archive writer.
-// The caller is responsible for closing both the writer and file.
+// createTarWriter creates a new tar archive writer at the specified destination.
+// It creates any necessary parent directories and opens the file for writing.
+// The caller is responsible for closing both the returned writer and file.
+// Returns the tar writer, the underlying file, and any error that occurred.
 func createTarWriter(destPath string) (*tar.Writer, *os.File, error) {
 	// Create parent directories if they don't exist
 	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
@@ -38,6 +43,8 @@ func createTarWriter(destPath string) (*tar.Writer, *os.File, error) {
 }
 
 // validateFileType checks if the file type is supported for archiving.
+// Currently supports regular files and symbolic links.
+// Returns an error if the file type is unsupported.
 func validateFileType(info os.FileInfo, absPath string) error {
 	if !info.Mode().IsRegular() && info.Mode()&os.ModeSymlink == 0 {
 		return fmt.Errorf("unsupported file type for %s", absPath)
@@ -89,7 +96,16 @@ func addFileToTar(tw *tar.Writer, absPath string) error {
 	return nil
 }
 
-// CreateTar creates a new tar archive containing the specified files.
+// CreateTar creates a new tar archive at destPath containing the specified files.
+// It handles both regular files and symbolic links, preserving their paths and attributes.
+// Parent directories of destPath will be created if they don't exist.
+//
+// Parameters:
+//   - destPath: Path where the tar archive will be created
+//   - files: List of file paths to include in the archive
+//
+// Returns an error if the archive creation fails, input validation fails,
+// or any file operations fail.
 func CreateTar(destPath string, files []string) error {
 	if err := validateTarInputs(destPath, files); err != nil {
 		return err

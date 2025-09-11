@@ -95,6 +95,7 @@ cache-apt-pkgs validate [packages]
 ```
 
 #### Examples
+
 ```bash
 # Validate package names and versions
 cache-apt-pkgs validate python3-dev=3.9.5-3 cmake=3.18.4-2

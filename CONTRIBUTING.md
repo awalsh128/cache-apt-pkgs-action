@@ -22,7 +22,7 @@ Thank you for your interest in contributing to cache-apt-pkgs-action! This docum
 
 ### 📋 Prerequisites
 
-1. 🔵 [Go 1.23 or later](https://golang.org/dl/)
+1. 🔵 [Go 1.23.4 or later](https://golang.org/dl/)
 2. 💻 [Visual Studio Code](https://code.visualstudio.com/) (recommended)
 3. 📂 [Git](https://git-scm.com/downloads)
 
@@ -40,7 +40,7 @@ Thank you for your interest in contributing to cache-apt-pkgs-action! This docum
    ```bash
    # Interactive menu for all development tasks
    ./scripts/menu.sh
-   
+
    # Or use individual scripts directly:
    ./scripts/setup_dev.sh       # Set up development environment
    ./scripts/update_md_tocs.sh  # Update table of contents in markdown files
@@ -65,9 +65,9 @@ The project includes several utility scripts to help with development:
 
 To access the menu system, run:
 
-   ```bash
-   ./scripts/menu.sh
-   ```
+```bash
+./scripts/menu.sh
+```
 
 This will present an interactive menu with all available development tasks.
 
@@ -102,9 +102,9 @@ There are two ways to test the GitHub Action workflows:
      - 🐧 Non-WSL users (native Linux)
 
        ```bash
-       curl -fsSL https://get.docker.com -o get-docker.sh && 
-       sudo sh get-docker.sh && 
-       sudo usermod -aG docker $USER && 
+       curl -fsSL https://get.docker.com -o get-docker.sh &&
+       sudo sh get-docker.sh &&
+       sudo usermod -aG docker $USER &&
        sudo systemctl start docker
        ```
 
@@ -116,7 +116,7 @@ There are two ways to test the GitHub Action workflows:
      act push               # Run push event workflows
      act pull_request       # Run PR workflows
      act workflow_dispatch -i ref=dev-v2.0 -i debug=true  # Manual trigger workflow
-     ```  
+     ```
 
 ## 📝 Making Changes
 
@@ -171,7 +171,7 @@ There are two ways to test the GitHub Action workflows:
      act push               # Run push event workflows
      act pull_request       # Run PR workflows
      act workflow_dispatch -i ref=dev-v2.0 -i debug=true  # Manual trigger workflow
-     ```  
+     ```
 
 ## Making Changes
 
@@ -266,7 +266,6 @@ To make the library available on [pkg.go.dev](https://pkg.go.dev):
    ```
 
 2. 🔄 Trigger pkg.go.dev to fetch your module:
-
    - Visit [pkg.go.dev for this module](https://pkg.go.dev/github.com/awalsh128/cache-apt-pkgs-action@v2.0.0)
    - Or fetch via command line:
 
@@ -275,7 +274,6 @@ To make the library available on [pkg.go.dev](https://pkg.go.dev):
      ```
 
 3. 📝 Best practices for publishing:
-
    - Add comprehensive godoc comments
    - Include examples in your documentation
    - Use semantic versioning for tags

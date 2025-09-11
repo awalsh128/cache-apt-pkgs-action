@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/awalsh128/cache-apt-pkgs-action/blob/master/README.md
+    about: Please check the documentation before filing an issue
+  - name: Discussions
+    url: https://github.com/awalsh128/cache-apt-pkgs-action/discussions
+    about: Ask questions and discuss ideas with the community

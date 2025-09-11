@@ -1,8 +1,8 @@
-src/cmd/apt_query/apt_query*
-
 # Environment files
 .env.local
 .env.*.local
 
 # Don't ignore the main .env file
 !.env
+
+scripts/sandbox.sh

@@ -70,6 +70,9 @@ func (a *Apt) ListInstalledFiles(pkg *Package) ([]string, error) {
 	return files, nil
 }
 
+// Validate checks if a package exists and is available for installation.
+// It returns package information including version, size, and dependencies.
+// Returns an error if the package is not found or cannot be queried.
 func (a *Apt) Validate(pkg *Package) (manager.PackageInfo, error) {
 	packageInfo, err := a.manager.GetPackageInfo(pkg.String(), &manager.Options{AssumeYes: true})
 	if err != nil {

@@ -30,5 +30,6 @@ func GetRestoreCmd() *Cmd {
 		"--cache-dir /tmp/cache_dir --restore-root /",
 	}
 	cmd.ExamplePackages = ExamplePackages
+
 	return cmd
 }

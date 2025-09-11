@@ -2,220 +2,322 @@ package cache
 
 import (
 	"bytes"
+	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"awalsh128.com/cache-apt-pkgs-action/internal/pkgs"
 )
 
 const (
-	pkg1     = "xdot=1.3-1"
-	pkg2     = "rolldice=1.16-1build3"
+	package1 = "xdot=1.3-1"
+	package2 = "rolldice=1.16-1build3"
+
 	version1 = "test1"
 	version2 = "test2"
-	version  = "test"
-	globalV1 = "v1"
-	globalV2 = "v2"
-	arch1    = "amd64"
-	arch2    = "x86"
+
+	globalVersion1 = "v1"
+	globalVersion2 = "v2"
+
+	archAmd64 = "amd64"
+	archX86   = "x86"
 )
 
-func TestKey_PlainText(t *testing.T) {
-	emptyKey := Key{
-		Packages:      pkgs.NewPackagesFromStrings(),
-		Version:       "",
-		GlobalVersion: "",
-		OsArch:        "",
-	}
-	singleKey := Key{
-		Packages:      pkgs.NewPackagesFromStrings(pkg1),
-		Version:       version,
-		GlobalVersion: globalV2,
-		OsArch:        arch1,
-	}
-	multiKey := Key{
-		Packages:      pkgs.NewPackagesFromStrings(pkg1, pkg2),
-		Version:       version,
-		GlobalVersion: globalV2,
-		OsArch:        arch1,
-	}
+//==============================================================================
+// Helper Functions
+//==============================================================================
 
-	cases := []struct {
-		name     string
-		key      Key
-		expected string
+func createKey(t *testing.T, packages []string, version, globalVersion, osArch string) Key {
+	t.Helper()
+	key, err := NewKey(
+		pkgs.NewPackagesFromStrings(packages...),
+		version,
+		globalVersion,
+		osArch,
+	)
+	if err != nil {
+		t.Fatalf("Failed to create key: %v", err)
+	}
+	return key
+}
+
+func assertStringEquals(t *testing.T, key Key, expected string) {
+	t.Helper()
+	actual := key.String()
+	if actual != expected {
+		t.Errorf("String() = %q, expected %q", actual, expected)
+	}
+}
+
+func assertHashesEqual(t *testing.T, key1, key2 Key) {
+	t.Helper()
+	hash1 := key1.Hash()
+	hash2 := key2.Hash()
+	if !bytes.Equal(hash1, hash2) {
+		t.Errorf("Hashes should be equal: key1=%x, key2=%x", hash1, hash2)
+	}
+}
+
+func assertHashesDifferent(t *testing.T, key1, key2 Key) {
+	t.Helper()
+	hash1 := key1.Hash()
+	hash2 := key2.Hash()
+	if bytes.Equal(hash1, hash2) {
+		t.Errorf("Hashes should be different but were equal: %x", hash1)
+	}
+}
+
+func assertFileContentEquals(t *testing.T, filePath string, expected []byte) {
+	t.Helper()
+	actual, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("Failed to read file %s: %v", filePath, err)
+	}
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("File content mismatch in %s: actual %q, expected %q", filePath, actual, expected)
+	}
+}
+
+//==============================================================================
+// String Tests
+//==============================================================================
+
+func TestKeyString_WithEmptyKey_ReturnsError(t *testing.T) {
+	// Arrange & Act
+	_, err := NewKey(
+		pkgs.NewPackagesFromStrings(),
+		"",
+		"",
+		"",
+	)
+
+	// Assert
+	if err == nil {
+		t.Error("Expected error but got nil")
+	}
+}
+
+func TestKeyString_WithSinglePackage_ReturnsFormattedString(t *testing.T) {
+	// Arrange
+	key := createKey(t, []string{package1}, version1, globalVersion2, archAmd64)
+	expected := fmt.Sprintf(
+		"Packages: '%s', Version: '%s', GlobalVersion: '%s', OsArch: '%s'",
+		package1,
+		version1,
+		globalVersion2,
+		archAmd64,
+	)
+
+	// Act & Assert
+	assertStringEquals(t, key, expected)
+}
+
+func TestKeyString_WithMultiplePackages_ReturnsCommaSeparatedString(t *testing.T) {
+	// Arrange
+	key := createKey(
+		t,
+		[]string{package1, package2}, // xdot=1.3-1, rolldice=1.16-1build3
+		version1,
+		globalVersion2,
+		archAmd64,
+	)
+	// Packages are sorted, so "rolldice" comes before "xdot"
+	expected := fmt.Sprintf(
+		"Packages: '%s %s', Version: '%s', GlobalVersion: '%s', OsArch: '%s'",
+		package2,
+		package1,
+		version1,
+		globalVersion2,
+		archAmd64,
+	)
+
+	// Act & Assert
+	assertStringEquals(t, key, expected)
+}
+
+//==============================================================================
+// Hash Tests
+//==============================================================================
+
+func TestKeyHash_WithIdenticalKeys_ReturnsSameHash(t *testing.T) {
+	// Arrange
+	key1 := createKey(t, []string{package1}, version1, globalVersion2, archAmd64)
+	key2 := createKey(t, []string{package1}, version1, globalVersion2, archAmd64)
+
+	// Act & Assert
+	assertHashesEqual(t, key1, key2)
+}
+
+func TestKeyHash_WithDifferences_ReturnsDifferentHash(t *testing.T) {
+	tests := []struct {
+		name string
+		key1 Key
+		key2 Key
 	}{
 		{
-			name:     "Empty key",
-			key:      emptyKey,
-			expected: "Packages: '', Version: '', GlobalVersion: '', OsArch: ''",
+			name: "Different packages",
+			key1: createKey(t, []string{package1}, version1, globalVersion1, archAmd64),
+			key2: createKey(t, []string{package2}, version1, globalVersion1, archAmd64),
 		},
 		{
-			name:     "Single package",
-			key:      singleKey,
-			expected: "Packages: 'xdot=1.3-1', Version: 'test', GlobalVersion: 'v2', OsArch: 'amd64'",
+			name: "Different versions",
+			key1: createKey(t, []string{package1}, version1, globalVersion1, archAmd64),
+			key2: createKey(t, []string{package2}, version2, globalVersion1, archAmd64),
 		},
 		{
-			name:     "Multiple packages",
-			key:      multiKey,
-			expected: "Packages: 'xdot=1.3-1,rolldice=1.16-1build3', Version: 'test', GlobalVersion: 'v2', OsArch: 'amd64'",
+			name: "Different global versions",
+			key1: createKey(t, []string{package1}, version1, globalVersion1, archAmd64),
+			key2: createKey(t, []string{package2}, version1, globalVersion2, archAmd64),
+		},
+		{
+			name: "Different architectures",
+			key1: createKey(t, []string{package1}, version1, globalVersion1, archAmd64),
+			key2: createKey(t, []string{package1}, version1, globalVersion2, archX86),
 		},
 	}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			result := c.key.PlainText()
-			if result != c.expected {
-				t.Errorf("PlainText() = %v, want %v", result, c.expected)
-			}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assertHashesDifferent(t, tt.key1, tt.key2)
 		})
 	}
 }
 
-func TestKey_Hash(t *testing.T) {
-	cases := []struct {
-		name     string
-		key1     Key
-		key2     Key
-		wantSame bool
-	}{
-		{
-			name: "Same keys hash to same value",
-			key1: Key{
-				Packages:      pkgs.NewPackagesFromStrings(pkg1),
-				Version:       version,
-				GlobalVersion: globalV2,
-				OsArch:        arch1,
-			},
-			key2: Key{
-				Packages:      pkgs.NewPackagesFromStrings(pkg1),
-				Version:       version,
-				GlobalVersion: globalV2,
-				OsArch:        arch1,
-			},
-			wantSame: true,
-		},
-		{
-			name: "Different packages hash to different values",
-			key1: Key{
-				Packages:      pkgs.NewPackagesFromStrings(pkg1),
-				Version:       version,
-				GlobalVersion: globalV2,
-				OsArch:        arch1,
-			},
-			key2: Key{
-				Packages:      pkgs.NewPackagesFromStrings(pkg2),
-				Version:       version,
-				GlobalVersion: globalV2,
-				OsArch:        arch1,
-			},
-			wantSame: false,
-		},
-		{
-			name: "Different versions hash to different values",
-			key1: Key{
-				Packages:      pkgs.NewPackagesFromStrings(pkg1),
-				Version:       version1,
-				GlobalVersion: globalV2,
-				OsArch:        arch1,
-			},
-			key2: Key{
-				Packages:      pkgs.NewPackagesFromStrings(pkg1),
-				Version:       version2,
-				GlobalVersion: globalV2,
-				OsArch:        arch1,
-			},
-			wantSame: false,
-		},
-		{
-			name: "Different global versions hash to different values",
-			key1: Key{
-				Packages:      pkgs.NewPackagesFromStrings(pkg1),
-				Version:       version1,
-				GlobalVersion: globalV1,
-				OsArch:        arch1,
-			},
-			key2: Key{
-				Packages:      pkgs.NewPackagesFromStrings(pkg1),
-				Version:       version2,
-				GlobalVersion: globalV2,
-				OsArch:        arch1,
-			},
-			wantSame: false,
-		},
-		{
-			name: "Different OS arches hash to different values",
-			key1: Key{
-				Packages:      pkgs.NewPackagesFromStrings(pkg1),
-				Version:       version1,
-				GlobalVersion: globalV1,
-				OsArch:        arch1,
-			},
-			key2: Key{
-				Packages:      pkgs.NewPackagesFromStrings(pkg1),
-				Version:       version2,
-				GlobalVersion: globalV2,
-				OsArch:        arch2,
-			},
-			wantSame: false,
-		},
+//==============================================================================
+// Write Tests
+//==============================================================================
+
+func TestKeyWrite_WithValidPaths_WritesPlaintextAndHash(t *testing.T) {
+	// Arrange
+	key := createKey(
+		t,
+		[]string{package1, package2},
+		version1,
+		globalVersion2,
+		archAmd64,
+	)
+
+	plaintextPath := filepath.Join(t.TempDir(), "key.txt")
+	ciphertextPath := filepath.Join(t.TempDir(), "key.md5")
+
+	// Act
+	err := key.Write(plaintextPath, ciphertextPath)
+	// Assert
+	if err != nil {
+		t.Fatalf("Write() failed: %v", err)
 	}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			hash1 := c.key1.Hash()
-			hash2 := c.key2.Hash()
-			if bytes.Equal(hash1, hash2) != c.wantSame {
-				t.Errorf("Hash equality = %v, want %v", bytes.Equal(hash1, hash2), c.wantSame)
-			}
-		})
+	// Verify plaintext file
+	expectedPlaintext := []byte(key.String())
+	assertFileContentEquals(t, plaintextPath, expectedPlaintext)
+
+	// Verify hash file
+	expectedHash := key.Hash()
+	assertFileContentEquals(t, ciphertextPath, expectedHash)
+}
+
+func TestKeyWrite_WithInvalidPlaintextPath_ReturnsError(t *testing.T) {
+	// Arrange
+	key := createKey(t, []string{package1}, version1, globalVersion2, archAmd64)
+	invalidPath := "/invalid/path/key.txt"
+	validPath := filepath.Join(t.TempDir(), "key.md5")
+
+	// Act
+	err := key.Write(invalidPath, validPath)
+
+	// Assert
+	if err == nil {
+		t.Error("Write() should have failed with invalid plaintext path")
 	}
 }
 
-func TestKey_WriteKeyPlaintext_RoundTripsSameValue(t *testing.T) {
-	key := Key{
-		Packages:      pkgs.NewPackagesFromStrings(pkg1, pkg2),
-		Version:       version,
-		GlobalVersion: globalV2,
-		OsArch:        arch1,
+func TestKeyWrite_WithInvalidCiphertextPath_ReturnsError(t *testing.T) {
+	// Arrange
+	key := createKey(t, []string{package1}, version1, globalVersion2, archAmd64)
+	validPath := filepath.Join(t.TempDir(), "key.txt")
+	invalidPath := "/invalid/path/key.md5"
+
+	// Act
+	err := key.Write(validPath, invalidPath)
+
+	// Assert
+	if err == nil {
+		t.Error("Write() should have failed with invalid ciphertext path")
 	}
-	plaintextPath := path.Join(t.TempDir(), "key.txt")
-	ciphertextPath := path.Join(t.TempDir(), "key.md5")
+}
+
+//==============================================================================
+// Integration Tests
+//==============================================================================
+
+func TestKeyWriteAndRead_PlaintextRoundTrip_PreservesContent(t *testing.T) {
+	// Arrange
+	key := createKey(
+		t,
+		[]string{package1, package2},
+		version1,
+		globalVersion2,
+		archAmd64,
+	)
+	tempDir := t.TempDir()
+	plaintextPath := filepath.Join(tempDir, "key.txt")
+	ciphertextPath := filepath.Join(tempDir, "key.md5")
+
+	// Act
 	err := key.Write(plaintextPath, ciphertextPath)
 	if err != nil {
 		t.Fatalf("Write() failed: %v", err)
 	}
+
 	plaintextBytes, err := os.ReadFile(plaintextPath)
 	if err != nil {
-		t.Fatalf("ReadAll() failed: %v", err)
+		t.Fatalf("ReadFile() failed: %v", err)
 	}
 
-	plaintext := string(plaintextBytes)
-	if plaintext != key.PlainText() {
-		t.Errorf("Round trip failed: got %q, want %q", plaintext, key.PlainText())
+	// Assert
+	actualPlaintext := string(plaintextBytes)
+	expectedPlaintext := key.String()
+	if actualPlaintext != expectedPlaintext {
+		t.Errorf(
+			"Plaintext round trip failed: actual %q, expected %q",
+			actualPlaintext,
+			expectedPlaintext,
+		)
 	}
 }
 
-func TestKey_WriteKeyCiphertext_RoundTripsSameValue(t *testing.T) {
-	key := Key{
-		Packages:      pkgs.NewPackagesFromStrings(pkg1, pkg2),
-		Version:       version,
-		GlobalVersion: globalV2,
-		OsArch:        arch1,
-	}
-	plaintextPath := path.Join(t.TempDir(), "key.txt")
-	ciphertextPath := path.Join(t.TempDir(), "key.md5")
+func TestKeyWriteAndRead_CiphertextRoundTrip_PreservesHash(t *testing.T) {
+	// Arrange
+	key := createKey(
+		t,
+		[]string{package1, package2},
+		version1,
+		globalVersion2,
+		archAmd64,
+	)
+	tempDir := t.TempDir()
+	plaintextPath := filepath.Join(tempDir, "key.txt")
+	ciphertextPath := filepath.Join(tempDir, "key.md5")
+
+	// Act
 	err := key.Write(plaintextPath, ciphertextPath)
 	if err != nil {
 		t.Fatalf("Write() failed: %v", err)
 	}
+
 	ciphertextBytes, err := os.ReadFile(ciphertextPath)
 	if err != nil {
-		t.Fatalf("ReadAll() failed: %v", err)
+		t.Fatalf("ReadFile() failed: %v", err)
 	}
-	ciphertext := string(ciphertextBytes)
-	if !bytes.Equal(ciphertextBytes, key.Hash()) {
-		t.Errorf("Round trip failed: got %q, want %q", ciphertext, key.Hash())
+
+	// Assert
+	expectedHash := key.Hash()
+	if !bytes.Equal(ciphertextBytes, expectedHash) {
+		t.Errorf(
+			"Ciphertext round trip failed: actual %x, expected %x",
+			ciphertextBytes,
+			expectedHash,
+		)
 	}
 }

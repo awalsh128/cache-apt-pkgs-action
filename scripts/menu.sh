@@ -3,153 +3,159 @@
 #==============================================================================
 # menu.sh
 #==============================================================================
-# 
+#
 # DESCRIPTION:
-#   Interactive menu for running project scripts and common tasks.
-#   Provides easy access to development, testing, and maintenance tasks.
+#   Streamlined interactive menu for essential development tasks.
+#   Provides quick access to the most commonly used development operations.
 #
 # USAGE:
-#   ./scripts/menu.sh
+#   menu.sh
 #
-# FEATURES:
-#   - Interactive menu interface
-#   - Clear task descriptions
-#   - Status feedback
-#   - Error handling
-#
-# DEPENDENCIES:
-#   - bash
-#   - Various project scripts
+# OPTIONS:
+#   -v, --verbose   Enable verbose output
+#   -h, --help      Show this help message
 #==============================================================================
 
-# Colors for output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-BOLD='\033[1m'
+source "$(git rev-parse --show-toplevel)/scripts/lib.sh"
+SCRIPT_DIR="${PROJECT_ROOT}/scripts"
+CAP_CMD_DIR="${PROJECT_ROOT}/cmd/cache_apt_pkgs"
 
-# Function to print section headers
-print_header() {
-    echo -e "\n${BOLD}${BLUE}$1${NC}\n"
+parse_common_args "$@" >/dev/null # prevent return from echo'ng
+
+#==============================================================================
+# Menu Operations
+#==============================================================================
+
+run_task() {
+  local description="$1"
+  shift
+  local cmd="$*"
+
+  print_status "Running: ${description}"
+  [[ ${VERBOSE} == true ]] && log_debug "Command: ${cmd}"
+
+  echo
+  if eval "${cmd}"; then
+    log_success "${description} completed successfully"
+  else
+    local exit_code=$?
+    log_error "${description} failed (exit code: ${exit_code})"
+  fi
+
+  pause
 }
 
-# Function to print status messages
-print_status() {
-    echo -e "${GREEN}==>${NC} $1"
-}
+show_project_status() {
+  print_header "Project Status"
 
-# Function to print errors
-print_error() {
-    echo -e "${RED}Error:${NC} $1"
-}
+  echo "Git Status:"
+  git status --short --branch
+  echo
 
-# Function to wait for user input before continuing
-pause() {
+  echo "Go Module Status:"
+  go mod verify && log_success "Go modules are valid"
+  echo
+
+  if command_exists trunk; then
+    echo "Linting Status:"
+    trunk check --no-fix --quiet || log_warn "Linting issues detected"
     echo
-    read -n 1 -s -r -p "Press any key to continue..."
-    echo
+  fi
+
+  pause
 }
 
-# Function to run a command and handle errors
-run_command() {
-    local cmd="$1"
-    local description="$2"
-    
-    print_status "Running: $description"
-    echo "Command: $cmd"
-    echo
-    
-    if eval "$cmd"; then
-        print_status "Successfully completed: $description"
-    else
-        print_error "Failed: $description"
-        echo "Exit code: $?"
-    fi
-    
-    pause
-}
+#==============================================================================
+# Main Menu Loop
+#==============================================================================
 
-# Main menu
-while true; do
+main_menu() {
+  while true; do
     clear
-    print_header "Cache Apt Packages Action - Development Menu"
-    echo "1) Setup Development Environment"
-    echo "2) Update Markdown TOCs"
-    echo "3) Run Tests"
-    echo "4) Run Linting (trunk check)"
-    echo "5) Build Project"
-    echo "6) Check UTF-8 Encoding"
-    echo "7) Run All Checks (tests, lint, build)"
-    echo "8) Run All Script Tests"
+    print_header "Cache Apt Packages - Development Menu"
+
+    print_section "Essential Tasks:"
+    print_option 1 "Setup Development Environment"
+    print_option 2 "Run All Checks (test + lint + build)"
+    print_option 3 "Test Only"
+    print_option 4 "Lint & Fix"
+    print_option 5 "Build Project"
+
+    print_section "Maintenance:"
+    print_option 6 "Update Documentation (TOCs)"
+    print_option 7 "Export Version Info"
+
+    print_section "Information:"
+    print_option 8 "Project Status"
+    print_option 9 "Recent Changes"
     echo
-    echo "9) Show Project Status"
-    echo "10) Show Recent Git Log"
-    echo "11) Export Version Information"
-    echo
-    echo "q) Quit"
-    echo
-    read -p "Select an option: " choice
+    print_option q "Quit"
     echo
 
-    case $choice in
-        1)
-            run_command "./scripts/setup_dev.sh" "Setting up development environment"
-            ;;
-        2)
-            run_command "./scripts/update_md_tocs.sh" "Updating markdown tables of contents"
-            ;;
-        3)
-            run_command "go test -v ./..." "Running tests"
-            ;;
-        4)
-            run_command "trunk check" "Running linting checks"
-            ;;
-        5)
-            run_command "go build -v ./..." "Building project"
-            ;;
-        6)
-            run_command "./scripts/check_utf8.sh" "Checking UTF-8 encoding"
-            ;;
-        7)
-            print_header "Running All Checks"
-            run_command "go test -v ./..." "Running tests"
-            run_command "trunk check" "Running linting checks"
-            run_command "go build -v ./..." "Building project"
-            run_command "./scripts/check_utf8.sh" "Checking UTF-8 encoding"
-            ;;
-        8)
-            print_header "Running All Script Tests"
-            run_command "./scripts/tests/setup_dev_test.sh" "Running setup dev tests"
-            run_command "./scripts/tests/check_utf8_test.sh" "Running UTF-8 check tests"
-            run_command "./scripts/tests/update_md_tocs_test.sh" "Running markdown TOC tests"
-            run_command "./scripts/tests/export_version_test.sh" "Running version export tests"
-            run_command "./scripts/tests/distribute_test.sh" "Running distribute tests"
-            ;;
-        9)
-            print_header "Project Status"
-            echo "Git Status:"
-            git status
-            echo
-            echo "Go Module Status:"
-            go mod verify
-            pause
-            ;;
-        10)
-            print_header "Recent Git Log"
-            git log --oneline -n 10
-            pause
-            ;;
-        11)
-            run_command "./scripts/export_version.sh" "Exporting version information"
-            ;;
-        q|Q)
-            print_status "Goodbye!"
-            exit 0
-            ;;
-        *)
-            print_error "Invalid option"
-            pause
-            ;;
+    echo_color -n green "choice > "
+    read -n 1 -rp "" choice
+    printf "\n\n"
+
+    case ${choice} in
+    1)
+      run_task "Setting up development environment" \
+        "${SCRIPT_DIR}/setup_dev.sh"
+      ;;
+    2)
+      print_header "Running All Checks"
+      echo ""
+      run_task "Running linting" "trunk check --fix"
+      run_task "Building project" "go build -v ${CAP_CMD_DIR}"
+      run_task "Running tests" "go test -v ${CAP_CMD_DIR}"
+      ;;
+    3)
+      run_task "Running tests" "go test -v ${CAP_CMD_DIR}"
+      ;;
+    4)
+      run_task "Running lint with fixes" "trunk check --fix"
+      ;;
+    5)
+      run_task "Building project" "go build -v ${CAP_CMD_DIR}"
+      ;;
+    6)
+      run_task "Updating documentation TOCs" \
+        "${SCRIPT_DIR}/update_md_tocs.sh"
+      ;;
+    7)
+      run_task "Exporting version information" \
+        "${SCRIPT_DIR}/export_version.sh"
+      ;;
+    8)
+      show_project_status
+      ;;
+    9)
+      print_header "Recent Changes"
+      git log --oneline --graph --decorate -n 10
+      pause
+      ;;
+    q | Q | "")
+      echo -e "${GREEN}Goodbye!${NC}"
+      exit 0
+      ;;
+    *)
+      echo ""
+      log_error "Invalid option: ${choice}"
+      pause
+      ;;
     esac
-done
+  done
+}
+
+#==============================================================================
+# Entry Point
+#==============================================================================
+
+# Validate project structure
+# validate_go_project
+# validate_git_repo
+
+# Parse any command line arguments
+parse_common_args "$@"
+
+# Run main menu
+main_menu

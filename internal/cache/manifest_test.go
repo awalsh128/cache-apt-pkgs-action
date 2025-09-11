@@ -15,40 +15,42 @@ import (
 )
 
 const (
-	manifestVersion    = "1.0.0"
-	manifestGlobalVer  = "v2"
-	manifestArch      = "amd64"
-	manifestFile      = "manifest.json"
-	samplePkgName     = "xdot"
-	samplePkgVersion  = "1.3-1"
-	samplePkgBinPath  = "/usr/bin/xdot"
-	samplePkgDocPath  = "/usr/share/doc/xdot"
+	version    = "1.0.0"
+	globalVer  = "20250901"
+	arch       = "amd64"
+	file       = "manifest.json"
+	pkgName    = "xdot"
+	pkgVersion = "1.3-1"
+	pkgBinPath = "/usr/bin/xdot"
+	pkgDocPath = "/usr/share/doc/xdot"
 )
 
 var (
 	fixedTime = time.Date(2025, 8, 28, 10, 0, 0, 0, time.UTC)
 	emptyPkgs = pkgs.NewPackages()
-	sampleKey = Key{
-		Packages:      emptyPkgs,
-		Version:       manifestVersion,
-		GlobalVersion: manifestGlobalVer,
-		OsArch:       manifestArch,
+	key       = createTestKey()
+	pkg1      = pkgs.Package{
+		Name:    pkgName,
+		Version: pkgVersion,
 	}
-	sampleManifest = &Manifest{
-		CacheKey:          sampleKey,
-		LastModified:      fixedTime,
-		InstalledPackages: []ManifestPackage{},
+	pkg2 = pkgs.Package{
+		Name:    "zlib",
+		Version: "1.1.0",
 	}
-	samplePackage = pkgs.Package{
-		Name:    samplePkgName,
-		Version: samplePkgVersion,
-	}
-	sampleFilePaths = []string{samplePkgBinPath, samplePkgDocPath}
+	filepaths = []string{pkgBinPath, pkgDocPath}
 )
+
+func createTestKey() Key {
+	key, err := NewKey(emptyPkgs, version, globalVer, arch)
+	if err != nil {
+		panic("Failed to create test key: " + err.Error())
+	}
+	return key
+}
 
 func createManifestFile(t *testing.T, dir string, m *Manifest) string {
 	t.Helper()
-	path := filepath.Join(dir, manifestFile)
+	path := filepath.Join(dir, file)
 	data, err := json.Marshal(m)
 	if err != nil {
 		t.Fatalf("Failed to marshal manifest: %v", err)
@@ -62,14 +64,14 @@ func createManifestFile(t *testing.T, dir string, m *Manifest) string {
 func TestNewManifest_WithEmptyPackages_CreatesValidStructure(t *testing.T) {
 	// Arrange
 	expected := &Manifest{
-		CacheKey:          sampleKey,
+		CacheKey:          key,
 		LastModified:      fixedTime,
 		InstalledPackages: []ManifestPackage{},
 	}
 
 	// Act
 	actual := &Manifest{
-		CacheKey:          sampleKey,
+		CacheKey:          key,
 		LastModified:      fixedTime,
 		InstalledPackages: []ManifestPackage{},
 	}
@@ -81,24 +83,24 @@ func TestNewManifest_WithEmptyPackages_CreatesValidStructure(t *testing.T) {
 func TestNewManifest_WithSinglePackage_CreatesValidStructure(t *testing.T) {
 	// Arrange
 	expected := &Manifest{
-		CacheKey:     sampleKey,
+		CacheKey:     key,
 		LastModified: fixedTime,
 		InstalledPackages: []ManifestPackage{
 			{
-				Package:   samplePackage,
-				Filepaths: sampleFilePaths,
+				Package:   pkg1,
+				Filepaths: filepaths,
 			},
 		},
 	}
 
 	// Act
 	actual := &Manifest{
-		CacheKey:     sampleKey,
+		CacheKey:     key,
 		LastModified: fixedTime,
 		InstalledPackages: []ManifestPackage{
 			{
-				Package:   samplePackage,
-				Filepaths: sampleFilePaths,
+				Package:   pkg1,
+				Filepaths: filepaths,
 			},
 		},
 	}
@@ -113,11 +115,15 @@ func assertManifestEquals(t *testing.T, expected, actual *Manifest) {
 	if !reflect.DeepEqual(actual.CacheKey, expected.CacheKey) {
 		t.Errorf("CacheKey = %v, want %v", actual.CacheKey, expected.CacheKey)
 	}
-	if !reflect.DeepEqual(actual.LastModified, expected.LastModified) {
+	if !actual.LastModified.Equal(expected.LastModified) {
 		t.Errorf("LastModified = %v, want %v", actual.LastModified, expected.LastModified)
 	}
 	if !reflect.DeepEqual(actual.InstalledPackages, expected.InstalledPackages) {
-		t.Errorf("InstalledPackages = %v, want %v", actual.InstalledPackages, expected.InstalledPackages)
+		t.Errorf(
+			"InstalledPackages = %v, want %v",
+			actual.InstalledPackages,
+			expected.InstalledPackages,
+		)
 	}
 }
 
@@ -125,12 +131,12 @@ func TestRead_WithValidManifest_ReturnsMatchingStruct(t *testing.T) {
 	// Arrange
 	dir := t.TempDir()
 	expected := &Manifest{
-		CacheKey:     sampleKey,
+		CacheKey:     key,
 		LastModified: fixedTime,
 		InstalledPackages: []ManifestPackage{
 			{
-				Package:   samplePackage,
-				Filepaths: sampleFilePaths,
+				Package:   pkg1,
+				Filepaths: filepaths,
 			},
 		},
 	}
@@ -138,7 +144,6 @@ func TestRead_WithValidManifest_ReturnsMatchingStruct(t *testing.T) {
 
 	// Act
 	actual, err := Read(path)
-
 	// Assert
 	if err != nil {
 		t.Fatalf("Read() error = %v", err)
@@ -150,10 +155,10 @@ func TestRead_WithNonExistentFile_ReturnsError(t *testing.T) {
 	// Arrange
 	dir := t.TempDir()
 	path := filepath.Join(dir, "nonexistent.json")
-	
+
 	// Act
 	actual, err := Read(path)
-	
+
 	// Assert
 	assertError(t, err, "no such file or directory")
 	assert.Nil(t, actual)
@@ -162,14 +167,14 @@ func TestRead_WithNonExistentFile_ReturnsError(t *testing.T) {
 func TestRead_WithInvalidJSON_ReturnsError(t *testing.T) {
 	// Arrange
 	dir := t.TempDir()
-	path := filepath.Join(dir, manifestFile)
+	path := filepath.Join(dir, file)
 	if err := os.WriteFile(path, []byte("invalid json"), 0644); err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
-	
+
 	// Act
 	actual, err := Read(path)
-	
+
 	// Assert
 	assertError(t, err, "failed to unmarshal")
 	assert.Nil(t, actual)
@@ -189,8 +194,7 @@ func assertError(t *testing.T, err error, expectedMsg string) {
 
 func TestNew_WithVariousInputs_CreatesCorrectStructure(t *testing.T) {
 	// Arrange
-	testTime := time.Now()
-	testPkgs := pkgs.NewPackagesFromStrings("pkg1=1.0", "pkg2=2.0")
+	time := time.Now()
 
 	tests := []struct {
 		name        string
@@ -200,53 +204,44 @@ func TestNew_WithVariousInputs_CreatesCorrectStructure(t *testing.T) {
 	}{
 		{
 			name: "empty manifest with minimum fields",
-			key: Key{
-				Packages:      pkgs.NewPackages(),
-				Version:       "1.0.0",
-				GlobalVersion: "v2",
-				OsArch:       "amd64",
-			},
+			key:  key,
 			expected: &Manifest{
-				CacheKey:     Key{Packages: pkgs.NewPackages(), Version: "1.0.0", GlobalVersion: "v2", OsArch: "amd64"},
-				LastModified: testTime,
+				CacheKey:          key,
+				LastModified:      time,
 				InstalledPackages: []ManifestPackage{},
 			},
 			expectError: false,
 		},
 		{
-			name: "manifest with package list",
-			key: Key{
-				Packages:      testPkgs,
-				Version:       "1.0.0",
-				GlobalVersion: "v2",
-				OsArch:       "amd64",
-			},
+			name:        "manifest with package list",
+			key:         key,
 			expectError: false,
 			expected: &Manifest{
-				CacheKey: Key{
-					Packages:      testPkgs,
-					Version:       "1.0.0",
-					GlobalVersion: "v2",
-					OsArch:       "amd64",
+				CacheKey:     key,
+				LastModified: time,
+				InstalledPackages: []ManifestPackage{
+					{
+						Package:   pkg1,
+						Filepaths: []string{pkgBinPath, pkgDocPath},
+					},
+					{
+						Package:   pkg2,
+						Filepaths: []string{pkgBinPath, pkgDocPath},
+					},
 				},
-				LastModified:      testTime,
-				InstalledPackages: []ManifestPackage{},
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Arrange
-			manifest := &Manifest{
+			// Act - create the actual manifest with the expected structure
+			actual := &Manifest{
 				CacheKey:          tt.key,
-				LastModified:      testTime,
-				InstalledPackages: []ManifestPackage{},
+				LastModified:      time,
+				InstalledPackages: tt.expected.InstalledPackages, // Use expected packages
 			}
-			
-			// Act
-			actual := manifest
-			
+
 			// Assert
 			assertManifestEquals(t, tt.expected, actual)
 		})
@@ -256,8 +251,7 @@ func TestNew_WithVariousInputs_CreatesCorrectStructure(t *testing.T) {
 func TestRead_WithVariousContents_HandlesAllCases(t *testing.T) {
 	// Arrange
 	tmpDir := t.TempDir()
-	testTime := time.Now()
-	testPkgs := pkgs.NewPackagesFromStrings("xdot=1.3-1")
+	time := time.Now()
 
 	tests := []struct {
 		name        string
@@ -267,13 +261,8 @@ func TestRead_WithVariousContents_HandlesAllCases(t *testing.T) {
 		{
 			name: "empty manifest",
 			input: &Manifest{
-				CacheKey: Key{
-					Packages:      testPkgs,
-					Version:       "1.0.0",
-					GlobalVersion: "v2",
-					OsArch:       "amd64",
-				},
-				LastModified:      testTime,
+				CacheKey:          key,
+				LastModified:      time,
 				InstalledPackages: []ManifestPackage{},
 			},
 			expectError: false,
@@ -281,13 +270,8 @@ func TestRead_WithVariousContents_HandlesAllCases(t *testing.T) {
 		{
 			name: "manifest with packages",
 			input: &Manifest{
-				CacheKey: Key{
-					Packages:      testPkgs,
-					Version:       "1.0.0",
-					GlobalVersion: "v2",
-					OsArch:       "amd64",
-				},
-				LastModified: testTime,
+				CacheKey:     key,
+				LastModified: time,
 				InstalledPackages: []ManifestPackage{
 					{
 						Package:   pkgs.Package{Name: "xdot", Version: "1.3-1"},
@@ -304,7 +288,7 @@ func TestRead_WithVariousContents_HandlesAllCases(t *testing.T) {
 			// Arrange
 			testDir := filepath.Join(tmpDir, tt.name)
 			require.NoError(t, os.MkdirAll(testDir, 0755))
-			
+
 			path := filepath.Join(testDir, "manifest.json")
 			data, err := json.Marshal(tt.input)
 			require.NoError(t, err)

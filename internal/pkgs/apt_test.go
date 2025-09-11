@@ -18,19 +18,19 @@ func TestApt_Install(t *testing.T) {
 	// Note: These tests require a real system and apt to be available
 	// They should be run in a controlled environment like a Docker container
 	tests := []struct {
-		name    string
-		pkgs    []string
-		wantErr bool
+		name        string
+		pkgs        []Package
+		expectedErr bool
 	}{
 		{
-			name:    "Empty package list",
-			pkgs:    []string{},
-			wantErr: false,
+			name:        "Empty package list",
+			pkgs:        []Package{},
+			expectedErr: false,
 		},
 		{
-			name:    "Invalid package",
-			pkgs:    []string{"nonexistent-package-12345"},
-			wantErr: true,
+			name:        "Invalid package",
+			pkgs:        []Package{{Name: "nonexistent-package-12345"}},
+			expectedErr: true,
 		},
 	}
 
@@ -41,49 +41,24 @@ func TestApt_Install(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			packages := NewPackages()
-			for _, pkg := range tt.pkgs {
-				packages.Add(pkg)
-			}
-
+			packages := NewPackages(tt.pkgs...)
 			_, err := apt.Install(packages)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Apt.Install() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) != tt.expectedErr {
+				t.Errorf("Apt.Install() error = %v, expectedErr %v", err, tt.expectedErr)
 			}
 		})
 	}
 }
 
-func TestApt_ListInstalledFiles(t *testing.T) {
+func TestApt_ListInstalledFiles_NonExistentPackage_ReturnsError(t *testing.T) {
 	// Note: These tests require a real system and apt to be available
 	apt, err := NewApt()
 	if err != nil {
 		t.Fatalf("Failed to create Apt instance: %v", err)
 	}
-
-	tests := []struct {
-		name    string
-		pkg     string
-		want    []string
-		wantErr bool
-	}{
-		{
-			name:    "Invalid package",
-			pkg:     "nonexistent-package-12345",
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := apt.ListInstalledFiles(tt.pkg)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Apt.ListInstalledFiles() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr && len(got) == 0 {
-				t.Error("Apt.ListInstalledFiles() returned empty list for valid package")
-			}
-		})
+	_, err = apt.ListInstalledFiles(&Package{Name: "nonexistent-package-12345"})
+	if err == nil {
+		t.Errorf("Apt.ListInstalledFiles() expected error, but got nil")
+		return
 	}
 }

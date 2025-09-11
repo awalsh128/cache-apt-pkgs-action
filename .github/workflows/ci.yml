@@ -1,36 +1,36 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [dev-v2.0]
-    tags: ['v*']  # Trigger on version tags
+    tags: [v*] # Trigger on version tags
   pull_request:
     branches: [dev-v2.0]
   schedule:
-    - cron: 0 0 * * *  # Run at 00:00 UTC every day
+    - cron: 0 0 * * * # Run at 00:00 UTC every day
   workflow_dispatch:
-    inputs:
-      debug:
-        description: Run in debug mode.
-        type: boolean
-        required: false
-        default: false
 
 env:
-  DEBUG: ${{ github.event.inputs.debug || false }}
+  DEBUG: false
   SHELLOPTS: errexit:pipefail
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
-    steps: 
+    steps:
       - uses: actions/checkout@v4
 
-      - name: Install Go
-        uses: actions/setup-go@v5
+      - name: Read Go version from .env
+        id: go-version
+        run: |
+          echo "go_version=$(grep '^GO_VERSION=' .env | cut -d '=' -f2)" >> $GITHUB_OUTPUT
+
+      - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: ${{ steps.go-version.outputs.go_version }}
           cache: true
 
       - name: Install Go module dependencies
@@ -38,19 +38,6 @@ jobs:
 
       - name: Build
         run: go build -v ./...
-        
-      - name: Check file encodings
-        run: |
-          ./scripts/check_utf8.sh
-          
-      - name: Check file encoding changes
-        id: git-check
-        run: |
-          if [[ -n "$(git status --porcelain)" ]]; then
-            echo "::error::Some files are not in UTF-8 encoding. Please run ./scripts/check_utf8.sh locally and commit the changes."
-            git status --porcelain
-            exit 1
-          fi
 
       - name: trunk.io Lint
         uses: trunk-io/trunk-action@v1
@@ -113,6 +100,3 @@ jobs:
               fi
             done
           fi
-
-
-

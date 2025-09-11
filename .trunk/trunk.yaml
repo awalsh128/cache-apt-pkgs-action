@@ -3,34 +3,65 @@
 version: 0.1
 cli:
   version: 1.25.0
+# Trunk provides extensibility via plugins. (https://docs.trunk.io/plugins)
 plugins:
   sources:
     - id: trunk
-      ref: v1.7.1
+      ref: v1.7.2
       uri: https://github.com/trunk-io/plugins
+# Many linters and tools depend on runtimes - configure them here. (https://docs.trunk.io/runtimes)
 runtimes:
   enabled:
+    - node@22.16.0
+    - python@3.10.8
     - go@1.21.0
+# This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
 lint:
+  disabled:
+    - cspell
   enabled:
+    - yamlfmt@0.17.2
+    - vale@3.12.0
+    - trunk-toolbox@0.5.4
+    - trufflehog-git@3.90.6
+    - snyk@1.1295.0
+    - remark-lint@12.0.1
+    - pre-commit-hooks@6.0.0
+    - nancy@1.0.51
+    - markdownlint-cli2@0.18.1
+    - markdown-table-prettify@3.7.0
+    - markdown-link-check@3.13.7
+    - ls-lint@2.3.1
+    - golangci-lint@1.64.8
+    - gokart@0.5.1
     - goimports@0.9.1
+    - gofumpt@0.5.0
+    - gitleaks@8.28.0
+    - deno@2.5.0
+    - biome@2.2.4
+    - codespell@2.4.1
+    - kube-linter@0.7.2
     - golines@0.13.0
-    - markdownlint@0.45.0
+    - semgrep@1.136.0
+    - shellcheck@0.11.0
     - actionlint@1.7.7
+    - checkov@3.2.470
+    - dotenv-linter@3.3.0
+    - git-diff-check
     - gofmt@1.20.4
-    - golangci-lint@1.54.2
-    - shellcheck@0.10.0
+    - golangci-lint2@2.4.0
+    - isort@6.0.1
+    - markdownlint@0.45.0
+    - osv-scanner@2.2.2
+    - oxipng@9.1.5
+    - prettier@3.6.2
     - shfmt@3.6.0
+    - trivy@0.66.0
+    - trufflehog@3.90.6
     - yamllint@1.37.1
-    - cspell@0.27.1
-  
-  definitions:
-    - name: cspell
-      files: [".md$"]
 actions:
   enabled:
-    - trunk-upgrade-available
-    - trunk-fmt-pre-commit
-  disabled:
     - trunk-announce
     - trunk-check-pre-push
+    # - trunk-fmt-pre-commit
+    - trunk-upgrade-available

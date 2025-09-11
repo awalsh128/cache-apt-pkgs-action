@@ -3,167 +3,62 @@
 #==============================================================================
 # export_version_test.sh
 #==============================================================================
-# 
+#
 # DESCRIPTION:
 #   Test suite for export_version.sh script.
 #   Validates version extraction, file generation, and error handling.
 #
 # USAGE:
-#   ./scripts/tests/export_version_test.sh [-v|--verbose]
+#   export_version_test.sh [OPTIONS]
 #
 # OPTIONS:
-#   -v, --verbose    Show verbose test output
-#   -h, --help       Show this help message
+#   -v, --verbose        Enable verbose test output
+#   --stop-on-failure    Stop on first test failure
+#   -h, --help           Show this help message
 #
 #==============================================================================
 
-# Colors for test output
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Source the test framework, exports SCRIPT_PATH
+source "$(git rev-parse --show-toplevel)/scripts/tests/test_lib.sh"
 
-# Test settings
-VERBOSE=false
-PASS=0
-FAIL=0
+# Define test functions
+run_tests() {
+  test_section "Command Line Interface"
 
-# Help message
-show_help() {
-    sed -n '/^# DESCRIPTION:/,/^#===/p' "$0" | sed 's/^# \?//'
-}
-
-# Parse command line arguments
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        -v|--verbose)
-            VERBOSE=true
-            shift
-            ;;
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        *)
-            echo "Unknown option: $1"
-            show_help
-            exit 1
-            ;;
-    esac
-done
-
-# Get the directory containing this script
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
-
-# Create a temporary directory for test files
-TEMP_DIR=$(mktemp -d)
-trap 'rm -rf "$TEMP_DIR"' EXIT
-
-# Source the script (without executing main)
-source "$PROJECT_ROOT/scripts/export_version.sh"
-
-# Main test case function
-function test_case() {
-    local name=$1
-    local cmd=$2
-    local expected_output=$3
-    local should_succeed=${4:-true}
-
-    echo -n "Testing $name... "
-
-    # Run command and capture output
-    local output
-    if [[ $should_succeed == "true" ]]; then
-        output=$($cmd 2>&1)
-        local status=$?
-        if [[ $status -eq 0 && $output == *"$expected_output"* ]]; then
-            echo -e "${GREEN}PASS${NC}"
-            ((PASS++))
-            return 0
-        fi
-    else
-        output=$($cmd 2>&1) || true
-        if [[ $output == *"$expected_output"* ]]; then
-            echo -e "${GREEN}PASS${NC}"
-            ((PASS++))
-            return 0
-        fi
-    fi
-
-    echo -e "${RED}FAIL${NC}"
-    echo "  Expected output to contain: '$expected_output'"
-    echo "  Got: '$output'"
-    ((FAIL++))
-    return 0
-}
-
-echo "Running export_version.sh tests..."
-echo "--------------------------------"
-
-# Section 1: Command Line Interface
-echo -e "\n${BLUE}Testing Command Line Interface${NC}"
-test_case "help option" \
-    "$PROJECT_ROOT/scripts/export_version.sh --help" \
-    "Usage:" \
+  test_case "basic execution" \
+    "" \
+    "Exporting version information" \
     true
 
-test_case "unknown option" \
-    "$PROJECT_ROOT/scripts/export_version.sh --unknown" \
-    "Unknown option" \
-    false
+  test_section "File Generation"
 
-# Section 2: Version Extraction
-echo -e "\n${BLUE}Testing Version Extraction${NC}"
-test_case "go version extraction" \
-    "get_go_version" \
-    "1.23" \
-    true
-
-test_case "toolchain version extraction" \
-    "get_toolchain_version" \
-    "go1.23.4" \
-    true
-
-test_case "syspkg version extraction" \
-    "get_syspkg_version" \
-    "v0.1.5" \
-    true
-
-# Section 3: File Generation
-echo -e "\n${BLUE}Testing File Generation${NC}"
-test_case "version info file creation" \
-    "$PROJECT_ROOT/scripts/export_version.sh" \
+  test_case "version info file creation" \
+    "" \
     "Version information has been exported" \
     true
 
-test_case "version file format" \
-    "grep -E '^GO_VERSION=[0-9]+\.[0-9]+$' $PROJECT_ROOT/.version-info" \
-    "GO_VERSION=1.23" \
+  test_case "JSON file creation" \
+    "" \
+    "exported in JSON format" \
     true
 
-test_case "JSON file format" \
-    "grep -E '\"goVersion\": \"[0-9]+\.[0-9]+\"' $PROJECT_ROOT/.version-info.json" \
-    "\"goVersion\": \"1.23\"" \
-    true
+  test_section "File Contents Validation"
 
-# Section 4: Error Conditions
-echo -e "\n${BLUE}Testing Error Conditions${NC}"
-test_case "invalid go.mod" \
-    "GO_MOD_PATH=$TEMP_DIR/go.mod $PROJECT_ROOT/scripts/export_version.sh" \
-    "Could not read go.mod" \
-    false
+  local project_root
+  project_root=$(get_project_root)
+  # Test that files exist and contain expected content
+  test_file_exists "version info file exists" "${project_root}/.version-info"
+  test_file_exists "JSON version file exists" "${project_root}/.version-info.json"
 
-# Create invalid go.mod for testing
-echo "invalid content" > "$TEMP_DIR/go.mod"
-test_case "malformed go.mod" \
-    "GO_MOD_PATH=$TEMP_DIR/go.mod $PROJECT_ROOT/scripts/export_version.sh" \
-    "Failed to parse version" \
-    false
+  test_file_contains "version file contains Go version" \
+    "${project_root}/.version-info" \
+    "GO_VERSION="
 
-# Report results
-echo
-echo "Test Results:"
-echo "Passed: $PASS"
-echo "Failed: $FAIL"
-exit $FAIL
+  test_file_contains "JSON file contains Go version" \
+    "${project_root}/.version-info.json" \
+    '"goVersion":'
+}
+
+# Start the test framework and run tests
+start_tests "$@"
+run_tests

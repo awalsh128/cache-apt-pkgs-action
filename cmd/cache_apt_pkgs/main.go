@@ -5,7 +5,7 @@ import (
 )
 
 func main() {
-	logging.Init("cache_apt_pkgs", true)
+	logging.Init(true)
 
 	commands := CreateCmds(
 		GetCreateKeyCmd(),

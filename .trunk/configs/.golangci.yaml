@@ -1,87 +1,81 @@
 version: "2"
 
+formatters:
+  enable:
+    - gofumpt # formats Go code
+    - goimports # formats imports and does everything that gofmt does
+
 linters:
   enable:
-    - asasalint     # checks for pass []any as any in variadic func(...any)
-    - asciicheck    # checks that your code does not contain non-ASCII identifiers
-    - bidichk       # checks for dangerous unicode character sequences
-    - bodyclose     # checks whether HTTP response body is closed successfully
-    - containedctx  # detects struct contained context.Context field
-    - contextcheck  # checks the function whether use a non-inherited context
-    - cyclop        # checks function and package cyclomatic complexity
-    - decorder      # checks declaration order and count of types, constants, variables and functions
-    - dogsled       # checks assignments with too many blank identifiers
-    - dupl         # checks code clone duplication
+    - asasalint # checks for pass []any as any in variadic func(...any)
+    - asciicheck # checks that your code does not contain non-ASCII identifiers
+    - bidichk # checks for dangerous unicode character sequences
+    - bodyclose # checks whether HTTP response body is closed successfully
+    - containedctx # detects struct contained context.Context field
+    - contextcheck # checks the function whether use a non-inherited context
+    - cyclop # checks function and package cyclomatic complexity
+    - decorder # checks declaration order and count of types, constants, variables and functions
+    - dogsled # checks assignments with too many blank identifiers
+    - dupl # checks code clone duplication
     - durationcheck # checks for two durations multiplied together
-    - errcheck     # checks unchecked errors
-    - errchkjson   # checks types passed to encoding/json functions
-    - errname      # checks that sentinel errors are prefixed with the Err and error types are suffixed with the Error
-    - errorlint    # finds code that will cause problems with the error wrapping scheme
-    - execinquery  # checks query string in Query function which reads your Go src files and warning it finds
-    - exhaustive   # checks exhaustiveness of enum switch statements
-    - exportloopref # checks for pointers to enclosing loop variables
+    - errcheck # checks unchecked errors
+    - errchkjson # checks types passed to encoding/json functions
+    - errname # checks that sentinel errors are prefixed with the Err and error types are suffixed with the Error
+    - errorlint # finds code that will cause problems with the error wrapping scheme
+    - exhaustive # checks exhaustiveness of enum switch statements
     - forcetypeassert # finds forced type assertions
-    - funlen       # checks for long functions
+    - funlen # checks for long functions
     - gocheckcompilerdirectives # validates go compiler directive comments
     - gochecknoglobals # checks that no global variables exist
-    - gochecknoinits   # checks that no init functions are present
-    - gocognit     # computes and checks the cognitive complexity
-    - goconst      # finds repeated strings that could be replaced by a constant
-    - gocritic     # provides diagnostics that check for bugs, performance and style issues
-    - gocyclo      # checks cyclomatic complexity
-    - godot        # checks if comments end in a period
-    - godox        # detects FIXME, TODO and other comment keywords
-    - goerr113     # checks the errors handling expressions
-    - gofmt        # checks whether code was gofmt-ed
-    - gofumpt      # checks whether code was gofumpt-ed
-    - goheader     # checks is file header matches to pattern
-    - goimports    # does everything that gofmt does + formats imports
-    - gomnd        # detects magic numbers
+    - gochecknoinits # checks that no init functions are present
+    - gocognit # computes and checks the cognitive complexity
+    - goconst # finds repeated strings that could be replaced by a constant
+    - gocritic # provides diagnostics that check for bugs, performance and style issues
+    - gocyclo # checks cyclomatic complexity
+    - godot # checks if comments end in a period
+    - godox # detects FIXME, TODO and other comment keywords
+    - goheader # checks is file header matches to pattern
     - gomoddirectives # manages the use of 'replace', 'retract', and 'excludes' directives in go.mod
-    - gomodguard   # allows to specify a list of forbidden modules
+    - gomodguard # allows to specify a list of forbidden modules
     - goprintffuncname # checks that printf-like functions are named with f at the end
-    - gosec        # inspects source code for security problems
-    - gosimple     # specializes in simplifying code
-    - govet        # reports suspicious constructs
-    - grouper      # analyzes expression groups
-    - importas     # enforces consistent import aliases
-    - ineffassign  # detects when assignments to existing variables are not used
+    - gosec # inspects source code for security problems
+    - govet # reports suspicious constructs
+    - grouper # analyzes expression groups
+    - importas # enforces consistent import aliases
+    - ineffassign # detects when assignments to existing variables are not used
     - interfacebloat # checks the number of methods inside an interface
-    - ireturn      # accept interfaces, return concrete types
-    - lll          # reports long lines
-    - loggercheck  # checks key value pairs for common logger libraries
-    - maintidx     # measures the maintainability index of each function
-    - makezero     # finds slice declarations with non-zero initial length
-    - misspell     # finds commonly misspelled English words
-    - nakedret     # finds naked returns
-    - nestif      # reports deeply nested if statements
-    - nilerr      # finds the code that returns nil even if it checks that error is not nil
-    - nilnil      # checks that there is no simultaneous return of nil error and an invalid value
-    - nlreturn    # checks for a new line before return and branch statements
-    - noctx       # finds sending http request without context.Context
-    - nolintlint  # reports ill-formed or insufficient nolint directives
+    - ireturn # accept interfaces, return concrete types
+    - lll # reports long lines
+    - loggercheck # checks key value pairs for common logger libraries
+    - maintidx # measures the maintainability index of each function
+    - makezero # finds slice declarations with non-zero initial length
+    - misspell # finds commonly misspelled English words
+    - nakedret # finds naked returns
+    - nestif # reports deeply nested if statements
+    - nilerr # finds the code that returns nil even if it checks that error is not nil
+    - nilnil # checks that there is no simultaneous return of nil error and an invalid value
+    - nlreturn # checks for a new line before return and branch statements
+    - noctx # finds sending http request without context.Context
+    - nolintlint # reports ill-formed or insufficient nolint directives
     - nonamedreturns # reports all named returns
     - nosprintfhostport # checks for misuse of Sprintf to construct a host with port in a URL
     - paralleltest # detects missing usage of t.Parallel() method in your Go test
-    - prealloc    # finds slice declarations that could potentially be pre-allocated
+    - prealloc # finds slice declarations that could potentially be pre-allocated
     - predeclared # finds code that shadows one of Go's predeclared identifiers
-    - promlinter  # checks Prometheus metrics naming via promlint
-    - reassign    # checks that package variables are not reassigned
-    - revive      # fast, configurable, extensible, flexible, and beautiful linter for Go
+    - promlinter # checks Prometheus metrics naming via promlint
+    - reassign # checks that package variables are not reassigned
+    - revive # fast, configurable, extensible, flexible, and beautiful linter for Go
     - rowserrcheck # checks whether Err of rows is checked successfully
     - sqlclosecheck # checks that sql.Rows and sql.Stmt are closed
-    - staticcheck  # comprehensive checks for bugs and inefficiencies
-    - stylecheck   # replacement for golint
-    - tenv        # detects using os.Setenv instead of t.Setenv since Go1.17
+    - staticcheck # comprehensive checks for bugs and inefficiencies
     - testableexamples # checks if examples are testable
-    - testpackage  # makes you use a separate _test package
-    - thelper     # detects golang test helpers without t.Helper()
-    - tparallel   # detects inappropriate usage of t.Parallel()
-    - typecheck   # like the front-end of a Go compiler
-    - unconvert   # removes unnecessary type conversions
-    - unparam     # reports unused function parameters
-    - unused      # checks for unused constants, variables, functions and types
+    - testpackage # makes you use a separate _test package
+    - thelper # detects golang test helpers without t.Helper()
+    - tparallel # detects inappropriate usage of t.Parallel()
+    - unconvert # removes unnecessary type conversions
+    - unparam # reports unused function parameters
+    - unused # checks for unused constants, variables, functions and types
     - usestdlibvars # detects the possibility to use variables/constants from the Go standard library
-    - varnamelen  # checks that the length of a variable's name matches its scope
+    - varnamelen # checks that the length of a variable's name matches its scope
     - wastedassign # finds wasted assignment statements
-    - whitespace  # detects leading and trailing whitespace
+    - whitespace # detects leading and trailing whitespace

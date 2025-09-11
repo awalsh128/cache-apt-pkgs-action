@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"awalsh128.com/cache-apt-pkgs-action/internal/cache"
@@ -18,19 +19,21 @@ func install(cmd *Cmd, pkgArgs pkgs.Packages) error {
 		return fmt.Errorf("error initializing APT: %v", err)
 	}
 
-	logging.Info("Installing packages.")
-	logging.Debug("Package list: %v.", pkgArgs)
+	logging.Info("Installing packages:\n%s.", strings.Join(pkgArgs.StringArray(), "\n  "))
 
 	installedPkgs, err := apt.Install(pkgArgs)
 	if err != nil {
 		return fmt.Errorf("error installing packages: %v", err)
 	}
 
-	manifestKey := cache.Key{
-		Packages:      pkgArgs,
-		Version:       cmd.StringFlag("version"),
-		GlobalVersion: cmd.StringFlag("global-version"),
-		OsArch:        runtime.GOARCH,
+	manifestKey, err := cache.NewKey(
+		pkgArgs,
+		cmd.StringFlag("version"),
+		cmd.StringFlag("global-version"),
+		runtime.GOARCH,
+	)
+	if err != nil {
+		return fmt.Errorf("error creating manifest key: %v", err)
 	}
 
 	pkgManifests := make([]cache.ManifestPackage, installedPkgs.Len())
@@ -40,6 +43,7 @@ func install(cmd *Cmd, pkgArgs pkgs.Packages) error {
 		if err != nil {
 			return err
 		}
+		logging.Debug("Package %s installed files:\n%s", pkg.String(), strings.Join(files, "\n"))
 		pkgManifests[i] = cache.ManifestPackage{
 			Package:   *pkg,
 			Filepaths: files,
@@ -52,10 +56,11 @@ func install(cmd *Cmd, pkgArgs pkgs.Packages) error {
 	}
 
 	manifestPath := filepath.Join(cmd.StringFlag("cache-dir"), "manifest.json")
+	logging.Info("Writing manifest to %s.", manifestPath)
 	if err := cache.Write(manifestPath, manifest); err != nil {
 		return fmt.Errorf("error writing manifest to %s: %v", manifestPath, err)
 	}
-	logging.Info("Writing manifest to %s.", manifestPath)
+	logging.Info("Wrote manifest to %s.", manifestPath)
 	logging.Info("Completed package installation.")
 	return nil
 }

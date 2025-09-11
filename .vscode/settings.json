@@ -1,28 +1,41 @@
 {
-  "cSpell.enabled": false,
-  "editor.rulers": [
-    100
-  ],
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "editor.rulers": [100],
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.formatOnType": true,
+  "editor.wordWrap": "wordWrapColumn",
   "editor.wordWrapColumn": 100,
+  "editor.wrappingIndent": "indent",
   "[go]": {
-    "editor.defaultFormatter": "trunk.io",
-    "editor.formatOnSave": true
+    "editor.defaultFormatter": "trunk.io"
   },
-  "[json]": {
-    "editor.defaultFormatter": "vscode.json-language-features",
-    "editor.formatOnSave": true
+  "[shellscript]": {
+    "editor.defaultFormatter": "trunk.io"
   },
-  "[jsonc]": {
-    "editor.defaultFormatter": "vscode.json-language-features",
-    "editor.formatOnSave": true
+  "[bash]": {
+    "editor.defaultFormatter": "trunk.io"
   },
-  "[shell]": {
-    "editor.defaultFormatter": "trunk.io",
-    "editor.formatOnSave": true
+  "[json,jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "[shfmt]": {
+    "editor.defaultFormatter": "trunk.io"
   },
   "[yaml]": {
-    "editor.defaultFormatter": "trunk.io",
-    "editor.formatOnSave": true
+    "editor.defaultFormatter": "trunk.io"
   },
-  "editor.formatOnSave": true
+  "cSpell.enabled": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.shellcheck": "explicit"
+  },
+  "workbench.editorAssociations": {
+    "git-index": "default",
+    "git-show": "default"
+  },
+  "files.readonlyInclude": {},
+  "workbench.editor.defaultBinaryEditor": "default",
+  "workbench.editor.enablePreviewFromCodeNavigation": false
 }

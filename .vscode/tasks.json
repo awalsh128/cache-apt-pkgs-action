@@ -5,18 +5,12 @@
       "label": "go: build",
       "type": "shell",
       "command": "go",
-      "args": [
-        "build",
-        "-v",
-        "./..."
-      ],
+      "args": ["build", "-v", "./..."],
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": [
-        "$go"
-      ],
+      "problemMatcher": ["$go"],
       "presentation": {
         "reveal": "always",
         "panel": "shared",
@@ -28,18 +22,12 @@
       "label": "go: test",
       "type": "shell",
       "command": "go",
-      "args": [
-        "test",
-        "-v",
-        "./..."
-      ],
+      "args": ["test", "-v", "./..."],
       "group": {
         "kind": "test",
         "isDefault": true
       },
-      "problemMatcher": [
-        "$go"
-      ],
+      "problemMatcher": ["$go"],
       "presentation": {
         "reveal": "always",
         "panel": "shared",
@@ -59,9 +47,7 @@
         "-covermode=atomic",
         "./..."
       ],
-      "problemMatcher": [
-        "$go"
-      ],
+      "problemMatcher": ["$go"],
       "presentation": {
         "reveal": "always",
         "panel": "shared",

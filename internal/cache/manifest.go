@@ -1,3 +1,32 @@
+// manifest.go
+//
+// Description:
+//
+//	Provides types and functions for managing cache manifests and keys, including serialization,
+//	deserialization, and validation of package metadata.
+//
+// Package: cache
+//
+// Example usage:
+//
+//	// Reading a manifest from file
+//	manifest, err := cache.Read("/path/to/manifest.json")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	fmt.Println("Packages:", manifest.InstalledPackages)
+//
+//	// Writing a manifest to file
+//	err = cache.Write("/path/to/manifest.json", manifest)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	// Writing GitHub outputs
+//	err = cache.WriteGithubOutputs("/path/to/outputs.txt", manifest)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
 package cache
 
 import (

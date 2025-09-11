@@ -1,0 +1,37 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+# top-most EditorConfig file
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+charset = utf-8
+
+# 2 space indentation
+[*.{js,json,jsonc,yml,yaml,md,sh}]
+indent_style = space
+indent_size = 2
+
+# Tab indentation (no size specified)
+[*.go]
+indent_style = tab
+indent_size = 4
+
+# Matches the exact files
+[{Makefile,makefile,*.mk}]
+indent_style = tab
+indent_size = 4
+
+# Shell scripts
+[*.sh]
+indent_style = space
+indent_size = 2
+max_line_length = 100
+
+# Markdown files
+[*.md]
+max_line_length = 100
+trim_trailing_whitespace = false

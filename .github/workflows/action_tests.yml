@@ -1,45 +1,31 @@
 name: Test Action
 
+permissions:
+  contents: read
+
+env:
+  DEBUG: false
+
 on:
-  # Manual trigger with specific ref
+  # Manual trigger (no inputs allowed per Trunk rule)
   workflow_dispatch:
-    inputs:
-      ref:
-        description: Branch, tag, SHA to test (for PRs use pull/ID/head)
-        required: true
-        type: string
-      debug:
-        description: Enable debug logging
-        type: boolean
-        required: false
-        default: false
-  
-  # Automatic triggers
+
   push:
-    branches: [dev-v2.0]  # Test on pushes to dev branch
+    branches: [dev-v2.0] # Test on pushes to dev branch
     paths:
-      - cmd/**           # Only when action code changes
-      - internal/**      # Only when action code changes
+      - cmd/** # Only when action code changes
+      - internal/** # Only when action code changes
       - action.yml
       - .github/workflows/action_tests.yml
   pull_request:
-    branches: [dev-v2.0]  # Test on PRs to dev branch
+    branches: [dev-v2.0] # Test on PRs to dev branch
     paths:
-      - cmd/**          # Only when action code changes
-      - internal/**     # Only when action code changes
+      - cmd/** # Only when action code changes
+      - internal/** # Only when action code changes
       - action.yml
       - .github/workflows/action_tests.yml
 
-# Environment configuration
-env:
-  DEBUG: ${{ github.event.inputs.debug || false }}
-  # Test for overrides in built in shell options (regression issue 98).
-  SHELLOPTS: errexit:pipefail
-  # Use PR's SHA when testing a PR, otherwise use the ref provided
-  TEST_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.ref }}
-
-jobs:  
-
+jobs:
   list_all_versions:
     runs-on: ubuntu-latest
     name: List all package versions (including deps).
@@ -48,8 +34,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ env.TEST_REF }}
-          
+          # Use the event ref/sha by default; do not accept user-controlled ref inputs
+          fetch-depth: 0
+
       # Run the action from the checked out code
       - name: Execute
         id: execute
@@ -57,7 +44,7 @@ jobs:
         with:
           packages: xdot=1.3-1
           version: ${{ github.run_id }}-${{ github.run_attempt }}-list_all_versions
-          debug: ${{ env.DEBUG }}
+          debug: "false"
       - name: Verify
         if: |
           steps.execute.outputs.cache-hit != 'false' || 
@@ -82,8 +69,8 @@ jobs:
         with:
           packages: xdot rolldice
           version: ${{ github.run_id }}-${{ github.run_attempt }}-list_versions
-          debug: ${{ env.DEBUG }}
-      - name: Verify                                                                                                      
+          debug: "false"
+      - name: Verify
         if: steps.execute.outputs.cache-hit != 'false' || steps.execute.outputs.package-version-list != 'rolldice=1.16-1build3,xdot=1.3-1'
         run: |
           echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}" 
@@ -104,7 +91,7 @@ jobs:
         with:
           packages: xdot rolldice
           version: ${{ github.run_id }}-${{ github.run_attempt }}-standard_workflow
-          debug: ${{ env.DEBUG }}
+          debug: "false"
       - name: Verify
         if: steps.execute.outputs.cache-hit != 'false'
         run: |
@@ -124,7 +111,7 @@ jobs:
         with:
           packages: xdot rolldice
           version: ${{ github.run_id }}-${{ github.run_attempt }}-standard_workflow_install_with_new_version
-          debug: ${{ env.DEBUG }}
+          debug: "false"
       - name: Verify
         if: steps.execute.outputs.cache-hit != 'false'
         run: |
@@ -290,7 +277,7 @@ jobs:
         with:
           packages: xdot
           version: ${{ github.run_id }}-${{ github.run_attempt }}-list-all-package-versions
-          debug: ${{ env.DEBUG }}
+          debug: false
 
   regression_72_1:
     runs-on: ubuntu-latest

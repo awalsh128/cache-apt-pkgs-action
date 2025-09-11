@@ -3,14 +3,14 @@
 #==============================================================================
 # update_md_tocs.sh
 #==============================================================================
-# 
+#
 # DESCRIPTION:
 #   Automatically updates table of contents in all markdown files that contain
 #   doctoc markers. The script handles installation of doctoc if not present
 #   and applies consistent formatting across all markdown files.
 #
 # USAGE:
-#   ./scripts/update_md_tocs.sh
+#   update_md_tocs.sh [OPTIONS]
 #
 # FEATURES:
 #   - Auto-detects markdown files with doctoc markers
@@ -37,53 +37,37 @@
 #   0 - Success
 #   1 - Missing dependencies or installation failure
 #
-# AUTHOR:
-#   Claude - 2025-08-28
-#
 # NOTES:
 #   - Only processes files containing doctoc markers
 #   - Preserves existing markdown content
 #   - Safe to run multiple times
 #==============================================================================
 
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
-
-# Function to check if npm package is installed globally
-npm_package_installed() {
-    npm list -g "$1" >/dev/null 2>&1
-}
+source "$(git rev-parse --show-toplevel)/scripts/lib.sh"
 
 # Install doctoc if not present
 if ! command_exists doctoc; then
-    echo "doctoc not found. Installing..."
-    if ! command_exists npm; then
-        echo "Error: npm is required to install doctoc"
-        exit 1
+  echo "doctoc not found. Installing..."
+  if ! command_exists npm; then
+    echo "Error: npm is required to install doctoc"
+    exit 1
+  fi
+
+  if ! npm_package_installed doctoc; then
+    echo "Installing doctoc globally..."
+    if ! npm install -g doctoc; then
+      fail "Failed to install doctoc"
     fi
-    
-    if ! npm_package_installed doctoc; then
-        echo "Installing doctoc globally..."
-        npm install -g doctoc
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to install doctoc"
-            exit 1
-        fi
-    fi
+  fi
 fi
 
-echo "Updating table of contents in markdown files..."
-
+print_status "Updating table of contents in markdown files..."
 # Find all markdown files that contain doctoc markers
 find . -type f -name "*.md" -exec grep -l "START doctoc" {} \; | while read -r file; do
-    echo "Processing: $file"
-    doctoc --maxlevel 4 --no-title --notitle --github "$file"
-    
-    if [ $? -ne 0 ]; then
-        echo "Error: Failed to update TOC in $file"
-    fi
+  log_info "Processing: ${file}"
+  if ! doctoc --maxlevel 4 --no-title --notitle --github "${file}"; then
+    log_error "Failed to update TOC in ${file}"
+  fi
 done
 
-echo "Table of contents update complete!"
+print_success "Table of contents update complete!"
