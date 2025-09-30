@@ -35,6 +35,10 @@ inputs:
     description: 'Enable debugging when there are issues with action. Minor performance penalty.'
     required: false
     default: 'false'
+  add-repository:
+    description: 'Space delimited list of repositories to add via apt-add-repository before installing packages. Supports PPA (ppa:user/repo) and other repository formats.'
+    required: false
+    default: ''
 
 outputs:
   cache-hit:
@@ -59,6 +63,7 @@ runs:
           "$VERSION" \
           "$EXEC_INSTALL_SCRIPTS" \
           "$DEBUG" \
+          "$ADD_REPOSITORY" \
           "$PACKAGES"
         if [ -f ~/cache-apt-pkgs/cache_key.md5 ]; then
           echo "CACHE_KEY=$(cat ~/cache-apt-pkgs/cache_key.md5)" >> $GITHUB_ENV
@@ -71,6 +76,7 @@ runs:
          EXEC_INSTALL_SCRIPTS: "${{ inputs.execute_install_scripts }}"
          EMPTY_PACKAGES_BEHAVIOR: "${{ inputs.empty_packages_behavior }}"
          DEBUG: "${{ inputs.debug }}"
+         ADD_REPOSITORY: "${{ inputs.add-repository }}"
          PACKAGES: "${{ inputs.packages }}"
 
     - id: load-cache
@@ -89,6 +95,7 @@ runs:
           "$CACHE_HIT" \
           "$EXEC_INSTALL_SCRIPTS" \
           "$DEBUG" \
+          "$ADD_REPOSITORY" \
           "$PACKAGES"
         function create_list { local list=$(cat ~/cache-apt-pkgs/manifest_${1}.log | tr '\n' ','); echo ${list:0:-1}; };
         echo "package-version-list=$(create_list main)" >> $GITHUB_OUTPUT
@@ -98,6 +105,7 @@ runs:
          CACHE_HIT: "${{ steps.load-cache.outputs.cache-hit }}"
          EXEC_INSTALL_SCRIPTS: "${{ inputs.execute_install_scripts }}"
          DEBUG: "${{ inputs.debug }}"
+         ADD_REPOSITORY: "${{ inputs.add-repository }}"
          PACKAGES: "${{ inputs.packages }}"
 
     - id: upload-logs
