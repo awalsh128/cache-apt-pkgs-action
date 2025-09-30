@@ -1,2 +1,3 @@
 src/cmd/apt_query/apt_query*
 apt_query_test*
+*.log
