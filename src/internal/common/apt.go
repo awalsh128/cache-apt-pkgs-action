@@ -42,6 +42,13 @@ func getNonVirtualPackage(executor exec.Executor, name string) (pkg *AptPackage,
 	if isErrLine(execution.CombinedOut) {
 		return pkg, execution.Error()
 	}
+	
+	// Check if the output is just "Reverse Provides:" with no actual package info
+	trimmedOutput := strings.TrimSpace(execution.CombinedOut)
+	if trimmedOutput == "Reverse Provides:" {
+		return pkg, fmt.Errorf("virtual package '%s' has no concrete package providers", name)
+	}
+	
 	splitLine := GetSplitLine(execution.CombinedOut, " ", 3)
 	if len(splitLine.Words) < 2 {
 		return pkg, fmt.Errorf("unable to parse space delimited line's package name and version from apt-cache showpkg output below:\n%s", execution.CombinedOut)

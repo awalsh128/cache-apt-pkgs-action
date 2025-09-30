@@ -1,0 +1,18 @@
+2025/09/30 07:33:25 Debug log created at /home/runner/work/cache-apt-pkgs-action/cache-apt-pkgs-action/src/cmd/apt_query/apt_query.log
+2025/09/30 07:33:26 EXECUTION-OBJ-START
+{
+ "Cmd": "apt-cache --quiet=0 --no-all-versions show python",
+ "CombinedOut": "N: Can't select candidate version from package python as it has no candidate\nN: Can't select versions from package 'python' as it is purely virtual\nN: No packages found\n",
+ "ExitCode": 0
+}
+EXECUTION-OBJ-END
+2025/09/30 07:33:27 EXECUTION-OBJ-START
+{
+ "Cmd": "bash -c apt-cache showpkg python | grep -A 1 \"Reverse Provides\" | tail -1",
+ "CombinedOut": "Reverse Provides: \n",
+ "ExitCode": 0
+}
+EXECUTION-OBJ-END
+2025/09/30 07:33:27 Encountered error resolving some or all package names, see combined std[out,err] below.
+virtual package 'python' has no concrete package providers
+virtual package 'python' has no concrete package providers
