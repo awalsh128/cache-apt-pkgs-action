@@ -29,6 +29,19 @@ input_packages="${@:5}"
 
 # Trim commas, excess spaces, and sort.
 log "Normalizing package list..."
+
+# Ensure APT package lists are updated if stale (for nektos/act compatibility)
+# Uses the same logic as install_and_cache_pkgs.sh
+if [[ -z "$(find -H /var/lib/apt/lists -maxdepth 0 -mmin -5 2>/dev/null)" ]]; then
+  log "APT package lists are stale, updating..."
+  if command -v apt-fast > /dev/null 2>&1; then
+    sudo apt-fast update > /dev/null 2>&1 || sudo apt update > /dev/null 2>&1 || true
+  else
+    sudo apt update > /dev/null 2>&1 || true
+  fi
+  log "APT package lists updated"
+fi
+
 packages="$(get_normalized_package_list "${input_packages}")"
 log "done"
 
