@@ -65,6 +65,21 @@ fi
 
 validate_bool "${execute_install_scripts}" execute_install_scripts 4
 
+# Basic validation for repository parameter
+if [ -n "${add_repository}" ]; then
+  log "Validating repository parameter..."
+  for repository in ${add_repository}; do
+    # Check if repository format looks valid (basic check)
+    if [[ "${repository}" =~ [^a-zA-Z0-9:\/.-] ]]; then
+      log "aborted"
+      log "Repository '${repository}' contains invalid characters." >&2
+      log "Supported formats: 'ppa:user/repo', 'deb http://...', 'http://...', 'multiverse', etc." >&2
+      exit 6
+    fi
+  done
+  log "done"
+fi
+
 log "done"
 
 log_empty_line
