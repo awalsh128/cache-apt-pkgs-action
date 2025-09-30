@@ -24,8 +24,11 @@ execute_install_scripts="${3}"
 # Debug mode for diagnosing issues.
 debug="${4}"
 
+# Repositories to add before installing packages.
+add_repository="${5}"
+
 # List of the packages to use.
-input_packages="${@:5}"
+input_packages="${@:6}"
 
 # Trim commas, excess spaces, and sort.
 log "Normalizing package list..."
@@ -80,6 +83,12 @@ cpu_arch="$(arch)"
 log "- CPU architecture is '${cpu_arch}'."
 
 value="${packages} @ ${version} ${force_update_inc}"
+
+# Include repositories in cache key to ensure different repos get different caches
+if [ -n "${add_repository}" ]; then
+  value="${value} ${add_repository}"
+  log "- Repositories '${add_repository}' added to value."
+fi
 
 # Don't invalidate existing caches for the standard Ubuntu runners
 if [ "${cpu_arch}" != "x86_64" ]; then

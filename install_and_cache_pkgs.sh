@@ -15,8 +15,11 @@ source "${script_dir}/lib.sh"
 # Directory that holds the cached packages.
 cache_dir="${1}"
 
+# Repositories to add before installing packages.
+add_repository="${3}"
+
 # List of the packages to use.
-input_packages="${@:3}"
+input_packages="${@:4}"
 
 if ! apt-fast --version > /dev/null 2>&1; then
   log "Installing apt-fast for optimized installs..."
@@ -24,6 +27,17 @@ if ! apt-fast --version > /dev/null 2>&1; then
   /bin/bash -c "$(curl -sL https://raw.githubusercontent.com/ilikenwf/apt-fast/master/quick-install.sh)"
   log "done"
 
+  log_empty_line
+fi
+
+# Add custom repositories if specified
+if [ -n "${add_repository}" ]; then
+  log "Adding custom repositories..."
+  for repository in ${add_repository}; do
+    log "- Adding repository: ${repository}"
+    sudo apt-add-repository -y "${repository}"
+  done
+  log "done"
   log_empty_line
 fi
 

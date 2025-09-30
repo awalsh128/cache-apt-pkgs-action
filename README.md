@@ -36,6 +36,7 @@ There are three kinds of version labels you can use.
 - `version` - Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
 - `execute_install_scripts` - Execute Debian package pre and post install script upon restore. See [Caveats / Non-file Dependencies](#non-file-dependencies) for more information.
 - `empty_packages_behavior` - Desired behavior when the given `packages` is empty. `'error'` (default), `'warn'` or `'ignore'`.
+- `add-repository` - Space delimited list of repositories to add via `apt-add-repository` before installing packages. Supports PPA (e.g., `ppa:user/repo`) and other repository formats.
 
 ### Outputs
 
@@ -87,6 +88,36 @@ install_doxygen_deps:
     - uses: awalsh128/cache-apt-pkgs-action@latest
       with:
         packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
+        version: 1.0
+```
+
+### Using with Third-party PPAs
+
+This example shows how to install packages from a third-party PPA:
+
+```yaml
+install_from_ppa:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: chromium-browser
+        add-repository: ppa:canonical-chromium-builds/stage
+        version: 1.0
+```
+
+You can also add multiple repositories:
+
+```yaml
+install_from_multiple_repos:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: package1 package2
+        add-repository: ppa:user/repo1 ppa:user/repo2
         version: 1.0
 ```
 
