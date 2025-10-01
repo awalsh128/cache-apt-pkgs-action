@@ -31,7 +31,13 @@ func isErrLine(line string) bool {
 	return strings.HasPrefix(line, "E: ") || strings.HasPrefix(line, "N: ")
 }
 
+// isVirtualPackage checks if a string indicates a purely virtual package message.
+func isVirtualPackage(message string) bool {
+	return strings.Contains(message, "as it is purely virtual")
+}
+
 // Resolves virtual packages names to their concrete one.
+// Returns the first available concrete package provider, or an error if none exist.
 func getNonVirtualPackage(executor exec.Executor, name string) (pkg *AptPackage, err error) {
 	execution := executor.Exec("bash", "-c", fmt.Sprintf("apt-cache showpkg %s | grep -A 1 \"Reverse Provides\" | tail -1", name))
 	err = execution.Error()
@@ -46,13 +52,15 @@ func getNonVirtualPackage(executor exec.Executor, name string) (pkg *AptPackage,
 	// Check if the output is just "Reverse Provides:" with no actual package info
 	trimmedOutput := strings.TrimSpace(execution.CombinedOut)
 	if trimmedOutput == "Reverse Provides:" {
-		return pkg, fmt.Errorf("virtual package '%s' has no concrete package providers", name)
+		return pkg, fmt.Errorf("virtual package '%s' has no concrete package providers available", name)
 	}
 	
 	splitLine := GetSplitLine(execution.CombinedOut, " ", 3)
 	if len(splitLine.Words) < 2 {
 		return pkg, fmt.Errorf("unable to parse space delimited line's package name and version from apt-cache showpkg output below:\n%s", execution.CombinedOut)
 	}
+	
+	// Successfully found a concrete package provider
 	return &AptPackage{Name: splitLine.Words[0], Version: splitLine.Words[1]}, nil
 }
 
@@ -74,7 +82,7 @@ func getPackage(executor exec.Executor, paragraph string) (pkg *AptPackage, err 
 
 		case "N":
 			// e.g.  Can't select versions from package 'libvips' as it is purely virtual
-			if strings.Contains(splitLine.Words[1], "as it is purely virtual") {
+			if isVirtualPackage(splitLine.Words[1]) {
 				return getNonVirtualPackage(executor, GetSplitLine(splitLine.Words[1], "'", 4).Words[2])
 			}
 			if strings.HasPrefix(splitLine.Words[1], "Unable to locate package") && !ArrContainsString(errMsgs, splitLine.Line) {
