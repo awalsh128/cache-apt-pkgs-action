@@ -68,3 +68,9 @@ func TestNormalizedList_VirtualPackagesExists_StdoutsConcretePackage(t *testing.
 	result := cmdtesting.New(t, createReplayLogs).Run("normalized-list", "libvips")
 	result.ExpectSuccessfulOut("libvips42=8.9.1-2")
 }
+
+func TestNormalizedList_VirtualPackageWithNoProviders_StderrsErrorMessage(t *testing.T) {
+	var result = cmdtesting.New(t, createReplayLogs).Run("normalized-list", "python")
+	result.ExpectError(`Encountered error resolving some or all package names, see combined std[out,err] below.
+virtual package 'python' has no concrete package providers available`)
+}
