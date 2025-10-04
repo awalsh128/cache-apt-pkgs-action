@@ -72,6 +72,5 @@ func TestNormalizedList_VirtualPackagesExists_StdoutsConcretePackage(t *testing.
 func TestNormalizedList_VirtualPackageWithNoProviders_StderrsErrorMessage(t *testing.T) {
 	var result = cmdtesting.New(t, createReplayLogs).Run("normalized-list", "python")
 	result.ExpectError(`Encountered error resolving some or all package names, see combined std[out,err] below.
-virtual package 'python' has no concrete package providers available
 virtual package 'python' has no concrete package providers available`)
 }

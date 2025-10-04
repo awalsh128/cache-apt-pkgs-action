@@ -127,10 +127,6 @@ func GetAptPackages(executor exec.Executor, names []string) (AptPackages, error)
 		}
 	}
 
-	if len(errMsgs) > 0 {
-		errMsgs = append(errMsgs, strings.Join(errMsgs, "\n"))
-	}
-
 	sort.Slice(pkgs, func(i, j int) bool {
 		return pkgs[i].Name < pkgs[j].Name
 	})
