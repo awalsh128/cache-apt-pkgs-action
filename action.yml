@@ -81,7 +81,7 @@ runs:
 
     - id: load-cache
       if: ${{ env.CACHE_KEY }}
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
         path: ~/cache-apt-pkgs
         key: cache-apt-pkgs_${{ env.CACHE_KEY }}
@@ -110,14 +110,14 @@ runs:
 
     - id: upload-logs
       if: ${{ env.CACHE_KEY && inputs.debug == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: cache-apt-pkgs-logs_${{ env.CACHE_KEY }}
         path: ~/cache-apt-pkgs/*.log
 
     - id: save-cache
       if: ${{ env.CACHE_KEY && ! steps.load-cache.outputs.cache-hit }}
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
         path: ~/cache-apt-pkgs
         key: ${{ steps.load-cache.outputs.cache-primary-key }}
