@@ -1,24 +1,7 @@
-// Package cache provides functionality for managing APT package cache keys.
-// It handles the creation, serialization, and validation of cache keys that uniquely
-// identify sets of packages for caching in GitHub Actions.
-//
-// Example usage:
-//
-//	// Create a new cache key
-//	key := cache.NewKey(packages, "v1.0", "v2", "amd64")
-//
-//	// Write the key to files
-//	err := key.Write("key.txt", "key.md5")
-//	if err != nil {
-//	    log.Fatal(err)
-//	}
-//
-//	// Read and validate a key
-//	plaintext, hash, err := cache.ReadKey("key.txt", "key.md5")
 package cache
 
 import (
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -93,13 +76,13 @@ func (k Key) String() string {
 		k.packages.String(), k.version, k.globalVersion, k.osArch)
 }
 
-// Hash generates a deterministic MD5 hash of the key's contents.
+// Hash generates a deterministic SHA256 hash of the key's contents.
 // This hash is used as the actual cache key for storage and lookup.
 //
-// Note: MD5 is used here for speed and determinism, not cryptographic security.
+// Note: SHA256 is used here for better collision resistance and security.
 // The hash is based on the string representation to ensure consistency.
 func (k Key) Hash() []byte {
-	hash := md5.Sum([]byte(k.String()))
+	hash := sha256.Sum256([]byte(k.String()))
 	return hash[:]
 }
 
@@ -214,13 +197,13 @@ func ReadKey(plaintextPath, hashPath string) (plaintext string, hash []byte, err
 	}
 
 	// Validate hash length
-	if len(storedHash) != md5.Size {
+	if len(storedHash) != sha256.Size {
 		return "", nil, fmt.Errorf("invalid hash length in %s: got %d bytes, want %d",
-			hashPath, len(storedHash), md5.Size)
+			hashPath, len(storedHash), sha256.Size)
 	}
 
 	// Verify hash matches plaintext
-	computedHash := md5.Sum(plaintextBytes)
+	computedHash := sha256.Sum256(plaintextBytes)
 	if string(computedHash[:]) != string(storedHash) {
 		return "", nil, fmt.Errorf("hash mismatch: stored hash does not match plaintext content")
 	}

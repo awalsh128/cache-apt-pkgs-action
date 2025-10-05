@@ -1,4 +1,3 @@
-// Package pkgs provides package management functionality using APT.
 package pkgs
 
 import (

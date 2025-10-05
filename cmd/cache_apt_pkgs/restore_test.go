@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	"awalsh128.com/cache-apt-pkgs-action/internal/pkgs"
@@ -62,27 +64,54 @@ func TestGetRestoreCmd(t *testing.T) {
 
 func TestRestore_NotImplemented(t *testing.T) {
 	cmd := GetRestoreCmd()
+
+	// Create a temporary directory for testing
+	tmpDir, err := os.MkdirTemp("", "restore_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Set up command flags
+	cmd.Flags.Set("cache-dir", tmpDir)
+
 	packages := pkgs.NewPackages(pkgs.Package{Name: "test-package"})
 
-	// The restore function is not implemented and should return an error
-	err := restore(cmd, packages)
+	// The restore function should now fail because there's no manifest file
+	err = restore(cmd, packages)
 	if err == nil {
-		t.Error("Expected error from unimplemented restore function")
+		t.Error("Expected error when manifest file doesn't exist")
 	}
 
-	expectedMsg := "restorePackages not implemented"
-	if err.Error() != expectedMsg {
-		t.Errorf("Expected error message '%s', got '%s'", expectedMsg, err.Error())
+	// Check that the error is about reading the manifest
+	if !strings.Contains(err.Error(), "error reading manifest") {
+		t.Errorf("Expected error about reading manifest, got '%s'", err.Error())
 	}
 }
 
 func TestRestore_EmptyPackages(t *testing.T) {
 	cmd := GetRestoreCmd()
+
+	// Create a temporary directory for testing
+	tmpDir, err := os.MkdirTemp("", "restore_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Set up command flags
+	cmd.Flags.Set("cache-dir", tmpDir)
+
 	packages := pkgs.NewPackages()
 
-	// Even with empty packages, restore should return not implemented error
-	err := restore(cmd, packages)
+	// The restore function should fail because there's no manifest file
+	err = restore(cmd, packages)
 	if err == nil {
-		t.Error("Expected error from unimplemented restore function")
+		t.Error("Expected error when manifest file doesn't exist")
+	}
+
+	// Check that the error is about reading the manifest
+	if !strings.Contains(err.Error(), "error reading manifest") {
+		t.Errorf("Expected error about reading manifest, got '%s'", err.Error())
 	}
 }

@@ -10,6 +10,8 @@ func TestMain_CommandStructure(t *testing.T) {
 		GetCreateKeyCmd(),
 		GetInstallCmd(),
 		GetRestoreCmd(),
+		GetSetupCmd(),
+		GetCleanupCmd(),
 		GetValidateCmd(),
 	)
 
@@ -18,7 +20,7 @@ func TestMain_CommandStructure(t *testing.T) {
 	}
 
 	// Check that all expected commands exist
-	expectedCommands := []string{"createkey", "install", "restore", "validate"}
+	expectedCommands := []string{"createkey", "install", "restore", "setup", "cleanup", "validate"}
 	for _, cmdName := range expectedCommands {
 		if _, ok := commands.Get(cmdName); !ok {
 			t.Errorf("Expected command '%s' to be available", cmdName)
@@ -31,6 +33,8 @@ func TestMain_AllCommandsHaveRequiredFields(t *testing.T) {
 		GetCreateKeyCmd(),
 		GetInstallCmd(),
 		GetRestoreCmd(),
+		GetSetupCmd(),
+		GetCleanupCmd(),
 		GetValidateCmd(),
 	)
 

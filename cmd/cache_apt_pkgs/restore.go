@@ -3,12 +3,35 @@ package main
 import (
 	"flag"
 	"fmt"
+	"path/filepath"
 
+	"awalsh128.com/cache-apt-pkgs-action/internal/cache"
+	"awalsh128.com/cache-apt-pkgs-action/internal/logging"
 	"awalsh128.com/cache-apt-pkgs-action/internal/pkgs"
 )
 
 func restore(cmd *Cmd, pkgArgs pkgs.Packages) error {
-	return fmt.Errorf("restorePackages not implemented")
+	manifestPath := filepath.Join(cmd.StringFlag("cache-dir"), "manifest.json")
+	logging.Info("Reading manifest from %s.", manifestPath)
+
+	manifest, err := cache.Read(manifestPath)
+	if err != nil {
+		return fmt.Errorf("error reading manifest from %s: %v", manifestPath, err)
+	}
+
+	// Extract all installed packages from the manifest
+	installedPkgList := make([]pkgs.Package, 0, len(manifest.InstalledPackages))
+	for _, manifestPkg := range manifest.InstalledPackages {
+		installedPkgList = append(installedPkgList, manifestPkg.Package)
+	}
+	installedPkgs := pkgs.NewPackages(installedPkgList...)
+
+	// Set GitHub Actions outputs
+	SetPackageVersionList(pkgArgs)
+	SetAllPackageVersionList(installedPkgs)
+
+	logging.Info("Completed package restoration.")
+	return nil
 }
 
 func GetRestoreCmd() *Cmd {

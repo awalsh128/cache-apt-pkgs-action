@@ -11,6 +11,8 @@ func main() {
 		GetCreateKeyCmd(),
 		GetInstallCmd(),
 		GetRestoreCmd(),
+		GetSetupCmd(),
+		GetCleanupCmd(),
 		GetValidateCmd(),
 	)
 	cmd, pkgArgs := commands.Parse()

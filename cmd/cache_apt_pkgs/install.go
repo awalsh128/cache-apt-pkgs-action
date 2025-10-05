@@ -61,6 +61,11 @@ func install(cmd *Cmd, pkgArgs pkgs.Packages) error {
 		return fmt.Errorf("error writing manifest to %s: %v", manifestPath, err)
 	}
 	logging.Info("Wrote manifest to %s.", manifestPath)
+
+	// Set GitHub Actions outputs
+	SetPackageVersionList(pkgArgs)
+	SetAllPackageVersionList(installedPkgs)
+
 	logging.Info("Completed package installation.")
 	return nil
 }

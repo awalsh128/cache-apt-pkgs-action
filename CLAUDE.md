@@ -3,63 +3,64 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Code Improvements by Claude](#code-improvements-by-claude)
-  - [General Code Organization Principles](#general-code-organization-principles)
-    - [1. Package Structure](#1-package-structure)
-    - [2. Code Style and Formatting](#2-code-style-and-formatting)
-    - [3. Error Handling](#3-error-handling)
-    - [4. API Design](#4-api-design)
-    - [5. Documentation Practices](#5-documentation-practices)
-      - [Go Code Documentation Standards](#go-code-documentation-standards)
-      - [Code Documentation](#code-documentation)
-      - [Project Documentation](#project-documentation)
-    - [6. Testing Strategy](#6-testing-strategy)
-      - [Types of Tests](#types-of-tests)
-      - [Test Coverage Strategy](#test-coverage-strategy)
-    - [7. Security Best Practices](#7-security-best-practices)
-      - [Input Validation](#input-validation)
-      - [Secure Coding](#secure-coding)
-      - [Secrets Management](#secrets-management)
-    - [8. Performance Considerations](#8-performance-considerations)
-    - [9. Profiling and Benchmarking](#9-profiling-and-benchmarking)
-      - [CPU Profiling](#cpu-profiling)
-      - [Memory Profiling](#memory-profiling)
-      - [Benchmarking](#benchmarking)
-      - [Trace Profiling](#trace-profiling)
-      - [Common Profiling Tasks](#common-profiling-tasks)
-      - [pprof Web Interface](#pprof-web-interface)
-      - [Key Metrics to Watch](#key-metrics-to-watch)
-    - [10. Concurrency Patterns](#10-concurrency-patterns)
-    - [11. Configuration Management](#11-configuration-management)
-    - [12. Logging and Observability](#12-logging-and-observability)
-  - [Non-Go Files](#non-go-files)
-    - [GitHub Actions](#github-actions)
-      - [Action File Formatting](#action-file-formatting)
-        - [Release Management](#release-management)
-        - [Create a README File](#create-a-readme-file)
-        - [Testing and Automation](#testing-and-automation)
-        - [Community Engagement](#community-engagement)
-        - [Further Guidance](#further-guidance)
-    - [Bash Scripts](#bash-scripts)
-      - [Script Testing](#script-testing)
-        - [Test Framework Architecture Pattern](#test-framework-architecture-pattern)
-        - [Script Argument Parsing Pattern](#script-argument-parsing-pattern)
-        - [Centralized Configuration Management](#centralized-configuration-management)
-        - [Implementation Status](#implementation-status)
-  - [Testing Principles](#testing-principles)
-    - [1. Test Organization Strategy](#1-test-organization-strategy)
-    - [2. Code Structure](#2-code-structure)
-      - [Constants and Variables](#constants-and-variables)
-      - [Helper Functions](#helper-functions)
-    - [3. Test Case Patterns](#3-test-case-patterns)
-      - [Table-Driven Tests (for simple cases)](#table-driven-tests-for-simple-cases)
-      - [Individual Tests (for complex cases)](#individual-tests-for-complex-cases)
-    - [4. Best Practices Applied](#4-best-practices-applied)
-    - [5. Examples of Improvements](#5-examples-of-improvements)
-      - [Before](#before)
-      - [After](#after)
-  - [Key Benefits](#key-benefits)
-  - [Conclusion](#conclusion)
+**Table of Contents**
+
+- [General Code Organization Principles](#general-code-organization-principles)
+  - [1. Package Structure](#1-package-structure)
+  - [2. Code Style and Formatting](#2-code-style-and-formatting)
+  - [3. Error Handling](#3-error-handling)
+  - [4. API Design](#4-api-design)
+  - [5. Documentation Practices](#5-documentation-practices)
+    - [Go Code Documentation Standards](#go-code-documentation-standards)
+    - [Code Documentation](#code-documentation)
+    - [Project Documentation](#project-documentation)
+  - [6. Testing Strategy](#6-testing-strategy)
+    - [Types of Tests](#types-of-tests)
+    - [Test Coverage Strategy](#test-coverage-strategy)
+  - [7. Security Best Practices](#7-security-best-practices)
+    - [Input Validation](#input-validation)
+    - [Secure Coding](#secure-coding)
+    - [Secrets Management](#secrets-management)
+  - [8. Performance Considerations](#8-performance-considerations)
+  - [9. Profiling and Benchmarking](#9-profiling-and-benchmarking)
+    - [CPU Profiling](#cpu-profiling)
+    - [Memory Profiling](#memory-profiling)
+    - [Benchmarking](#benchmarking)
+    - [Trace Profiling](#trace-profiling)
+    - [Common Profiling Tasks](#common-profiling-tasks)
+    - [`pprof` Web Interface](#pprof-web-interface)
+    - [Key Metrics to Watch](#key-metrics-to-watch)
+  - [10. Concurrency Patterns](#10-concurrency-patterns)
+  - [11. Configuration Management](#11-configuration-management)
+  - [12. Logging and Observability](#12-logging-and-observability)
+- [Non-Go Files](#non-go-files)
+  - [GitHub Actions](#github-actions)
+    - [Action File Formatting](#action-file-formatting)
+  - [YAML Formatting](#yaml-formatting)
+    - [Quoting Guidelines](#quoting-guidelines)
+    - [Formatting Standards](#formatting-standards)
+  - [Bash Scripts](#bash-scripts)
+    - [Script Testing](#script-testing)
+  - [YAML Files](#yaml-files)
+    - [Quoting Guidelines](#quoting-guidelines-1)
+    - [Examples](#examples)
+    - [Formatting Guidelines](#formatting-guidelines)
+    - [Multi-line Strings](#multi-line-strings)
+    - [GitHub Actions Specific](#github-actions-specific)
+- [Testing Principles](#testing-principles)
+  - [1. Test Organization Strategy](#1-test-organization-strategy)
+  - [2. Code Structure](#2-code-structure)
+    - [Constants and Variables](#constants-and-variables)
+    - [Helper Functions](#helper-functions)
+  - [3. Test Case Patterns](#3-test-case-patterns)
+    - [Table-Driven Tests (for simple cases)](#table-driven-tests-for-simple-cases)
+    - [Individual Tests (for complex cases)](#individual-tests-for-complex-cases)
+  - [4. Best Practices Applied](#4-best-practices-applied)
+  - [5. Examples of Improvements](#5-examples-of-improvements)
+    - [Before](#before)
+    - [After](#after)
+- [Key Benefits](#key-benefits)
+- [Conclusion](#conclusion)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -250,7 +251,7 @@ package cache
 
 - Validate all external input
 - Use strong types over strings
-- Implement proper sanitization
+- Implement proper input validation and cleaning
 - Assert array bounds
 - Validate file paths
 
@@ -266,7 +267,7 @@ package cache
 
 - Never commit secrets
 - Use environment variables
-- Implement secure config loading
+- Implement secure configuration loading
 - Rotate credentials regularly
 - Log access to sensitive operations
 
@@ -379,7 +380,7 @@ go tool trace trace.out
    go tool pprof -alloc_objects mem.prof
    ```
 
-3. **Goroutine Blocking**
+3. **Goroutine Block Profiling**
 
    ```bash
    # Track goroutine blocks
@@ -395,7 +396,7 @@ go tool trace trace.out
    go tool pprof mutex.prof
    ```
 
-#### pprof Web Interface
+#### `pprof` Web Interface
 
 For visual analysis:
 
@@ -435,7 +436,7 @@ go tool pprof -http=:8080 cpu.prof
 - Keep critical sections small
 - Document concurrency safety
 - Use context for cancellation
-- Consider rate limiting and backpressure
+- Consider rate limiting and load shedding
 
 ### 11. Configuration Management
 
@@ -496,12 +497,112 @@ For more details, visit:
 - <https://docs.github.com/en/actions/how-tos/create-and-publish-actions/manage-custom-actions>
 - <https://docs.github.com/en/actions/how-tos/create-and-publish-actions/release-and-maintain-actions>
 
+### YAML Formatting
+
+#### Quoting Guidelines
+
+Follow these rules for consistent YAML formatting:
+
+**DO quote when required:**
+
+```yaml
+# Strings with special characters or spaces
+version: "test version with spaces"
+name: "app-v1.2.3"
+message: "Value contains: colons, commas, quotes"
+
+# Empty strings
+packages: ""
+input: ""
+
+# Values that could be interpreted as other types
+id: "123" # Prevents interpretation as number
+flag: "true" # Prevents interpretation as boolean
+version: "1.0" # Prevents interpretation as number
+
+# YAML special values that should be strings
+value: "null" # String "null", not null value
+enable: "false" # String "false", not boolean false
+```
+
+**DO NOT quote simple values:**
+
+```yaml
+# Booleans
+debug: false
+enabled: true
+
+# Numbers
+count: 42
+version: 1.2
+
+# Simple strings without special characters
+name: ubuntu-latest
+step: checkout
+action: setup-node
+
+# GitHub Actions expressions (never quote these)
+if: github.event_name == 'push'
+with: ${{ secrets.TOKEN }}
+```
+
+**GitHub Actions specific guidelines:**
+
+```yaml
+# Action references - never quote
+uses: actions/checkout@v4
+uses: ./path/to/local/action
+
+# Boolean inputs - don't quote
+debug: false
+cache: true
+
+# Version strings with special chars - quote if needed
+version: "v1.2.3-beta"
+
+# Expressions - never quote
+if: ${{ github.ref == 'refs/heads/main' }}
+run: echo "${{ github.actor }}"
+```
+
+#### Formatting Standards
+
+- Use 2 spaces for indentation
+- Use `-` for list items with proper indentation
+- Keep consistent spacing around colons
+- Use block scalar `|` for multiline strings
+- Use folded scalar `>` for wrapped text
+
+Example of well-formatted YAML:
+
+```yaml
+name: CI Pipeline
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          npm install
+          npm test
+        env:
+          NODE_ENV: test
+          DEBUG: false
+```
+
 ### Bash Scripts
 
 Project scripts should follow these guidelines:
 
 - Follow formatting rules in
-  [Shellcheck](https://github.com/koalaman/shellcheck/wiki)
+  [ShellCheck](https://github.com/koalaman/shellcheck/wiki)
 - Follow style guide rules in
   [Google Bash Style Guide](https://google.github.io/styleguide/shellguide)
 - Include proper error handling and exit codes
@@ -831,6 +932,116 @@ remaining_args=$(parse_common_args "$@")
 main_menu
 ```
 
+### YAML Files
+
+YAML files in the project (GitHub Actions workflows, configuration files, etc.)
+should follow these best practices:
+
+#### Quoting Guidelines
+
+- **Avoid unnecessary quotes** - YAML values don't need quotes unless they
+  contain special characters
+- **Use quotes when required**:
+  - Values containing spaces: `version: "test version with spaces"`
+  - Empty strings: `packages: ""`
+  - Values starting with special characters: `value: "@special"`
+  - Boolean-like strings that should be treated as strings: `value: "true"` (if
+    you want the string "true", not boolean)
+  - Numeric-like strings: `version: "1.0"` (if you want string "1.0", not number
+    1.0)
+
+#### Examples
+
+✅ **Good - No unnecessary quotes**:
+
+```yaml
+name: Test Action
+on: workflow_dispatch
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: curl wget
+          version: test-1.0
+          debug: true
+```
+
+❌ **Avoid - Unnecessary quotes**:
+
+```yaml
+name: "Test Action"
+on: "workflow_dispatch"
+jobs:
+  test:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v4"
+      - uses: "./"
+        with:
+          packages: "curl wget"
+          version: "test-1.0"
+          debug: "true"
+```
+
+✅ **Good - Quotes when needed**:
+
+```yaml
+# Quotes required for values with spaces
+version: "test version with spaces"
+
+# Quotes required for empty strings
+packages: ""
+
+# No quotes needed for simple values
+debug: true
+timeout: 300
+name: test-job
+```
+
+#### Formatting Guidelines
+
+- Use 2-space indentation consistently
+- Keep lines under 120 characters when possible
+- Use `|` for multi-line strings that need line breaks preserved
+- Use `>` for multi-line strings that should be folded
+- Align nested items consistently
+- Use meaningful names for job IDs and step IDs (use kebab-case)
+
+#### Multi-line Strings
+
+```yaml
+# For scripts that need line breaks preserved
+run: |
+  echo "Line 1"
+  echo "Line 2"
+  if [[ condition ]]; then
+    echo "Line 3"
+  fi
+
+# For long descriptions that should be folded
+description: >
+  This is a very long description that
+  will be folded into a single line
+  when parsed by YAML.
+
+# For package lists (GitHub Actions input)
+packages: |
+  curl
+  wget
+  jq
+```
+
+#### GitHub Actions Specific
+
+- Use unquoted boolean values: `required: true`, `debug: false`
+- Use unquoted numeric values: `timeout-minutes: 30`
+- Quote version strings that might be interpreted as numbers: `version: "1.0"`
+- Use kebab-case for input/output names: `cache-hit`, `package-version-list`
+- Use meaningful step IDs: `test-basic-install`, `verify-cache-hit`
+
 ## Testing Principles
 
 ### 1. Test Organization Strategy
@@ -858,8 +1069,8 @@ var (
 )
 ```
 
-- Define constants for fixed values where the prescence and format is only
-  needed and the value content itself does not effect the behavior under test
+- Define constants for fixed values where the presence and format is only needed
+  and the value content itself does not affect the behavior under test
 - Use variables for reusable test data
 - Group related constants and variables together
 - Do not prefix constants or variables with `test`

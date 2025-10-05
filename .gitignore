@@ -5,4 +5,7 @@
 # Don't ignore the main .env file
 !.env
 
+# Local Go binaries from build command
+cache_apt_pkgs*
+
 scripts/sandbox.sh

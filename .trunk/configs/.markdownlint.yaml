@@ -1,54 +1,41 @@
 # Enable all rules by default
 default: true
-
 # Markdown linting configuration with all rules enabled
 extends: markdownlint/style/prettier
-
 # MD003 heading-style - Header style
 MD003:
   style: atx # Use # style headers
-
 # MD004 ul-style - Unordered list style
 MD004:
   style: consistent # Be consistent with the first list style used
-
 # MD012 no-multiple-blanks - No multiple consecutive blank lines
 MD012:
   maximum: 1
-
 # MD013 line-length - Line length
 MD013:
   line_length: 100
   code_blocks: false
   tables: false
-
 # MD024 no-duplicate-header - No duplicate headers
 MD024:
   siblings_only: true # Allow duplicates if they're not siblings
-
 # MD026 no-trailing-punctuation - No trailing punctuation in header
 MD026:
   punctuation: .,;:!。，；：！
-
 # MD029 ol-prefix - Ordered list item prefix
 MD029:
   style: one_or_ordered
-
 # MD033 no-inline-html - No inline HTML
 MD033:
   allowed_elements: []
-
 # MD034 no-bare-urls - No bare URLs
 MD034: true
-
 # MD035 hr-style - Horizontal rule style
 MD035:
   style: ---
-
 # MD041 first-line-heading - First line should be a top-level header
 MD041:
   level: 1
-
 # MD046 code-block-style - Code block style
 MD046:
   style: fenced

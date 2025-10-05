@@ -1,6 +1,7 @@
 # 🤝 Contributing to cache-apt-pkgs-action
 
-Thank you for your interest in contributing to cache-apt-pkgs-action! This document provides guidelines and instructions for contributing to the project.
+Thank you for your interest in contributing to cache-apt-pkgs-action! This
+document provides guidelines and instructions for contributing to the project.
 
 [![CI](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml/badge.svg?branch=dev-v2.0)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Adev-v2.0)
 [![Go Report Card](https://goreportcard.com/badge/github.com/awalsh128/cache-apt-pkgs-action)](https://goreportcard.com/report/github.com/awalsh128/cache-apt-pkgs-action)
@@ -8,13 +9,17 @@ Thank you for your interest in contributing to cache-apt-pkgs-action! This docum
 [![License](https://img.shields.io/github/license/awalsh128/cache-apt-pkgs-action)](https://github.com/awalsh128/cache-apt-pkgs-action/blob/dev-v2.0/LICENSE)
 [![Release](https://img.shields.io/github/v/release/awalsh128/cache-apt-pkgs-action)](https://github.com/awalsh128/cache-apt-pkgs-action/releases)
 
-⚠️ **IMPORTANT**: This is a very unstable branch and will be introduced as version 2.0 once in beta.
+⚠️ **IMPORTANT**: This is a very unstable branch and will be introduced as
+version 2.0 once in beta.
 
 ## 🔗 Useful Links
 
-- 📖 [GitHub Action Documentation](https://github.com/awalsh128/cache-apt-pkgs-action#readme)
-- 📦 [Go Package Documentation](https://pkg.go.dev/github.com/awalsh128/cache-apt-pkgs-action)
-- 🔄 [GitHub Actions Workflow Status](https://github.com/awalsh128/cache-apt-pkgs-action/actions)
+- 📖
+  [GitHub Action Documentation](https://github.com/awalsh128/cache-apt-pkgs-action#readme)
+- 📦
+  [Go Package Documentation](https://pkg.go.dev/github.com/awalsh128/cache-apt-pkgs-action)
+- 🔄
+  [GitHub Actions Workflow Status](https://github.com/awalsh128/cache-apt-pkgs-action/actions)
 - 🐛 [Issues](https://github.com/awalsh128/cache-apt-pkgs-action/issues)
 - 🛠️ [Pull Requests](https://github.com/awalsh128/cache-apt-pkgs-action/pulls)
 
@@ -93,12 +98,15 @@ There are two ways to test the GitHub Action workflows:
 
 1. ☁️ **Using GitHub Actions**:
    - Push your changes to a branch
-   - Create a PR to trigger the [test workflow](https://github.com/awalsh128/cache-apt-pkgs-action/blob/dev-v2.0/.github/workflows/test-action.yml)
-   - Or manually trigger the workflow from the [Actions tab](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/test-action.yml)
+   - Create a PR to trigger the
+     [test workflow](https://github.com/awalsh128/cache-apt-pkgs-action/blob/dev-v2.0/.github/workflows/test-action.yml)
+   - Or manually trigger the workflow from the
+     [Actions tab](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/test-action.yml)
 
 2. 🐳 **Running Tests Locally** (requires Docker):
    - Install Docker
-     - 🪟 WSL users install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+     - 🪟 WSL users install
+       [Docker Desktop](https://www.docker.com/products/docker-desktop/)
      - 🐧 Non-WSL users (native Linux)
 
        ```bash
@@ -108,7 +116,8 @@ There are two ways to test the GitHub Action workflows:
        sudo systemctl start docker
        ```
 
-   - 🎭 Install [`act`](https://github.com/nektos/act) for local GitHub Actions testing:
+   - 🎭 Install [`act`](https://github.com/nektos/act) for local GitHub Actions
+     testing:
    - ▶️ Run `act` on any action test in the following ways:
 
      ```bash
@@ -148,12 +157,15 @@ There are two ways to test the GitHub Action workflows:
 
 1. **Using GitHub Actions**:
    - Push your changes to a branch
-   - Create a PR to trigger the [test workflow](https://github.com/awalsh128/cache-apt-pkgs-action/blob/dev-v2.0/.github/workflows/test-action.yml)
-   - Or manually trigger the workflow from the [Actions tab](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/test-action.yml)
+   - Create a PR to trigger the
+     [test workflow](https://github.com/awalsh128/cache-apt-pkgs-action/blob/dev-v2.0/.github/workflows/test-action.yml)
+   - Or manually trigger the workflow from the
+     [Actions tab](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/test-action.yml)
 
 2. **Running Tests Locally** (requires Docker):
    - Install Docker
-     - WSL users install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+     - WSL users install
+       [Docker Desktop](https://www.docker.com/products/docker-desktop/)
      - Non-WSL users (native Linux)
 
        ```bash
@@ -163,7 +175,8 @@ There are two ways to test the GitHub Action workflows:
        sudo systemctl start docker
        ```
 
-   - Install [`act`](https://github.com/nektos/act) for local GitHub Actions testing:
+   - Install [`act`](https://github.com/nektos/act) for local GitHub Actions
+     testing:
    - Run `act` on any action test in the following ways:
 
      ```bash
@@ -182,11 +195,14 @@ There are two ways to test the GitHub Action workflows:
    ```
 
 2. ✏️ Make your changes, following these guidelines:
-   - 📚 Follow Go coding [standards and conventions](https://go.dev/doc/effective_go)
+   - 📚 Follow Go coding
+     [standards and conventions](https://go.dev/doc/effective_go)
    - ✅ Add tests for new features
      - 🎯 Test behaviors on the public interface not implementation
      - 🔍 Keep tests for each behavior separate
-     - 🏭 Use constants and factory functions to keep testing arrangement and asserts clear. Not a lot of boilerplate not directly relevant to the test.
+     - 🏭 Use constants and factory functions to keep testing arrangement and
+       asserts clear. Not a lot of boilerplate not directly relevant to the
+       test.
    - 📖 Update documentation as needed
    - 🎯 Keep commits focused and atomic
    - 📝 Write clear commit messages
@@ -212,20 +228,25 @@ There are two ways to test the GitHub Action workflows:
 
 ## 💻 Code Style Guidelines
 
-- 📏 Follow [standard Go formatting](https://golang.org/doc/effective_go#formatting) (use `gofmt`)
-- 📖 Follow [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
+- 📏 Follow
+  [standard Go formatting](https://golang.org/doc/effective_go#formatting) (use
+  `gofmt`)
+- 📖 Follow
+  [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
 - 🔍 Write clear, self-documenting code
-- 📚 Add [godoc](https://blog.golang.org/godoc) comments for complex logic
+- 📚 Add [GoDoc](https://blog.golang.org/godoc) comments for complex logic
 - 🏷️ Use meaningful variable and function names
 - ✨ Keep functions focused and manageable in size
   - 🔒 Prefer immutability vs state changing
   - 📏 Aim for lines less than 50
-  - 🎯 Observe [single responsibility principle](https://en.wikipedia.org/wiki/Single-responsibility_principle)
+  - 🎯 Observe
+    [single responsibility principle](https://en.wikipedia.org/wiki/Single-responsibility_principle)
 
 📚 For more details on Go best practices, refer to:
 
 - 📖 [Effective Go](https://golang.org/doc/effective_go)
-- 🔍 [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
+- 🔍
+  [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
 
 ## Documentation
 
@@ -242,15 +263,22 @@ There are two ways to test the GitHub Action workflows:
 
 ## Questions or Problems?
 
-- Open an [issue](https://github.com/awalsh128/cache-apt-pkgs-action/issues/new) for bugs or feature requests
-- Use [discussions](https://github.com/awalsh128/cache-apt-pkgs-action/discussions) for questions or ideas
-- Reference the [GitHub Action documentation](https://github.com/awalsh128/cache-apt-pkgs-action#readme)
-- Check existing [issues](https://github.com/awalsh128/cache-apt-pkgs-action/issues) and [pull requests](https://github.com/awalsh128/cache-apt-pkgs-action/pulls)
+- Open an [issue](https://github.com/awalsh128/cache-apt-pkgs-action/issues/new)
+  for bugs or feature requests
+- Use
+  [discussions](https://github.com/awalsh128/cache-apt-pkgs-action/discussions)
+  for questions or ideas
+- Reference the
+  [GitHub Action documentation](https://github.com/awalsh128/cache-apt-pkgs-action#readme)
+- Check existing
+  [issues](https://github.com/awalsh128/cache-apt-pkgs-action/issues) and
+  [pull requests](https://github.com/awalsh128/cache-apt-pkgs-action/pulls)
 - Tag maintainers for urgent issues
 
 ## License
 
-By contributing to this project, you agree that your contributions will be licensed under the same license as the project.
+By contributing to this project, you agree that your contributions will be
+licensed under the same license as the project.
 
 ## 📦 Publishing to pkg.go.dev
 
@@ -266,7 +294,8 @@ To make the library available on [pkg.go.dev](https://pkg.go.dev):
    ```
 
 2. 🔄 Trigger pkg.go.dev to fetch your module:
-   - Visit [pkg.go.dev for this module](https://pkg.go.dev/github.com/awalsh128/cache-apt-pkgs-action@v2.0.0)
+   - Visit
+     [pkg.go.dev for this module](https://pkg.go.dev/github.com/awalsh128/cache-apt-pkgs-action@v2.0.0)
    - Or fetch via command line:
 
      ```bash
@@ -274,7 +303,7 @@ To make the library available on [pkg.go.dev](https://pkg.go.dev):
      ```
 
 3. 📝 Best practices for publishing:
-   - Add comprehensive godoc comments
+   - Add comprehensive `godoc` comments
    - Include examples in your documentation
    - Use semantic versioning for tags
    - Keep the module path consistent

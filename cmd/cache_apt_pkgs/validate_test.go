@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 
 	"awalsh128.com/cache-apt-pkgs-action/internal/pkgs"
@@ -41,8 +42,10 @@ func TestValidate_EmptyPackages(t *testing.T) {
 	packages := pkgs.NewPackages()
 
 	// With no packages, validation should succeed (no packages to validate)
-	err := validate(cmd, packages)
-	if err != nil {
+	if err := validate(cmd, packages); err != nil {
+		if strings.Contains(err.Error(), "no supported package manager") {
+			t.Skip("APT is not available in the test environment")
+		}
 		t.Errorf("validate with empty packages should succeed, got error: %v", err)
 	}
 }

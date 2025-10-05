@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"path/filepath"
 	"runtime"
@@ -8,6 +9,7 @@ import (
 	"awalsh128.com/cache-apt-pkgs-action/internal/cache"
 	"awalsh128.com/cache-apt-pkgs-action/internal/logging"
 	"awalsh128.com/cache-apt-pkgs-action/internal/pkgs"
+	"github.com/sethvargo/go-githubactions"
 )
 
 func createKey(cmd *Cmd, pkgArgs pkgs.Packages) error {
@@ -19,7 +21,9 @@ func createKey(cmd *Cmd, pkgArgs pkgs.Packages) error {
 	if err != nil {
 		return fmt.Errorf("failed to create cache key: %w", err)
 	}
-	logging.Info("Created cache key: %s (%x)", key.String(), key.Hash())
+
+	hashHex := hex.EncodeToString(key.Hash())
+	logging.Info("Created cache key: %s (%s)", key.String(), hashHex)
 
 	cacheDir := cmd.StringFlag("cache-dir")
 
@@ -31,6 +35,14 @@ func createKey(cmd *Cmd, pkgArgs pkgs.Packages) error {
 		return fmt.Errorf("failed to write cache keys: %w", err)
 	}
 	logging.Info("Wrote cache key files:\n  %s\n  %s", plaintextPath, ciphertextPath)
+
+	// Output the cache key hash to GitHub Actions
+	if isGitHubActions() {
+		githubactions.SetOutput("cache-key", hashHex)
+	} else {
+		// In test/development environments, print to stdout
+		fmt.Printf("cache-key=%s\n", hashHex)
+	}
 
 	return nil
 }

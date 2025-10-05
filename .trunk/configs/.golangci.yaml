@@ -1,10 +1,8 @@
 version: "2"
-
 formatters:
   enable:
     - gofumpt # formats Go code
     - goimports # formats imports and does everything that gofmt does
-
 linters:
   enable:
     - asasalint # checks for pass []any as any in variadic func(...any)

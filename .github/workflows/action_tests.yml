@@ -44,7 +44,7 @@ jobs:
         with:
           packages: xdot=1.3-1
           version: ${{ github.run_id }}-${{ github.run_attempt }}-list_all_versions
-          debug: "false"
+          debug: false
       - name: Verify
         if: |
           steps.execute.outputs.cache-hit != 'false' || 
@@ -69,7 +69,7 @@ jobs:
         with:
           packages: xdot rolldice
           version: ${{ github.run_id }}-${{ github.run_attempt }}-list_versions
-          debug: "false"
+          debug: false
       - name: Verify
         if: steps.execute.outputs.cache-hit != 'false' || steps.execute.outputs.package-version-list != 'rolldice=1.16-1build3,xdot=1.3-1'
         run: |
@@ -91,7 +91,7 @@ jobs:
         with:
           packages: xdot rolldice
           version: ${{ github.run_id }}-${{ github.run_attempt }}-standard_workflow
-          debug: "false"
+          debug: false
       - name: Verify
         if: steps.execute.outputs.cache-hit != 'false'
         run: |
@@ -111,7 +111,7 @@ jobs:
         with:
           packages: xdot rolldice
           version: ${{ github.run_id }}-${{ github.run_attempt }}-standard_workflow_install_with_new_version
-          debug: "false"
+          debug: false
       - name: Verify
         if: steps.execute.outputs.cache-hit != 'false'
         run: |
