@@ -5,4 +5,4 @@ plugins:
   # Allow ATX-style headings (using #). Previously Trunk/remark was expecting
   # setext-style for certain heading levels which caused the "Unexpected ATX
   # heading, expected setext" errors. Setting this rule to 'atx' relaxes that.
-  remark-lint-heading-style: [true, 'atx']
+  remark-lint-heading-style: [true, "atx"]

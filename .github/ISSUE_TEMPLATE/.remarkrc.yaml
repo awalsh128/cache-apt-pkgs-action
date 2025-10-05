@@ -1,2 +1,2 @@
 plugins:
-  remark-lint-heading-style: [true, 'atx']
+  remark-lint-heading-style: [true, "atx"]

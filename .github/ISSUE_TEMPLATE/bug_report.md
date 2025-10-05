@@ -66,6 +66,7 @@ steps:
 
 ## Checklist
 
-- [ ] I have read the [non-file dependencies limitation](https://github.com/awalsh128/cache-apt-pkgs-action/blob/main/README.md#non-file-dependencies)
+- [ ] I have read the
+      [non-file dependencies limitation](https://github.com/awalsh128/cache-apt-pkgs-action/blob/main/README.md#non-file-dependencies)
 - [ ] I have searched existing issues for duplicates
 - [ ] I have provided all requested information above
