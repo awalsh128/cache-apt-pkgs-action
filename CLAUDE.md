@@ -3,8 +3,6 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-**Table of Contents**
-
 - [General Code Organization Principles](#general-code-organization-principles)
   - [1. Package Structure](#1-package-structure)
   - [2. Code Style and Formatting](#2-code-style-and-formatting)
@@ -40,13 +38,10 @@
     - [Quoting Guidelines](#quoting-guidelines)
     - [Formatting Standards](#formatting-standards)
   - [Bash Scripts](#bash-scripts)
+    - [File and Directory Structure](#file-and-directory-structure)
+    - [Style and Format Rules](#style-and-format-rules)
+    - [Comments](#comments)
     - [Script Testing](#script-testing)
-  - [YAML Files](#yaml-files)
-    - [Quoting Guidelines](#quoting-guidelines-1)
-    - [Examples](#examples)
-    - [Formatting Guidelines](#formatting-guidelines)
-    - [Multi-line Strings](#multi-line-strings)
-    - [GitHub Actions Specific](#github-actions-specific)
 - [Testing Principles](#testing-principles)
   - [1. Test Organization Strategy](#1-test-organization-strategy)
   - [2. Code Structure](#2-code-structure)
@@ -94,12 +89,11 @@
 - Make zero values useful
 - Keep interfaces small and focused, observing the
   [single responsibility principle](https://en.wikipedia.org/wiki/Single-responsibility_principle)
-- Observe the
-  [open-closed principle](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle)
+- Observe the [open-closed principle](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle)
   so that it is open for extension but closed to modification
 - Observe the
-  [dependency inversion principle](https://en.wikipedia.org/wiki/Dependency_inversion_principle)
-  to keep interfaces loosely coupled
+  [dependency inversion principle](https://en.wikipedia.org/wiki/Dependency_inversion_principle) to
+  keep interfaces loosely coupled
 - Design for composition over inheritance
 - Use option patterns for complex configurations
 - Make dependencies explicit
@@ -111,10 +105,8 @@
 Following the official [Go Documentation Guidelines](https://go.dev/blog/godoc):
 
 1. **Package Documentation**
-   - Every package must have a doc comment immediately before the `package`
-     statement
-   - Format: `// Package xyz ...` (first sentence) followed by detailed
-     description
+   - Every package must have a doc comment immediately before the `package` statement
+   - Format: `// Package xyz ...` (first sentence) followed by detailed description
    - First sentence should be a summary beginning with `Package xyz`
    - Follow with a blank line and detailed documentation
    - Include package-level examples if helpful
@@ -462,27 +454,25 @@ go tool pprof -http=:8080 cpu.prof
 
 - Minimize the amount of shell code and put complex logic in the Go code
 - Use clear step `id` names that use dashes between words and active verbs
-- Avoid hard-coded API URLs like <https://api.github.com>. Use environment
-  variables (GITHUB_API_URL for REST API, GITHUB_GRAPHQL_URL for GraphQL) or the
-  @actions/github toolkit for dynamic URL handling
+- Avoid hard-coded API URLs like <https://api.github.com>. Use environment variables (GITHUB_API_URL
+  for REST API, GITHUB_GRAPHQL_URL for GraphQL) or the @actions/github toolkit for dynamic URL
+  handling
 
 ##### Release Management
 
 - Use semantic versioning for releases (e.g., v1.0.0)
-- Recommend users reference major version tags (v1) instead of the default
-  branch for stability.
+- Recommend users reference major version tags (v1) instead of the default branch for stability.
 - Update major version tags to point to the latest release
 
 ##### Create a README File
 
-Include a detailed description, required/optional inputs and outputs, secrets,
-environment variables, and usage examples
+Include a detailed description, required/optional inputs and outputs, secrets, environment
+variables, and usage examples
 
 ##### Testing and Automation
 
 - Add workflows to test your action on feature branches and pull requests
-- Automate releases using workflows triggered by publishing or editing a
-  release.
+- Automate releases using workflows triggered by publishing or editing a release.
 
 ##### Community Engagement
 
@@ -601,78 +591,127 @@ jobs:
 
 Project scripts should follow these guidelines:
 
-- Follow formatting rules in
-  [ShellCheck](https://github.com/koalaman/shellcheck/wiki)
-- Follow style guide rules in
-  [Google Bash Style Guide](https://google.github.io/styleguide/shellguide)
-- Include proper error handling and exit codes
-- Use `scripts/lib.sh` whenever for common functionality
+#### File and Directory Structure
+
+All scripts must go into the project's script directory with specific guidance below
+
+```text
+scripts
+  ├── dev (directory for local development)
+  │   ├── *.sh (scripts used for development)
+  │   ├── lib.sh (library to use for common development functionality)
+  │   └── tests
+  │       ├── *.sh (corresponding tests for all scripts in the parent)
+  │       ├── template_test.sh (example template for all tests)
+  │       └── test_lib.sh (library to use for common testing functionality)
+  ├── *.sh (files used for integration and deployment operations)
+  ├── lib.sh (general library for common functionality applying to all script types)
+  ├── lib_test.sh (testing framework that all script tests must use)
+  ├── template_test.sh (example template for all tests)
+  └── template.sh (example template for all development scripts)
+```
+
+- `scripts` is where all scripts go, either at root or in sub-folders
+- `scripts/*.sh` is where non-development functionality like integration and deployment
+  functionality goes
+- `dev` is where local development functionality only
+- `dev/lib.sh` is where common functionality for local development scripts go
+- `dev/tests.sh` is for local development script tests
+- `lib_test.sh` is the testing framework that all scripts must use
+- `lib.sh` is the common functionality applying to both root scripts and `dev` scripts
+- `template_test.sh` baseline template that all script tests must be created from
+- `template.sh` baseline template that all scripts must be created from
+
+- Make scripts executable (`chmod +x`)
+- Add new development script functionality to the `scripts/dev/menu.sh` script for easy access
+- Always use `template.sh` when creating a script
+
+#### Style and Format Rules
+
+- **MANDATORY:** All Bash scripts must strictly follow the [Google Bash Style Guide](https://google.github.io/styleguide/shellguide) for naming, formatting, comments, and best practices.
+- **MANDATORY:** All Bash scripts must pass [ShellCheck](https://github.com/koalaman/shellcheck/wiki) with no warnings or errors.
+- **MANDATORY:** All script comments and header blocks must wrap at a maximum line length of 80 characters.
+- Use the `function` keyword before all function definitions: `function my_function() {`
 - Use imperative verb form for script names:
   - Good: `export_version.sh`, `build_package.sh`, `run_tests.sh`
   - Bad: `version_export.sh`, `package_builder.sh`, `test_runner.sh`
-- Create scripts in the `scripts` directory (not `tools`)
-- Make scripts executable (`chmod +x`)
-- Add new functionality to the `scripts/menu.sh` script for easy access
-- Add usage information (viewable with `-h` or `--help`)
 
-Script Header Format:
+Scripts that do not comply with these external standards will be flagged in code review and CI. See:
+
+- [Google Bash Style Guide](https://google.github.io/styleguide/shellguide)
+- [ShellCheck Wiki](https://github.com/koalaman/shellcheck/wiki)
+
+#### Comments
+
+For functions:
+
+- All functions greater than 5 lines must have a comment
+- Always follow the format described in
+  [Google Bash Style Guide: Function Comments](https://google.github.io/styleguide/shellguide#function-comments)
+
+#### Script Header Requirements (MANDATORY)
+
+Every Bash script must begin with a standardized header block, formatted as follows:
 
 ```bash
+#!/bin/bash
 #==============================================================================
-# script_name.sh
+# <script_name>.sh
 #==============================================================================
 #
 # DESCRIPTION:
-#   Brief description of what the script does.
-#   Additional details if needed.
+#   <Detailed description of the script's purpose and functionality>
 #
 # USAGE:
-#   ./scripts/script_name.sh [options]
+#   <script_name>.sh <command> [args]
 #
-# OPTIONS: (if applicable)
-#   List of command-line options and their descriptions
+# COMMANDS:
+#   <command_1>   <Description of command_1>
+#   <command_2>   <Description of command_2>
+#   ...
+#
+# OPTIONS:
+#   -h, --help    Show this help message
+#   ...           <Other options and their descriptions>
 #
 # DEPENDENCIES:
-#   - List of required tools and commands
+#   <List required dependencies, e.g. external tools, environment variables>
 #==============================================================================
 ```
 
-Every script should include this header format at the top, with all sections
-filled out appropriately. The header provides:
+Checklist for script headers:
 
-- Clear identification of the script
-- Description of its purpose and functionality
+- Script name and clear identification
+- Detailed description
 - Usage instructions and examples
-- Documentation of command-line options (if any)
-- List of required dependencies
+- Command and option documentation
+- Required dependencies
+
+All new and updated scripts must comply with this format. Non-compliant scripts will be flagged in code review and CI.
 
 #### Script Testing
 
-All scripts must have corresponding tests in the `scripts/tests` directory using
-the common test library:
+All scripts must have corresponding tests in the `tests` sub-directory using the common test
+library:
 
 1. **Test File Structure**
    - Name test files as `<script_name>_test.sh`
-   - Place in `scripts/tests` directory
+   - Place in a `tests` direct sub-directory to the script under test
    - Make test files executable (`chmod +x`)
    - Source the common test library (`test_lib.sh`)
 
-2. **Common Test Library** The `test_lib.sh` library provides a standard test
-   framework. See the `scripts/tests/template_test.sh` for examples of how to
-   set up one.
-
-3. **Test Organization**
+2. **Test Organization**
    - Group related test cases into sections
    - Test each command/flag combination
    - Test error conditions explicitly
 
-4. **Test Coverage**
+3. **Test Coverage**
    - Test error conditions
    - Test input validation
    - Test edge cases
    - Test each supported flag/option
 
-5. **CI Integration**
+4. **CI Integration**
    - Tests run automatically in CI
    - Tests must pass before merge
    - Test execution is part of the validate-scripts job
@@ -680,130 +719,23 @@ the common test library:
 
 ##### Test Framework Architecture Pattern
 
-The improved test framework follows this standardized pattern for all script
-tests:
-
-**Test File Template:**
-
-```bash
-#!/bin/bash
-
-#==============================================================================
-# script_name_test.sh
-#==============================================================================
-#
-# DESCRIPTION:
-#   Test suite for script_name.sh functionality.
-#   Brief description of what aspects are tested.
-#
-# USAGE:
-#   script_name_test.sh [OPTIONS]
-#
-# OPTIONS:
-#   -v, --verbose        Enable verbose test output
-#   --stop-on-failure    Stop on first test failure
-#   -h, --help           Show this help message
-#
-#==============================================================================
-
-# Set up the script path we want to test
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-export SCRIPT_PATH="$SCRIPT_DIR/../script_name.sh"
-
-# Source the test framework
-source "$SCRIPT_DIR/test_lib.sh"
-
-# Define test functions
-run_tests() {
-  test_section "Help and Usage"
-
-  test_case "shows help message" \
-    "--help" \
-    "USAGE:" \
-    true
-
-  test_case "shows error for invalid option" \
-    "--invalid-option" \
-    "Unknown option" \
-    false
-
-  test_section "Core Functionality"
-
-  # Add more test cases here
-}
-
-# Start the test framework and run tests
-start_tests "$@"
-run_tests
-```
+All tests must start with `scripts/template_test.sh`
 
 **Key Framework Features:**
 
-- **SCRIPT_PATH Setup**: Test files must set `SCRIPT_PATH` before sourcing
-  `test_lib.sh` to avoid variable conflicts
-- **Function-based Test Organization**: Tests are organized in a `run_tests()`
-  function called after framework initialization
-- **Consistent Test Sections**: Use `test_section` to group related tests with
-  descriptive headers
-- **Standard Test Case Pattern**:
-  `test_case "name" "args" "expected_output" "should_succeed"`
-- **Framework Integration**: Call `start_tests "$@"` before running tests to
-  handle argument parsing and setup
-
-##### Script Argument Parsing Pattern
-
-All scripts should implement consistent argument parsing following this pattern:
-
-```bash
-main() {
-  # Parse command line arguments first
-  while [[ $# -gt 0 ]]; do
-    case $1 in
-    -v | --verbose)
-      export VERBOSE=true
-      ;;
-    -h | --help)
-      cat << 'EOF'
-USAGE:
-  script_name.sh [OPTIONS]
-
-DESCRIPTION:
-  Brief description of what the script does.
-  Additional details if needed.
-
-OPTIONS:
-  -v, --verbose    Enable verbose output
-  -h, --help       Show this help message
-EOF
-      exit 0
-      ;;
-    *)
-      echo "Unknown option: $1" >&2
-      echo "Use --help for usage information." >&2
-      exit 1
-      ;;
-    esac
-    shift
-  done
-
-  # Script main logic here
-}
-
-main "$@"
-```
-
-**Key Argument Parsing Features:**
-
-- **Consistent Options**: All scripts support `-v/--verbose` and `-h/--help`
-- **Early Help Exit**: Help is displayed immediately without running script
-  logic
-- **Error Handling**: Unknown options produce helpful error messages
-- **Inline Help Text**: Help is embedded in the script using heredoc syntax
+- **SCRIPT_PATH Setup**: Test files must set `SCRIPT_PATH` before sourcing `test_lib.sh` to avoid
+  variable conflicts
+- **Function-based Test Organization**: Tests are organized in a `run_tests()` function called after
+  framework initialization
+- **Consistent Test Sections**: Use `test_section` to group related tests with descriptive headers
+- **Standard Test Case Pattern**: `test_case "name" "args" "expected_output" "should_succeed"`
+- **Framework Integration**: Call `start_tests "$@"` before running tests to handle argument parsing
+  and setup
 
 ##### Centralized Configuration Management
 
-The project implements centralized version management using the `.env` file as a
-single source of truth:
+The project implements centralized version management using the `.env` file as a single source of
+truth:
 
 **Configuration Structure:**
 
@@ -840,207 +772,9 @@ jobs:
 
 **Synchronization Script Pattern:**
 
-- `scripts/sync_go_version.sh` reads `.env` and updates `go.mod` accordingly
-- Ensures consistency between environment configuration and Go module
-  requirements
+- `scripts/dev/sync_go_version.sh` reads `.env` and updates `go.mod` accordingly
+- Ensures consistency between environment configuration and Go module requirements
 - Can be extended for other configuration synchronization needs
-
-##### Implementation Status
-
-**✅ Implemented Patterns:**
-
-The following scripts have been updated with the standardized patterns:
-
-1. **scripts/export_version.sh** - Complete implementation:
-   - ✅ Argument parsing with `--help` and `--verbose`
-   - ✅ Proper error handling and logging
-   - ✅ Comprehensive test suite in `scripts/tests/export_version_test.sh`
-   - ✅ Function-based test organization
-
-2. **scripts/setup_dev.sh** - Complete implementation:
-   - ✅ Argument parsing with `--help` and `--verbose`
-   - ✅ Script-specific help documentation
-   - ✅ Error handling for unknown options
-   - ✅ Comprehensive test suite in `scripts/tests/setup_dev_test.sh`
-   - ✅ Function-based test organization
-
-3. **scripts/tests/test_lib.sh** - Framework improvements:
-   - ✅ Reliable library loading with fallback paths
-   - ✅ Safe SCRIPT_PATH variable handling
-   - ✅ Arithmetic operations compatible with `set -e`
-   - ✅ Proper script name detection
-   - ✅ Lazy temporary directory initialization
-   - ✅ Comprehensive documentation and architecture notes
-
-4. **Centralized Configuration Management**:
-   - ✅ `.env` file as single source of truth for versions
-   - ✅ GitHub Actions CI integration with version propagation
-   - ✅ `scripts/sync_go_version.sh` for configuration synchronization
-
-**🔄 Remaining Scripts to Update:**
-
-These scripts need the same pattern implementations:
-
-- `scripts/distribute.sh` - Needs argument parsing and testing
-- `scripts/update_md_tocs.sh` - Needs argument parsing and testing
-- `scripts/check_and_fix_env.sh` - Needs argument parsing and testing
-- `scripts/template.sh` - Needs argument parsing and testing
-- `scripts/menu.sh` - Needs argument parsing and testing
-
-Example script structure:
-
-```bash
-#!/bin/bash
-
-#==============================================================================
-# fix_and_update.sh
-#==============================================================================
-#
-# DESCRIPTION:
-#   Runs lint fixes and checks for UTF-8 formatting issues in the project.
-#   Intended to help maintain code quality and formatting consistency.
-#
-# USAGE:
-#   ./scripts/fix_and_update.sh
-#
-# OPTIONS:
-#   -h, --help   Show this help message
-#
-# DEPENDENCIES:
-#   - trunk (for linting)
-#   - bash
-#   - ./scripts/check_utf8.sh
-#==============================================================================
-
-# Resolves to absolute path and loads library
-source "$(cd "$(dirname "$0")" && pwd)/lib.sh"
-
-main_menu() {
-  if false; then
-    show_help   # Uses the script header to output usage message
-  fi
-}
-
-# ...
-# Script logic, variables and functions.
-# ...
-
-# Parse common command line arguments and hand the remaining to the script
-remaining_args=$(parse_common_args "$@")
-
-# Run main menu
-main_menu
-```
-
-### YAML Files
-
-YAML files in the project (GitHub Actions workflows, configuration files, etc.)
-should follow these best practices:
-
-#### Quoting Guidelines
-
-- **Avoid unnecessary quotes** - YAML values don't need quotes unless they
-  contain special characters
-- **Use quotes when required**:
-  - Values containing spaces: `version: "test version with spaces"`
-  - Empty strings: `packages: ""`
-  - Values starting with special characters: `value: "@special"`
-  - Boolean-like strings that should be treated as strings: `value: "true"` (if
-    you want the string "true", not boolean)
-  - Numeric-like strings: `version: "1.0"` (if you want string "1.0", not number
-    1.0)
-
-#### Examples
-
-✅ **Good - No unnecessary quotes**:
-
-```yaml
-name: Test Action
-on: workflow_dispatch
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./
-        with:
-          packages: curl wget
-          version: test-1.0
-          debug: true
-```
-
-❌ **Avoid - Unnecessary quotes**:
-
-```yaml
-name: "Test Action"
-on: "workflow_dispatch"
-jobs:
-  test:
-    runs-on: "ubuntu-latest"
-    steps:
-      - uses: "actions/checkout@v4"
-      - uses: "./"
-        with:
-          packages: "curl wget"
-          version: "test-1.0"
-          debug: "true"
-```
-
-✅ **Good - Quotes when needed**:
-
-```yaml
-# Quotes required for values with spaces
-version: "test version with spaces"
-
-# Quotes required for empty strings
-packages: ""
-
-# No quotes needed for simple values
-debug: true
-timeout: 300
-name: test-job
-```
-
-#### Formatting Guidelines
-
-- Use 2-space indentation consistently
-- Keep lines under 120 characters when possible
-- Use `|` for multi-line strings that need line breaks preserved
-- Use `>` for multi-line strings that should be folded
-- Align nested items consistently
-- Use meaningful names for job IDs and step IDs (use kebab-case)
-
-#### Multi-line Strings
-
-```yaml
-# For scripts that need line breaks preserved
-run: |
-  echo "Line 1"
-  echo "Line 2"
-  if [[ condition ]]; then
-    echo "Line 3"
-  fi
-
-# For long descriptions that should be folded
-description: >
-  This is a very long description that
-  will be folded into a single line
-  when parsed by YAML.
-
-# For package lists (GitHub Actions input)
-packages: |
-  curl
-  wget
-  jq
-```
-
-#### GitHub Actions Specific
-
-- Use unquoted boolean values: `required: true`, `debug: false`
-- Use unquoted numeric values: `timeout-minutes: 30`
-- Quote version strings that might be interpreted as numbers: `version: "1.0"`
-- Use kebab-case for input/output names: `cache-hit`, `package-version-list`
-- Use meaningful step IDs: `test-basic-install`, `verify-cache-hit`
 
 ## Testing Principles
 
@@ -1049,8 +783,8 @@ packages: |
 We established a balanced approach to test organization:
 
 - Use table-driven tests for simple, repetitive cases without introducing logic
-- Use individual test functions for cases that require specific Arrange, Act,
-  Assert steps that cannot be shared amongst other cases
+- Use individual test functions for cases that require specific Arrange, Act, Assert steps that
+  cannot be shared amongst other cases
 - Group related test cases that operate on the same API method / function
 
 ### 2. Code Structure
@@ -1069,8 +803,8 @@ var (
 )
 ```
 
-- Define constants for fixed values where the presence and format is only needed
-  and the value content itself does not affect the behavior under test
+- Define constants for fixed values where the presence and format is only needed and the value
+  content itself does not affect the behavior under test
 - Use variables for reusable test data
 - Group related constants and variables together
 - Do not prefix constants or variables with `test`
@@ -1091,8 +825,7 @@ func assertValidJSON(t *testing.T, data string) {
 }
 ```
 
-Example of using functions to abstract away details not relevant to the behavior
-under test
+Example of using functions to abstract away details not relevant to the behavior under test
 
 ```go
 type Item struct {
@@ -1153,12 +886,11 @@ func TestAddPrefixToDescription_WithValidInput_AddsPrefix(t *testing.T) {
 }
 ```
 
-- Create helper functions to reduce duplication and keeps tests focused on the
-  arrangement inputs and how they correspond to the expected output
+- Create helper functions to reduce duplication and keeps tests focused on the arrangement inputs
+  and how they correspond to the expected output
 - Use `t.Helper()` for proper test failure reporting
 - Keep helpers focused and single-purpose
-- Helper functions that require logic should go into their own file and have
-  tests
+- Helper functions that require logic should go into their own file and have tests
 
 ### 3. Test Case Patterns
 
@@ -1281,11 +1013,9 @@ func assertBalanceEquals(t *testing.T, expected, actual decimal.Decimal) {
    - Use descriptive test name arrangement and expectation parts
    - Use test name formats in a 3 part structure
      - `Test<function>_<arrangement>_<expectation>` for free functions, and
-     - `Test<interface><function>_<arrangement>_<expectation>` for interface
-       functions.
+     - `Test<interface><function>_<arrangement>_<expectation>` for interface functions.
      - The module name is inferred
-     - Treat the first part as either the type function or the free function
-       under test
+     - Treat the first part as either the type function or the free function under test
 
    ```go
    func Test<[type]<function>>_<arrangement>_<expectation>(t *testing.T) {
@@ -1457,5 +1187,5 @@ These improvements make the test code:
 - More reliable
 - More efficient to extend
 
-The patterns and principles can be applied across different types of tests to
-create a consistent and effective testing strategy.
+The patterns and principles can be applied across different types of tests to create a consistent
+and effective testing strategy.

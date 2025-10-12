@@ -1,32 +1,32 @@
 name: Cache APT Packages
 description: Install APT based packages and cache them for future runs.
 author: awalsh128
-
 branding:
   icon: hard-drive
   color: green
-
 inputs:
   packages:
-    description: Space delimited list of packages to install. Version can be specified optionally using APT command syntax of <name>=<version> (e.g. xdot=1.2-2).
+    description: >
+      Space delimited list of packages to install. Version can be specified optionally using APT command syntax of <name>=<version> (e.g. xdot=1.2-2).
+
     required: true
     default: ""
   version:
-    description: Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
+    description: >
+      Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
+
     required: false
     default: ""
   execute_install_scripts:
-    description: Execute Debian package pre and post install script upon restore. See README.md caveats for more information.
+    description: >
+      Execute Debian package pre and post install script upon restore. See README.md caveats for  more information.
+
     required: false
     default: "false"
-  refresh:
-    description: "OBSOLETE: Refresh is not used by the action, use version instead."
-    deprecationMessage: Refresh is not used by the action, use version instead.
   debug:
     description: Enable debugging when there are issues with action. Minor performance penalty.
     required: false
     default: "false"
-
 outputs:
   cache-hit:
     description: A boolean value to indicate a cache was found for the packages requested.
@@ -34,58 +34,74 @@ outputs:
     # Need to output true and false instead of true and nothing.
     value: ${{ steps.load-cache.outputs.cache-hit || false }}
   package-version-list:
-    description: The main requested packages and versions that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. <package>:<version,<package>:<version>).
+    description: >
+      The main requested packages and versions that are installed. Represented as a comma delimited  list with equals delimit on the package version (i.e. <package>:<version,<package>:<version>).
+
     value: ${{ steps.install-pkgs.outputs.package-version-list || steps.restore-pkgs.outputs.package-version-list }}
   all-package-version-list:
-    description: All the pulled in packages and versions, including dependencies, that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. <package>:<version,<package>:<version>).
-    value: ${{ steps.install-pkgs.outputs.all-package-version-list || steps.restore-pkgs.outputs.all-package-version-list }}
+    description: >
+      All the pulled in packages and versions, including dependencies, that are installed.  Represented as a comma delimited list with equals delimit on the package version (i.e.  <package>:<version,<package>:<version>).
 
+    value: ${{ steps.install-pkgs.outputs.all-package-version-list || steps.restore-pkgs.outputs.all-package-version-list }}
 runs:
   using: composite
   steps:
+    - id: set-env
+      shell: bash
+      run: |
+        vars=( \
+          "BINARY_PATH=${{ github.action_path }}/distribute/${{ runner.arch }}/cache_apt_pkgs" \
+          "CACHE_DIR=~/cache-apt-pkgs" )
+        for var in "${vars[@]}"; do echo "$var" >> "$GITHUB_ENV"; done
     - id: setup
       shell: bash
-      run: |
-        ${{ github.action_path }}/distribute/${{ runner.arch }}/cache_apt_pkgs setup \
-          --binary-path ${{ github.action_path }}/distribute/${{ runner.arch }}/cache_apt_pkgs
-          --checksum-file ${{ github.action_path }}/distribute/${{ runner.arch }}/cache_apt_pkgs.sha256
+      run: scripts/setup.sh "$BINARY_PATH" "$BINARY_PATH.sha256"
     - id: create-cache-key
       shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        PACKAGES: ${{ inputs.packages }}
+        OS_ARCH: ${{ runner.arch }}
       run: |
-        ${{ github.action_path }}/distribute/${{ runner.arch }}/cache_apt_pkgs createkey \
-          -os-arch ${{ runner.arch }} \
-          -cache-dir ~/cache-apt-pkgs \
-          -version "${{ inputs.version }}" \
-          -global-version "20250910" \
-          ${{ inputs.packages }}
+        $BINARY_PATH createkey \
+          --os-arch $OS_ARCH \
+          --cache-dir "$CACHE_DIR" \
+          --version "$VERSION" \
+          --global-version "20250910" \
+          ${PACKAGES}
     - id: load-cache
       uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
-        path: ~/cache-apt-pkgs
+        path: "$CACHE_DIR"
         key: cache-apt-pkgs_${{ steps.create-cache-key.outputs.cache-key }}
     - id: restore-pkgs
       if: ${{ steps.load-cache.outputs.cache-hit == 'true' }}
+      env:
+        INPUTS_PACKAGES: ${{ inputs.packages }}
       shell: bash
       run: |
-        ${{ github.action_path }}/distribute/${{ runner.arch }}/cache_apt_pkgs restore \
-          --cache-dir ~/cache-apt-pkgs \
+        $BINARY_PATH restore \
+          --cache-dir "$CACHE_DIR" \
           --restore-root "/" \
-          ${{ inputs.packages }}
+          ${INPUTS_PACKAGES}
     - id: install-pkgs
       if: ${{ steps.load-cache.outputs.cache-hit != 'true' }}
+      env:
+        INPUTS_VERSION: ${{ inputs.version }}
+        INPUT_PACKAGES: ${{ inputs.packages }}
       shell: bash
       run: |
-        ${{ github.action_path }}/distribute/${{ runner.arch }}/cache_apt_pkgs install \
-          --cache-dir ~/cache-apt-pkgs \
-          --version "${{ inputs.version }}" \
+        $BINARY_PATH install \
+          --cache-dir "$CACHE_DIR" \
+          --version "$INPUTS_VERSION" \
           --global-version "20250910" \
-          ${{ inputs.packages }}
+          $INPUT_PACKAGES
     - id: upload-artifacts
       if: ${{ inputs.debug == 'true' }}
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: cache-apt-pkgs-logs_${{ steps.create-cache-key.outputs.cache-key }}
-        path: ~/cache-apt-pkgs/*.log
+        path: $CACHE_DIR/*.log
     - id: save-cache
       if: ${{ ! steps.load-cache.outputs.cache-hit }}
       uses: actions/cache/save@v4
@@ -94,6 +110,4 @@ runs:
         key: ${{ steps.load-cache.outputs.cache-primary-key }}
     - id: clean-cache
       shell: bash
-      run: |
-        ${{ github.action_path }}/distribute/${{ runner.arch }}/cache_apt_pkgs cleanup \
-          --cache-dir ~/cache-apt-pkgs
+      run: rm -fr "$CACHE_DIR"

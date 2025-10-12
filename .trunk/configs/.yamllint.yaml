@@ -1,7 +1,9 @@
 rules:
-  quoted-strings:
-    required: only-when-needed
-    extra-allowed: ["{|}"]
+  quoted-strings: disable
   key-duplicates: {}
   octal-values:
     forbid-implicit-octal: true
+  empty-lines:
+    max: 2
+    max-start: 0
+    max-end: 0

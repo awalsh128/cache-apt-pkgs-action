@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"awalsh128.com/cache-apt-pkgs-action/cmd/cache_apt_pkgs/cmdflags"
 	"awalsh128.com/cache-apt-pkgs-action/internal/cache"
 	"awalsh128.com/cache-apt-pkgs-action/internal/logging"
 	"awalsh128.com/cache-apt-pkgs-action/internal/pkgs"
 )
 
-func restore(cmd *Cmd, pkgArgs pkgs.Packages) error {
+func restore(cmd *cmdflags.Cmd, pkgArgs pkgs.Packages) error {
 	manifestPath := filepath.Join(cmd.StringFlag("cache-dir"), "manifest.json")
 	logging.Info("Reading manifest from %s.", manifestPath)
 
@@ -27,15 +28,15 @@ func restore(cmd *Cmd, pkgArgs pkgs.Packages) error {
 	installedPkgs := pkgs.NewPackages(installedPkgList...)
 
 	// Set GitHub Actions outputs
-	SetPackageVersionList(pkgArgs)
-	SetAllPackageVersionList(installedPkgs)
+	cmd.GhioPrinter.SetOutput("package-version-list", pkgArgs)
+	cmd.GhioPrinter.SetOutput("all-package-version-list", installedPkgs)
 
 	logging.Info("Completed package restoration.")
 	return nil
 }
 
-func GetRestoreCmd() *Cmd {
-	cmd := &Cmd{
+func GetRestoreCmd() *cmdflags.Cmd {
+	cmd := &cmdflags.Cmd{
 		Name:        "restore",
 		Description: "Restore packages from the cache",
 		Flags:       flag.NewFlagSet("restore", flag.ExitOnError),
@@ -52,7 +53,7 @@ func GetRestoreCmd() *Cmd {
 		"--cache-dir ~/cache_dir --restore-root / --execute-scripts true",
 		"--cache-dir /tmp/cache_dir --restore-root /",
 	}
-	cmd.ExamplePackages = ExamplePackages
+	cmd.ExamplePackages = cmdflags.ExamplePackages
 
 	return cmd
 }

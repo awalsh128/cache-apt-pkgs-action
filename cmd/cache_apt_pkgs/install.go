@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"awalsh128.com/cache-apt-pkgs-action/cmd/cache_apt_pkgs/cmdflags"
 	"awalsh128.com/cache-apt-pkgs-action/internal/cache"
 	"awalsh128.com/cache-apt-pkgs-action/internal/logging"
 	"awalsh128.com/cache-apt-pkgs-action/internal/pkgs"
 )
 
-func install(cmd *Cmd, pkgArgs pkgs.Packages) error {
+func install(cmd *cmdflags.Cmd, pkgArgs pkgs.Packages) error {
 	apt, err := pkgs.NewApt()
 	if err != nil {
 		return fmt.Errorf("error initializing APT: %v", err)
@@ -63,15 +64,15 @@ func install(cmd *Cmd, pkgArgs pkgs.Packages) error {
 	logging.Info("Wrote manifest to %s.", manifestPath)
 
 	// Set GitHub Actions outputs
-	SetPackageVersionList(pkgArgs)
-	SetAllPackageVersionList(installedPkgs)
+	cmd.GhioPrinter.SetOutput("package-version-list", pkgArgs)
+	cmd.GhioPrinter.SetOutput("all-package-version-list", installedPkgs)
 
 	logging.Info("Completed package installation.")
 	return nil
 }
 
-func GetInstallCmd() *Cmd {
-	cmd := &Cmd{
+func GetInstallCmd() *cmdflags.Cmd {
+	cmd := &cmdflags.Cmd{
 		Name:        "install",
 		Description: "Install packages and saves them to the cache",
 		Flags:       flag.NewFlagSet("install", flag.ExitOnError),
@@ -101,6 +102,6 @@ func GetInstallCmd() *Cmd {
 		"--cache-dir ~/cache_dir --version userver1 --global-version 20250812",
 		"--cache-dir /tmp/cache_dir --version what_ever --global-version whatever_too",
 	}
-	cmd.ExamplePackages = ExamplePackages
+	cmd.ExamplePackages = cmdflags.ExamplePackages
 	return cmd
 }

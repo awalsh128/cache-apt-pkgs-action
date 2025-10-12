@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	"awalsh128.com/cache-apt-pkgs-action/cmd/cache_apt_pkgs/cmdflags"
 	"awalsh128.com/cache-apt-pkgs-action/internal/logging"
 	"awalsh128.com/cache-apt-pkgs-action/internal/pkgs"
 )
 
-func validate(cmd *Cmd, pkgArgs pkgs.Packages) error {
+func validate(cmd *cmdflags.Cmd, pkgArgs pkgs.Packages) error {
 	apt, err := pkgs.NewApt()
 	if err != nil {
 		return fmt.Errorf("error initializing APT: %v", err)
@@ -32,13 +33,13 @@ func validate(cmd *Cmd, pkgArgs pkgs.Packages) error {
 	return nil
 }
 
-func GetValidateCmd() *Cmd {
-	cmd := &Cmd{
+func GetValidateCmd() *cmdflags.Cmd {
+	cmd := &cmdflags.Cmd{
 		Name:        "validate",
 		Description: "Validate package arguments",
 		Flags:       flag.NewFlagSet("validate", flag.ExitOnError),
 		Run:         validate,
 	}
-	cmd.ExamplePackages = ExamplePackages
+	cmd.ExamplePackages = cmdflags.ExamplePackages
 	return cmd
 }

@@ -5,7 +5,10 @@
 # Don't ignore the main .env file
 !.env
 
-# Local Go binaries from build command
-cache_apt_pkgs*
+# Local VS Code environment (contains secrets)
+.vscode/.env
+
+# Distribute artifacts (built by CI)
+distribute/
 
 scripts/sandbox.sh

@@ -1,15 +1,11 @@
 name: Test Action
-
 permissions:
   contents: read
-
 env:
   DEBUG: false
-
 on:
   # Manual trigger (no inputs allowed per Trunk rule)
   workflow_dispatch:
-
   push:
     branches: [dev-v2.0] # Test on pushes to dev branch
     paths:
@@ -24,7 +20,6 @@ on:
       - internal/** # Only when action code changes
       - action.yml
       - .github/workflows/action_tests.yml
-
 jobs:
   list_all_versions:
     runs-on: ubuntu-latest
@@ -36,7 +31,6 @@ jobs:
         with:
           # Use the event ref/sha by default; do not accept user-controlled ref inputs
           fetch-depth: 0
-
       # Run the action from the checked out code
       - name: Execute
         id: execute
@@ -46,9 +40,7 @@ jobs:
           version: ${{ github.run_id }}-${{ github.run_attempt }}-list_all_versions
           debug: false
       - name: Verify
-        if: |
-          steps.execute.outputs.cache-hit != 'false' || 
-          steps.execute.outputs.all-package-version-list != 'fonts-liberation2=1:2.1.5-3,gir1.2-atk-1.0=2.52.0-1build1,gir1.2-freedesktop=1.80.1-1,gir1.2-gdkpixbuf-2.0=2.42.10+dfsg-3ubuntu3.2,gir1.2-gtk-3.0=3.24.41-4ubuntu1.3,gir1.2-harfbuzz-0.0=8.3.0-2build2,gir1.2-pango-1.0=1.52.1+ds-1build1,graphviz=2.42.2-9ubuntu0.1,libann0=1.1.2+doc-9build1,libblas3=3.12.0-3build1.1,libcdt5=2.42.2-9ubuntu0.1,libcgraph6=2.42.2-9ubuntu0.1,libgts-0.7-5t64=0.7.6+darcs121130-5.2build1,libgts-bin=0.7.6+darcs121130-5.2build1,libgvc6=2.42.2-9ubuntu0.1,libgvpr2=2.42.2-9ubuntu0.1,libharfbuzz-gobject0=8.3.0-2build2,liblab-gamut1=2.42.2-9ubuntu0.1,liblapack3=3.12.0-3build1.1,libpangoxft-1.0-0=1.52.1+ds-1build1,libpathplan4=2.42.2-9ubuntu0.1,python3-cairo=1.25.1-2build2,python3-gi-cairo=3.48.2-1,python3-numpy=1:1.26.4+ds-6ubuntu1,xdot=1.3-1'
+        if: "steps.execute.outputs.cache-hit != 'false' || \nsteps.execute.outputs.all-package-version-list != 'fonts-liberation2=1:2.1.5-3,gir1.2-atk-1.0=2.52.0-1build1,gir1.2-freedesktop=1.80.1-1,gir1.2-gdkpixbuf-2.0=2.42.10+dfsg-3ubuntu3.2,gir1.2-gtk-3.0=3.24.41-4ubuntu1.3,gir1.2-harfbuzz-0.0=8.3.0-2build2,gir1.2-pango-1.0=1.52.1+ds-1build1,graphviz=2.42.2-9ubuntu0.1,libann0=1.1.2+doc-9build1,libblas3=3.12.0-3build1.1,libcdt5=2.42.2-9ubuntu0.1,libcgraph6=2.42.2-9ubuntu0.1,libgts-0.7-5t64=0.7.6+darcs121130-5.2build1,libgts-bin=0.7.6+darcs121130-5.2build1,libgvc6=2.42.2-9ubuntu0.1,libgvpr2=2.42.2-9ubuntu0.1,libharfbuzz-gobject0=8.3.0-2build2,liblab-gamut1=2.42.2-9ubuntu0.1,liblapack3=3.12.0-3build1.1,libpangoxft-1.0-0=1.52.1+ds-1build1,libpathplan4=2.42.2-9ubuntu0.1,python3-cairo=1.25.1-2build2,python3-gi-cairo=3.48.2-1,python3-numpy=1:1.26.4+ds-6ubuntu1,xdot=1.3-1'\n"
         run: |
           echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
           echo "package-version-list = ${{ steps.execute.outputs.package-version-list }}"
@@ -57,7 +49,6 @@ jobs:
           diff  <(echo "${{ steps.execute.outputs.all-package-version-list }}" ) <(echo "fonts-liberation2=1:2.1.5-3,gir1.2-atk-1.0=2.52.0-1build1,gir1.2-freedesktop=1.80.1-1,gir1.2-gdkpixbuf-2.0=2.42.10+dfsg-3ubuntu3.2,gir1.2-gtk-3.0=3.24.41-4ubuntu1.3,gir1.2-harfbuzz-0.0=8.3.0-2build2,gir1.2-pango-1.0=1.52.1+ds-1build1,graphviz=2.42.2-9ubuntu0.1,libann0=1.1.2+doc-9build1,libblas3=3.12.0-3build1.1,libcdt5=2.42.2-9ubuntu0.1,libcgraph6=2.42.2-9ubuntu0.1,libgts-0.7-5t64=0.7.6+darcs121130-5.2build1,libgts-bin=0.7.6+darcs121130-5.2build1,libgvc6=2.42.2-9ubuntu0.1,libgvpr2=2.42.2-9ubuntu0.1,libharfbuzz-gobject0=8.3.0-2build2,liblab-gamut1=2.42.2-9ubuntu0.1,liblapack3=3.12.0-3build1.1,libpangoxft-1.0-0=1.52.1+ds-1build1,libpathplan4=2.42.2-9ubuntu0.1,python3-cairo=1.25.1-2build2,python3-gi-cairo=3.48.2-1,python3-numpy=1:1.26.4+ds-6ubuntu1,xdot=1.3-1")
           exit 1
         shell: bash
-
   list_versions:
     runs-on: ubuntu-latest
     name: List package versions.
@@ -72,14 +63,8 @@ jobs:
           debug: false
       - name: Verify
         if: steps.execute.outputs.cache-hit != 'false' || steps.execute.outputs.package-version-list != 'rolldice=1.16-1build3,xdot=1.3-1'
-        run: |
-          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}" 
-          echo "package-version-list = ${{ steps.execute.outputs.package-version-list }}"
-          echo "diff package-version-list"
-          diff  <(echo "${{ steps.execute.outputs.package-version-list }}" ) <(echo "rolldice=1.16-1build3,xdot=1.3-1")
-          exit 1
+        run: "echo \"cache-hit = ${{ steps.execute.outputs.cache-hit }}\" \necho \"package-version-list = ${{ steps.execute.outputs.package-version-list }}\"\necho \"diff package-version-list\"\ndiff  <(echo \"${{ steps.execute.outputs.package-version-list }}\" ) <(echo \"rolldice=1.16-1build3,xdot=1.3-1\")\nexit 1\n"
         shell: bash
-
   standard_workflow_install:
     runs-on: ubuntu-latest
     name: Standard workflow install package and cache.
@@ -98,7 +83,6 @@ jobs:
           echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
           exit 1
         shell: bash
-
   standard_workflow_install_with_new_version:
     needs: standard_workflow_install
     runs-on: ubuntu-latest
@@ -118,7 +102,6 @@ jobs:
           echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
           exit 1
         shell: bash
-
   standard_workflow_restore:
     needs: standard_workflow_install
     runs-on: ubuntu-latest
@@ -138,7 +121,6 @@ jobs:
           echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
           exit 1
         shell: bash
-
   standard_workflow_restore_with_packages_out_of_order:
     needs: standard_workflow_install
     runs-on: ubuntu-latest
@@ -158,7 +140,6 @@ jobs:
           echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
           exit 1
         shell: bash
-
   standard_workflow_add_package:
     needs: standard_workflow_install
     runs-on: ubuntu-latest
@@ -178,7 +159,6 @@ jobs:
           echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
           exit 1
         shell: bash
-
   standard_workflow_restore_add_package:
     needs: standard_workflow_add_package
     runs-on: ubuntu-latest
@@ -198,7 +178,6 @@ jobs:
           echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
           exit 1
         shell: bash
-
   no_packages:
     runs-on: ubuntu-latest
     name: No packages passed.
@@ -213,7 +192,6 @@ jobs:
         if: steps.execute.outcome == 'failure'
         run: exit 0
         shell: bash
-
   package_not_found:
     runs-on: ubuntu-latest
     name: Package not found.
@@ -228,7 +206,6 @@ jobs:
         if: steps.execute.outcome == 'failure'
         run: exit 0
         shell: bash
-
   version_contains_spaces:
     runs-on: ubuntu-latest
     name: Version contains spaces.
@@ -245,7 +222,6 @@ jobs:
         if: steps.execute.outcome == 'failure'
         run: exit 0
         shell: bash
-
   regression_36:
     runs-on: ubuntu-latest
     name: "Reinstall existing package (regression issue #36)."
@@ -256,7 +232,6 @@ jobs:
           packages: libgtk-3-dev
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_36
           debug: ${{ env.DEBUG }}
-
   regression_37:
     runs-on: ubuntu-latest
     name: "Install with reported package dependencies not installed (regression issue #37)."
@@ -267,7 +242,6 @@ jobs:
           packages: libosmesa6-dev libgl1-mesa-dev python3-tk pandoc git-restore-mtime
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_37
           debug: ${{ env.DEBUG }}
-
   debug_disabled:
     runs-on: ubuntu-latest
     name: Debug disabled.
@@ -278,7 +252,6 @@ jobs:
           packages: xdot
           version: ${{ github.run_id }}-${{ github.run_attempt }}-list-all-package-versions
           debug: false
-
   regression_72_1:
     runs-on: ubuntu-latest
     name: "Cache Java CA certs package v1 (regression issue #72)."
@@ -289,7 +262,6 @@ jobs:
           packages: openjdk-11-jre
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_72
           debug: ${{ env.DEBUG }}
-
   regression_72_2:
     runs-on: ubuntu-latest
     name: "Cache Java CA certs package v2 (regression issue #72)."
@@ -300,7 +272,6 @@ jobs:
           packages: default-jre
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_72
           debug: ${{ env.DEBUG }}
-
   regression_76:
     runs-on: ubuntu-latest
     name: "Cache empty archive (regression issue #76)."
@@ -318,7 +289,6 @@ jobs:
           packages: intel-oneapi-runtime-libs
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_76
           debug: ${{ env.DEBUG }}
-
   regression_79:
     runs-on: ubuntu-latest
     name: "Tar error with libboost-dev (regression issue #79)."
@@ -329,7 +299,6 @@ jobs:
           packages: libboost-dev
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_79
           debug: ${{ env.DEBUG }}
-
   regression_81:
     runs-on: ubuntu-latest
     name: "Tar error with alsa-ucm-conf (regression issue #81)."
@@ -340,7 +309,6 @@ jobs:
           packages: libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcups2 libdrm2 libgbm1 libnspr4 libnss3 libxcomposite1 libxdamage1 libxfixes3 libxkbcommon0 libxrandr2
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_81
           debug: ${{ env.DEBUG }}
-
   regression_84_literal_block_install:
     runs-on: ubuntu-latest
     name: "Install multiline package listing using literal block style (regression issue #84)."
@@ -349,11 +317,10 @@ jobs:
       - uses: ./
         with:
           packages: >
-            xdot 
-            rolldice distro-info-data
+            xdot  rolldice distro-info-data
+
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_84_literal_block
           debug: ${{ env.DEBUG }}
-
   regression_84_literal_block_restore:
     needs: regression_84_literal_block_install
     runs-on: ubuntu-latest
@@ -373,7 +340,6 @@ jobs:
           echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
           exit 1
         shell: bash
-
   regression_84_folded_block_install:
     runs-on: ubuntu-latest
     name: "Install multiline package listing using literal block style (regression issue #84)."
@@ -386,7 +352,6 @@ jobs:
             rolldice distro-info-data
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_84_folded_block
           debug: ${{ env.DEBUG }}
-
   regression_84_folded_block_restore:
     needs: regression_84_folded_block_install
     runs-on: ubuntu-latest
@@ -406,7 +371,6 @@ jobs:
           echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
           exit 1
         shell: bash
-
   regression_89:
     runs-on: ubuntu-latest
     name: "Upload logs artifact name (regression issue #89)."
@@ -417,7 +381,6 @@ jobs:
           packages: libgtk-3-dev:amd64
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_89
           debug: ${{ env.DEBUG }}
-
   regression_98:
     runs-on: ubuntu-latest
     name: "Install error due to SHELLOPTS override (regression issue #98)."
@@ -428,7 +391,6 @@ jobs:
           packages: git-restore-mtime libgl1-mesa-dev libosmesa6-dev pandoc
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_98
           debug: ${{ env.DEBUG }}
-
   regression_106_install:
     runs-on: ubuntu-latest
     name: "Stale apt repo not finding package on restore, install phase (regression issue #106)."
@@ -439,7 +401,6 @@ jobs:
           packages: libtk8.6
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_106
           debug: ${{ env.DEBUG }}
-
   regression_106_restore:
     needs: regression_106_install
     runs-on: ubuntu-latest
@@ -451,7 +412,6 @@ jobs:
           packages: libtk8.6
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_106
           debug: ${{ env.DEBUG }}
-
   regression_159_install:
     runs-on: ubuntu-latest
     name: apt-show false positive parsing Package line (regression issue #159).
@@ -462,7 +422,6 @@ jobs:
           packages: texlive-latex-extra
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_159
           debug: ${{ env.DEBUG }}
-
   multi_arch_cache_key:
     runs-on: ubuntu-latest
     name: Cache packages with multi-arch cache key.
@@ -473,7 +432,6 @@ jobs:
           packages: libfuse2
           version: ${{ github.run_id }}-${{ github.run_attempt }}-multi_arch_cache_key
           debug: ${{ env.DEBUG }}
-
   virtual_package:
     runs-on: ubuntu-latest
     name: Cache virtual package.

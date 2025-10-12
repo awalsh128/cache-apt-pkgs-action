@@ -2,16 +2,16 @@ package main
 
 import (
 	"testing"
+
+	"awalsh128.com/cache-apt-pkgs-action/cmd/cache_apt_pkgs/cmdflags"
 )
 
 func TestMain_CommandStructure(t *testing.T) {
 	// Test that all commands are properly initialized
-	commands := CreateCmds(
+	commands := cmdflags.CreateCmds(
 		GetCreateKeyCmd(),
 		GetInstallCmd(),
 		GetRestoreCmd(),
-		GetSetupCmd(),
-		GetCleanupCmd(),
 		GetValidateCmd(),
 	)
 
@@ -29,12 +29,10 @@ func TestMain_CommandStructure(t *testing.T) {
 }
 
 func TestMain_AllCommandsHaveRequiredFields(t *testing.T) {
-	commands := CreateCmds(
+	commands := cmdflags.CreateCmds(
 		GetCreateKeyCmd(),
 		GetInstallCmd(),
 		GetRestoreCmd(),
-		GetSetupCmd(),
-		GetCleanupCmd(),
 		GetValidateCmd(),
 	)
 

@@ -5,9 +5,22 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"awalsh128.com/cache-apt-pkgs-action/internal/logging"
+	atesting "awalsh128.com/cache-apt-pkgs-action/internal/testing"
 )
 
-// Integration test for the real commands used by main.
+// SetupTest performs per-test initialization and registers cleanup hooks.
+func SetupTest(t *testing.T) {
+	logging.Init(true)
+	t.Cleanup(func() {
+		logging.InitDefault()
+	})
+}
+
+// Integration test for main processing actual and non-existent commands.
+//
+// NOTE: No args are tested, just help as an example of a valid command.
 func TestIntegration_MainCommands(t *testing.T) {
 	// Build the binary first
 	binaryPath := filepath.Join(t.TempDir(), "cache-apt-pkgs")
@@ -151,4 +164,91 @@ func TestIntegration_CommandExecution(t *testing.T) {
 			}
 		})
 	}
+}
+
+type execRunResponse struct {
+	stdout string
+	stderr string
+	err    error
+	ghVars map[string]string
+}
+
+func execBinaryAndReturnResponse(t *testing.T, binaryPath string, args []string) (response execRunResponse) {
+	t.Helper()
+	var err error
+	stdout, stderr := atesting.CaptureStd(func() {
+		cmd := exec.Command(binaryPath, args...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err = cmd.Run()
+	})
+	return execRunResponse{
+		stdout: stdout,
+		stderr: stderr,
+		err:    err,
+	}
+}
+
+// Simulate a pseudo GitHub Actions workflow using the commands
+
+func TestIntegration_PseudoActionWorkflow(t *testing.T) {
+	const cacheDirName = "cache-apt-pkgs-action-cache"
+	const pkgs = "xdot rolldice"
+
+	// This test simulates a pseudo GitHub Actions workflow using the commands
+	tmpDir := t.TempDir()
+	cacheDir := filepath.Join(tmpDir, cacheDirName)
+	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		t.Fatalf("Failed to create cache dir: %v", err)
+	}
+
+	// Build the binary
+	binaryPath := filepath.Join(tmpDir, "cache-apt-pkgs")
+	cmd := exec.Command("go", "build", "-o", binaryPath, ".")
+	cmd.Dir = "."
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to build binary: %v", err)
+	}
+
+	// Step 1: Validate packages
+	response := execBinaryAndReturnResponse(t, binaryPath, []string{"validate", pkgs})
+	if response.err != nil {
+		t.Fatalf("validate failed: %v", response.err)
+	}
+
+	// Step 2: Create cache key
+	response = execBinaryAndReturnResponse(t, binaryPath, []string{"createkey",
+		"--cache-dir", cacheDir,
+		"--version", "1.0",
+		"--global-version", "1.0",
+		"--ciphertext-path", filepath.Join(cacheDir, "cache_key.sha256"),
+		"--plaintext-path", filepath.Join(cacheDir, "cache_key.txt"),
+		pkgs})
+	if response.err != nil {
+		t.Fatalf("createkey command failed: %v", response.err)
+	}
+
+	// if response.ghVars["cache-hit"] == "true" {
+	// 	t.Log("Cache hit detected, executing restore.")
+	// 	// Step 4b: Restore packages
+	// 	response = execBinaryAndReturnResponse(t, binaryPath, []string{"restore",
+	// 		"--cache-dir", cacheDir,
+	// 		pkgs})
+	// 	if response.err != nil {
+	// 		t.Logf("restore failed: %v", response.err)
+	// 	}
+	// } else {
+	// 	t.Log("No cache hit, executing install.")
+	// 	// Step 4a: Install packages
+	// 	response = execBinaryAndReturnResponse(t, binaryPath, []string{"install",
+	// 		"--cache-dir", cacheDir,
+	// 		"--version", "1.0",
+	// 		"--global-version", "1.0",
+	// 		pkgs})
+	// 	if response.err != nil {
+	// 		t.Logf("install command failed: %v", response.err)
+	// 	}
+	// }
+
+	// t.Log("Pseudo GitHub Actions workflow simulation completed.")
 }

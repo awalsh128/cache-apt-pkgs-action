@@ -44,11 +44,11 @@ version 2.0 once in beta.
 
    ```bash
    # Interactive menu for all development tasks
-   ./scripts/menu.sh
+   ./scripts/dev/menu.sh
 
    # Or use individual scripts directly:
-   ./scripts/setup_dev.sh       # Set up development environment
-   ./scripts/update_md_tocs.sh  # Update table of contents in markdown files
+   ./scripts/dev/setup_dev.sh       # Set up development environment
+   ./scripts/dev/update_md_tocs.sh  # Update table of contents in markdown files
    ```
 
 ### 📜 Available Development Scripts
@@ -71,7 +71,7 @@ The project includes several utility scripts to help with development:
 To access the menu system, run:
 
 ```bash
-./scripts/menu.sh
+./scripts/dev/menu.sh
 ```
 
 This will present an interactive menu with all available development tasks.
@@ -118,6 +118,7 @@ There are two ways to test the GitHub Action workflows:
 
    - 🎭 Install [`act`](https://github.com/nektos/act) for local GitHub Actions
      testing:
+
    - ▶️ Run `act` on any action test in the following ways:
 
      ```bash
@@ -177,6 +178,7 @@ There are two ways to test the GitHub Action workflows:
 
    - Install [`act`](https://github.com/nektos/act) for local GitHub Actions
      testing:
+
    - Run `act` on any action test in the following ways:
 
      ```bash

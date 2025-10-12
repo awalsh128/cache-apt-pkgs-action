@@ -1,6 +1,7 @@
 # Command Line Usage Guide
 
-This document provides information about using the `cache-apt-pkgs` command line tool.
+This document provides information about using the `cache-apt-pkgs` command line
+tool.
 
 ## Basic Usage
 
@@ -23,7 +24,8 @@ cache-apt-pkgs install [flags] [packages]
 #### Flags for Install
 
 - `--version`: Cache version identifier (optional)
-- `--execute-scripts`: Execute package install scripts (optional, default: false)
+- `--execute-scripts`: Execute package install scripts (optional, default:
+  false)
 
 #### Install Examples
 
@@ -74,7 +76,8 @@ cache-apt-pkgs restore [flags] [packages]
 #### Flags for Restore
 
 - `--version`: Cache version to restore from (optional)
-- `--execute-scripts`: Execute package install scripts (optional, default: false)
+- `--execute-scripts`: Execute package install scripts (optional, default:
+  false)
 
 #### Restore Examples
 

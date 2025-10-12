@@ -9,41 +9,30 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Cache APT Packages Action](#cache-apt-packages-action)
-  - [🚀 Quick Start](#-quick-start)
-  - [✨ Features](#-features)
-  - [📋 Requirements](#-requirements)
-  - [🔧 Configuration](#-configuration)
-    - [Inputs](#inputs)
-    - [Outputs](#outputs)
-  - [📝 Usage Guide](#-usage-guide)
-    - [Version Selection](#version-selection)
-    - [Basic Example](#basic-example)
-    - [Advanced Example](#advanced-example)
-  - [🔍 Cache Details](#-cache-details)
-    - [Cache Scoping](#cache-scoping)
-    - [Cache Keys](#cache-keys)
-    - [Cache Invalidation](#cache-invalidation)
-  - [🚨 Common Issues](#-common-issues)
-    - [Permission Issues](#permission-issues)
-    - [Missing Dependencies](#missing-dependencies)
-    - [Cache Misses](#cache-misses)
-  - [🤝 Contributing](#-contributing)
-  - [📜 License](#-license)
-  - [🌟 Acknowledgements](#-acknowledgements)
-    - [Getting Started](#getting-started)
-      - [Workflow Setup](#workflow-setup)
-      - [Detailed Configuration](#detailed-configuration)
-        - [Input Parameters](#input-parameters)
-        - [Output Values](#output-values)
-    - [Cache scopes](#cache-scopes)
-    - [Example workflows](#example-workflows)
-      - [Build and Deploy `Doxygen` Documentation](#build-and-deploy-doxygen-documentation)
-      - [Simple Package Installation](#simple-package-installation)
-  - [Caveats](#caveats)
-    - [Edge Cases](#edge-cases)
-    - [Non-file Dependencies](#non-file-dependencies)
-    - [Cache Limits](#cache-limits)
+- [🚀 Quick Start](#-quick-start)
+- [✨ Features](#-features)
+- [📋 Requirements](#-requirements)
+- [🔧 Configuration](#-configuration)
+  - [Inputs](#inputs)
+  - [Outputs](#outputs)
+- [📝 Usage Guide](#-usage-guide)
+  - [Version Selection](#version-selection)
+  - [Example Workflows](#example-workflows)
+- [🔍 Cache Details](#-cache-details)
+  - [Cache Scoping](#cache-scoping)
+  - [Cache Keys](#cache-keys)
+  - [Cache Invalidation](#cache-invalidation)
+- [🚨 Common Issues](#-common-issues)
+  - [Permission Issues](#permission-issues)
+  - [Missing Dependencies](#missing-dependencies)
+  - [Cache Misses](#cache-misses)
+- [🤝 Contributing](#-contributing)
+- [📜 License](#-license)
+- [Caveats](#caveats)
+  - [Edge Cases](#edge-cases)
+  - [Non-file Dependencies](#non-file-dependencies)
+  - [Cache Limits](#cache-limits)
+- [🌟 Acknowledgements](#-acknowledgements)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -103,11 +92,10 @@ steps:
 
 ### Version Selection
 
-> ⚠️ Starting with this release, the action enforces immutable references.
-> Workflows must pin `awalsh128/cache-apt-pkgs-action` to a release tag or
-> commit SHA. Referencing a branch (for example `@main`) will now fail during
-> the `setup` step. For more information on blocking and SHA pinning actions,
-> see the
+> ⚠️ The action enforces immutable references. Workflows must pin
+> `awalsh128/cache-apt-pkgs-action` to a release tag or commit SHA. Referencing
+> a branch (for example `@main`) will now fail during the `setup` step. For more
+> information on blocking and SHA pinning actions, see the
 > [announcement on the GitHub changelog](https://github.blog/changelog/2025-08-15-github-actions-policy-now-supports-blocking-and-sha-pinning-actions).
 
 Recommended options:
@@ -119,7 +107,9 @@ Avoid floating references such as `@latest`, `@master`, or `@dev`. The action
 will refuse to run when a branch reference is detected to protect consumers from
 involuntary updates.
 
-### Basic Example
+### Example Workflows
+
+Install a set of packages and build your code.
 
 ```yaml
 name: Build
@@ -143,50 +133,33 @@ jobs:
           make
 ```
 
-### Advanced Example
+Install `Doxygen` dependencies for building and deploying documentation.
 
 ```yaml
-name: Complex Build
-on: [push]
-
+name: Create Documentation
+on: push
 jobs:
-  build:
+  build_and_deploy_docs:
     runs-on: ubuntu-latest
+    name: Build Doxygen documentation and deploy
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Cache APT Packages
-        uses: awalsh128/cache-apt-pkgs-action@v2
-        id: apt-cache
+      - uses: actions/checkout@v4
+      - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: python3-dev cmake libboost-all-dev
-          version: ${{ github.sha }}
-          execute_install_scripts: true
+          packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
+          version: 1.0
 
-      - name: Cache Info
+      - name: Build
         run: |
-          echo "Cache hit: ${{ steps.apt-cache.outputs.cache-hit }}"
-          echo "Installed packages: ${{ steps.apt-cache.outputs.package-version-list }}"
+          cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+          cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@4.1.5
+        with:
+          branch: gh-pages
+          folder: ${{github.workspace}}/build/website
 ```
-
-### Binary Integrity Verification
-
-Every published release bundles precompiled binaries under
-`distribute/<runner arch>/cache_apt_pkgs`. Starting with this release the action
-verifies the binary against a co-located `.sha256` manifest before execution. If
-the checksum does not match the expected value the `setup` step exits with an
-error to prevent tampering or incomplete releases.
-
-When preparing a new release:
-
-1. Run `scripts/distribute.sh push` to build architecture-specific binaries.
-2. The script now emits a matching `cache-apt-pkgs-linux-<arch>.sha256` file for
-   each binary.
-3. Copy the binaries and checksum files into `distribute/<arch>/` before
-   creating the release artifact.
-
-Workflows do not need to perform any additional setup—the checksum enforcement
-is automatic as long as the bundled `.sha256` files accompany the binaries.
 
 ## 🔍 Cache Details
 
@@ -244,106 +217,6 @@ for details.
 
 This project is licensed under the Apache License 2.0 - see the
 [LICENSE](LICENSE) file for details.
-
-## 🌟 Acknowledgements
-
-- [actions/cache](https://github.com/actions/cache/) team
-- All our
-  [contributors](https://github.com/awalsh128/cache-apt-pkgs-action/graphs/contributors)
-
-### Getting Started
-
-#### Workflow Setup
-
-Create a workflow `.yml` file in your repositories `.github/workflows`
-directory. [Example workflows](#example-workflows) are available below. For more
-information, reference the GitHub Help Documentation for
-[Creating a workflow file](https://help.github.com/en/articles/configuring-a-workflow#creating-a-workflow-file).
-
-#### Detailed Configuration
-
-##### Input Parameters
-
-- `packages` - Space delimited list of packages to install.
-- `version` - Version of cache to load. Each version will have its own cache.
-  Note, all characters except spaces are allowed.
-- `execute_install_scripts` - Execute Debian package 'preinst' and 'postinst'
-  install scripts upon restore. See
-  [Caveats / Non-file Dependencies](#non-file-dependencies) for more
-  information.
-
-##### Output Values
-
-- `cache-hit` - A `true` or `false` value to indicate a cache was found for the
-  packages requested.
-- `package-version-list` - The main requested packages and versions that are
-  installed. Represented as a comma delimited list with equals delimit on the
-  package version (i.e. \<package1>=<version1\>,\<package2>=\<version2>,...).
-- `all-package-version-list` - All the pulled in packages and versions,
-  including dependencies, that are installed. Represented as a comma delimited
-  list with equals delimit on the package version (i.e.
-  \<package1>=<version1\>,\<package2>=\<version2>,...).
-
-### Cache scopes
-
-The cache is scoped to:
-
-- Package list and versions
-- Branch settings
-- Default branch cache (available to other branches)
-
-### Example workflows
-
-Below are some example workflows showing how to use this action.
-
-#### Build and Deploy `Doxygen` Documentation
-
-This example shows how to cache dependencies for building and deploying
-`Doxygen` documentation:
-
-```yaml
-name: Create Documentation
-on: push
-jobs:
-  build_and_deploy_docs:
-    runs-on: ubuntu-latest
-    name: Build Doxygen documentation and deploy
-    steps:
-      - uses: actions/checkout@v4
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
-          version: 1.0
-
-      - name: Build
-        run: |
-          cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-          cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-      - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@4.1.5
-        with:
-          branch: gh-pages
-          folder: ${{github.workspace}}/build/website
-```
-
-#### Simple Package Installation
-
-This example shows the minimal configuration needed to cache and install
-packages:
-
-```yaml
-name: Install Dependencies
-jobs:
-  install_doxygen_deps:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
-          version: 1.0
-```
 
 ## Caveats
 
@@ -404,3 +277,9 @@ caches will be evicted based on when the cache was last accessed. Caches that
 are not accessed within the last week will also be evicted. To get more
 information on how to access and manage your actions's caches, see
 [GitHub Actions / Using workflows / Cache dependencies](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#viewing-cache-entries).
+
+## 🌟 Acknowledgements
+
+- [actions/cache](https://github.com/actions/cache/) team
+- All our
+  [contributors](https://github.com/awalsh128/cache-apt-pkgs-action/graphs/contributors)

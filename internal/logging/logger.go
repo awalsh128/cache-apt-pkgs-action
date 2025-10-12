@@ -1,12 +1,11 @@
 package logging
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"os"
 	"sync"
-
-	"awalsh128.com/cache-apt-pkgs-action/internal/cio"
 )
 
 // loggerWrapper encapsulates a standard logger with additional functionality.
@@ -42,6 +41,8 @@ func createDefault() loggerWrapper {
 // This affects all subsequent log messages from this package.
 // Thread-safe operation that can be called at any time.
 func SetOutput(writer io.Writer) {
+	loggerMu.Lock()
+	defer loggerMu.Unlock()
 	logger.wrapped.SetOutput(writer)
 }
 
@@ -116,12 +117,12 @@ func Debug(format string, a ...any) {
 func DumpVars(a ...any) {
 	if DebugEnabled {
 		for _, v := range a {
-			json, err := cio.ToJSON(v)
+			content, err := json.MarshalIndent(v, "", "  ")
 			if err != nil {
 				Info("warning: unable to dump variable: %v", err)
 				continue
 			}
-			logger.wrapped.Println(json)
+			logger.wrapped.Println(content)
 		}
 	}
 }

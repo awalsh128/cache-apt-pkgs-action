@@ -32,7 +32,7 @@ MD033:
 MD034: true
 # MD035 hr-style - Horizontal rule style
 MD035:
-  style: ---
+  style: "---"
 # MD041 first-line-heading - First line should be a top-level header
 MD041:
   level: 1

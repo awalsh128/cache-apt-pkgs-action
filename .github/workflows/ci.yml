@@ -1,8 +1,6 @@
 name: CI
-
 permissions:
   contents: read
-
 on:
   push:
     branches: [dev-v2.0]
@@ -12,88 +10,74 @@ on:
   schedule:
     - cron: 0 0 * * * # Run at 00:00 UTC every day
   workflow_dispatch:
-
 env:
   DEBUG: false
   SHELLOPTS: errexit:pipefail
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Read Go version from .env
         id: go-version
         run: |
           echo "go_version=$(grep '^GO_VERSION=' .env | cut -d '=' -f2)" >> $GITHUB_OUTPUT
-
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ steps.go-version.outputs.go_version }}
           cache: true
-
       - name: Install Go module dependencies
         run: go mod download
-
       - name: Build
         run: go build -v ./...
-
       - name: trunk.io Lint
         uses: trunk-io/trunk-action@v1
         with:
           arguments: check
-
       - name: Test with coverage
         run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
-
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           files: ./coverage.txt
           fail_ci_if_error: true
-
   validate-scripts:
     runs-on: ubuntu-latest
     needs: build
     steps:
       - uses: actions/checkout@v4
-
       - name: Check script syntax
         run: |
-          for script in scripts/*.sh; do
+          for script in scripts/dev/*.sh; do
             echo "Checking syntax for $script"
             bash -n "$script"
           done
-
       - name: Check scripts are executable
         run: |
-          for script in scripts/*.sh; do
+          for script in scripts/dev/*.sh; do
             if [[ ! -x "$script" ]]; then
               echo "::error::Script $script is not executable. Run 'chmod +x $script' and commit the changes."
               exit 1
             fi
           done
-
       - name: Check menu integration
         run: |
           echo "Checking if all scripts are integrated in menu.sh..."
-          for script in scripts/*.sh; do
+          for script in scripts/dev/*.sh; do
             # Skip menu.sh itself
             if [[ "$(basename "$script")" == "menu.sh" ]]; then
               continue
             fi
             # Look for the script path in menu.sh
-            if ! grep -q "\".*$(basename "$script")\"" scripts/menu.sh; then
+            if ! grep -q "\".*$(basename "$script")\"" scripts/dev/menu.sh; then
               echo "::error::Script $(basename "$script") is not integrated in menu.sh"
               exit 1
             fi
           done
-
       - name: Run script tests
         run: |
-          if [[ -d "scripts/tests" ]]; then
-            for test in scripts/tests/*_test.sh; do
+          if [[ -d "scripts/dev/tests" ]]; then
+            for test in scripts/dev/tests/*_test.sh; do
               if [[ -f "$test" ]]; then
                 echo "Running test: $test"
                 bash "$test"
