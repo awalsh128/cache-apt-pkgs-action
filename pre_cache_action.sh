@@ -10,7 +10,7 @@ source "${script_dir}/lib.sh"
 # Setup first before other operations.
 debug="${4}"
 validate_bool "${debug}" debug 1
-test ${debug} == "true" && set -x
+test "${debug}" == "true" && set -x
 
 # Directory that holds the cached packages.
 cache_dir="${1}"
@@ -28,7 +28,8 @@ debug="${4}"
 add_repository="${5}"
 
 # List of the packages to use.
-input_packages="${@:6}"
+# Use * instead of @ to concatenate array elements into a single string
+input_packages="${*:6}"
 
 # Trim commas, excess spaces, and sort.
 log "Normalizing package list..."
@@ -40,7 +41,7 @@ packages="$(get_normalized_package_list "${input_packages}")"
 log "done"
 
 # Create cache directory so artifacts can be saved.
-mkdir -p ${cache_dir}
+mkdir -p "${cache_dir}"
 
 log "Validating action arguments (version='${version}', packages='${packages}')...";
 if grep -q " " <<< "${version}"; then
@@ -51,7 +52,9 @@ fi
 
 # Is length of string zero?
 if test -z "${packages}"; then
-  case "$EMPTY_PACKAGES_BEHAVIOR" in
+  # shellcheck disable=SC2154
+  # EMPTY_PACKAGES_BEHAVIOR is an environment variable passed from GitHub Actions
+  case "${EMPTY_PACKAGES_BEHAVIOR}" in
     ignore)
       exit 0
       ;;
@@ -70,7 +73,7 @@ fi
 validate_bool "${execute_install_scripts}" execute_install_scripts 4
 
 # Basic validation for repository parameter
-if [ -n "${add_repository}" ]; then
+if [[ -n "${add_repository}" ]]; then
   log "Validating repository parameter..."
   for repository in ${add_repository}; do
     # Check if repository format looks valid (basic check)
@@ -104,13 +107,13 @@ log "- CPU architecture is '${cpu_arch}'."
 value="${packages} @ ${version} ${force_update_inc}"
 
 # Include repositories in cache key to ensure different repos get different caches
-if [ -n "${add_repository}" ]; then
+if [[ -n "${add_repository}" ]]; then
   value="${value} ${add_repository}"
   log "- Repositories '${add_repository}' added to value."
 fi
 
 # Don't invalidate existing caches for the standard Ubuntu runners
-if [ "${cpu_arch}" != "x86_64" ]; then
+if [[ "${cpu_arch}" != "x86_64" ]]; then
   value="${value} ${cpu_arch}"
   log "- Architecture '${cpu_arch}' added to value."
 fi
@@ -123,5 +126,5 @@ log "- Value hashed as '${key}'."
 log "done"
 
 key_filepath="${cache_dir}/cache_key.md5"
-echo ${key} > ${key_filepath}
+echo "${key}" > "${key_filepath}"
 log "Hash value written to ${key_filepath}"

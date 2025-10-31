@@ -154,3 +154,84 @@ For more context and information see [issue #57](https://github.com/awalsh128/ca
 ### Cache Limits
 
 A repository can have up to 5GB of caches. Once the 5GB limit is reached, older caches will be evicted based on when the cache was last accessed. Caches that are not accessed within the last week will also be evicted. To get more information on how to access and manage your actions's caches, see [GitHub Actions / Using workflows / Cache dependencies](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#viewing-cache-entries).
+
+## Development
+
+### Prerequisites
+
+- **Go 1.20+** (for building the `apt_query` binary) - version specified in `go.mod`
+  - Install from [golang.org](https://golang.org/dl/) or via package manager
+  - Verify installation: `go version`
+- **ShellCheck** (for linting shell scripts) - install via:
+  - macOS: `brew install shellcheck`
+  - Linux: `sudo apt-get install shellcheck` or see [shellcheck installation guide](https://github.com/koalaman/shellcheck#installing)
+  - Windows: Available via [scoop](https://scoop.sh/) or [chocolatey](https://chocolatey.org/)
+
+### Building
+
+The project includes Go binaries (`apt_query-arm64` and `apt_query-x86`) that are used by the shell scripts to query APT package information.
+
+**Build all packages:**
+```bash
+go build -v ./...
+```
+
+**Build for specific architecture:**
+```bash
+# For ARM64 (Apple Silicon, ARM servers)
+GOARCH=arm64 go build -o apt_query-arm64 ./src/cmd/apt_query
+
+# For x86_64 (Intel/AMD)
+GOARCH=amd64 go build -o apt_query-x86 ./src/cmd/apt_query
+```
+
+**Run tests:**
+```bash
+go test -v ./...
+```
+
+### Linting
+
+This project uses [ShellCheck](https://github.com/koalaman/shellcheck) to ensure shell script quality and catch common errors. The configuration is stored in `.shellcheckrc`.
+
+**Run ShellCheck locally:**
+```bash
+shellcheck *.sh
+```
+
+**IDE Integration:**
+
+Many IDEs and editors can automatically run ShellCheck:
+
+- **VS Code**: Install the [ShellCheck extension](https://marketplace.visualstudio.com/items?itemName=timonwong.shellcheck)
+- **Vim/Neovim**: Use [ALE](https://github.com/dense-analysis/ale) or [coc-shellcheck](https://github.com/josa42/coc-shellcheck)
+- **IntelliJ/CLion**: ShellCheck is integrated in recent versions
+- **Sublime Text**: Install [SublimeLinter-shellcheck](https://github.com/SublimeLinter/SublimeLinter-shellcheck)
+
+**Go Linting:**
+
+This project uses [golangci-lint](https://golangci-lint.run/) for Go code quality checks.
+
+**Run golangci-lint locally:**
+```bash
+# Install golangci-lint (if not already installed)
+# macOS: brew install golangci-lint
+# Linux: See https://golangci-lint.run/usage/install/
+
+golangci-lint run
+```
+
+**IDE Integration:**
+
+- **VS Code**: Install the [Go extension](https://marketplace.visualstudio.com/items?itemName=golang.go) for syntax highlighting, auto-completion, and built-in linting
+- **IntelliJ/GoLand**: Built-in Go support with linting and formatting
+- **Vim/Neovim**: Use [vim-go](https://github.com/fatih/vim-go) for Go development
+
+### CI/CD
+
+The GitHub Actions workflows will automatically:
+- **Build and test** Go code on pull requests
+- **Run ShellCheck** on shell scripts (blocks PRs on failures)
+- **Run golangci-lint** on Go code (blocks PRs on failures)
+
+All checks run on pull requests and pushes to `master`, `dev`, and `staging` branches.

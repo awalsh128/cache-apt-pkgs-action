@@ -19,7 +19,7 @@ cache_dir="${1}"
 add_repository="${3}"
 
 # List of the packages to use.
-input_packages="${@:4}"
+input_packages="${*:4}"
 
 if ! apt-fast --version > /dev/null 2>&1; then
   log "Installing apt-fast for optimized installs..."
@@ -31,7 +31,7 @@ if ! apt-fast --version > /dev/null 2>&1; then
 fi
 
 # Add custom repositories if specified
-if [ -n "${add_repository}" ]; then
+if [[ -n "${add_repository}" ]]; then
   log "Adding custom repositories..."
   for repository in ${add_repository}; do
     log "- Adding repository: ${repository}"
@@ -71,7 +71,10 @@ install_log_filepath="${cache_dir}/install.log"
 
 log "Clean installing ${package_count} packages..."
 # Zero interaction while installing or upgrading the system via apt.
-sudo DEBIAN_FRONTEND=noninteractive apt-fast --yes install ${packages} > "${install_log_filepath}"
+# Note: sudo doesn't affect redirects, but we want the output in the file anyway
+# shellcheck disable=SC2024
+# We intentionally redirect output here; the redirect happens as the current user which is fine
+sudo DEBIAN_FRONTEND=noninteractive apt-fast --yes install "${packages}" > "${install_log_filepath}"
 log "done"
 log "Installation log written to ${install_log_filepath}"
 
@@ -81,7 +84,7 @@ installed_packages=$(get_installed_packages "${install_log_filepath}")
 log "Installed package list:"
 for installed_package in ${installed_packages}; do
   # Reformat for human friendly reading.  
-  log "- $(echo ${installed_package} | awk -F\= '{print $1" ("$2")"}')"
+  log "- $(echo "${installed_package}" | awk -F= '{print $1" ("$2")"}')"
 done
 
 log_empty_line
@@ -93,7 +96,7 @@ for installed_package in ${installed_packages}; do
 
   # Sanity test in case APT enumerates duplicates.
   if test ! -f "${cache_filepath}"; then
-    read package_name package_ver < <(get_package_name_ver "${installed_package}")
+    read -r package_name package_ver < <(get_package_name_ver "${installed_package}")
     log "  * Caching ${package_name} to ${cache_filepath}..."
 
     # Pipe all package files (no folders), including symlinks, their targets, and installation control data to Tar.
@@ -104,9 +107,9 @@ for installed_package in ${installed_packages}; do
       while IFS= read -r f; do
         if test -f "${f}" -o -L "${f}"; then
           get_tar_relpath "${f}"
-          if [ -L "${f}" ]; then
+          if [[ -L "${f}" ]]; then
             target="$(readlink -f "${f}")"
-            if [ -f "${target}" ]; then
+            if [[ -f "${target}" ]]; then
               get_tar_relpath "${target}"
             fi
           fi
@@ -120,7 +123,7 @@ for installed_package in ${installed_packages}; do
   # Comma delimited name:ver pairs in the all packages manifest.
   manifest_all="${manifest_all}${package_name}=${package_ver},"
 done
-log "done (total cache size $(du -h ${cache_dir} | tail -1 | awk '{print $1}'))"
+log "done (total cache size $(du -h "${cache_dir}" | tail -1 | awk '{print $1}'))"
 
 log_empty_line
 

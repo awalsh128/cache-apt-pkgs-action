@@ -1,0 +1,31 @@
+# ShellCheck configuration file
+# See https://github.com/koalaman/shellcheck/wiki/Directives for more information
+
+# Enable all optional checks
+enable=all
+
+# Disable specific warnings that may be acceptable in this project
+# SC1090: Can't follow non-constant source. Use a path to a file that can be checked
+#         (disabled because we use dynamic sourcing with script_dir)
+disable=SC1090
+
+# SC1091: Not following: <file> was not specified as input
+#         (disabled because lib.sh is sourced dynamically)
+disable=SC1091
+
+# SC2310: Function invoked in && condition (set -e disabled)
+#         (acceptable pattern for conditional execution)
+disable=SC2310
+
+# SC2311: Bash implicitly disabled set -e in command substitution
+#         (acceptable pattern - we want to capture output even if function fails)
+disable=SC2311
+
+# SC2312: Consider invoking command separately to avoid masking return value
+#         (many of these are acceptable patterns in command substitutions)
+disable=SC2312
+
+# Exclude external files that we don't control
+exclude-dir=.git
+exclude-dir=testlogs
+
