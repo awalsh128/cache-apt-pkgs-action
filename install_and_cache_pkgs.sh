@@ -75,6 +75,33 @@ manifest_all=""
 install_log_filepath="${cache_dir}/install.log"
 
 log "Clean installing ${package_count} packages..."
+
+# Check for processes holding dpkg locks before installation
+log "Checking for processes holding dpkg locks..."
+if command -v lsof > /dev/null 2>&1; then
+  log "Checking /var/lib/dpkg/lock-frontend..."
+  sudo lsof /var/lib/dpkg/lock-frontend 2>&1 || log "No processes found holding lock-frontend"
+  
+  log "Checking /var/lib/dpkg/lock..."
+  sudo lsof /var/lib/dpkg/lock 2>&1 || log "No processes found holding lock"
+  
+  log "Checking for all dpkg/apt related processes..."
+  ps aux | grep -E "(dpkg|apt|apt-fast)" | grep -v grep || log "No dpkg/apt processes found"
+  
+  log "Checking all open files by dpkg/apt processes..."
+  pids=$(pgrep -f "(dpkg|apt|apt-fast)" 2>/dev/null | tr '\n' ',' | sed 's/,$//')
+  if [ -n "${pids}" ]; then
+    sudo lsof -p "${pids}" 2>&1 | head -50 || log "No open files found for dpkg/apt processes"
+  else
+    log "No dpkg/apt processes found to check"
+  fi
+else
+  log "lsof not available, checking with fuser instead..."
+  sudo fuser /var/lib/dpkg/lock-frontend 2>&1 || log "No processes found holding lock-frontend"
+  sudo fuser /var/lib/dpkg/lock 2>&1 || log "No processes found holding lock"
+fi
+log "done checking locks"
+
 # Zero interaction while installing or upgrading the system via apt.
 sudo DEBIAN_FRONTEND=noninteractive apt-fast --yes install ${packages} > "${install_log_filepath}"
 log "done"
