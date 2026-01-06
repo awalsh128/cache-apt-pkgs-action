@@ -27,20 +27,19 @@ jobs:
         id: check_distribute
         run: |
           if [ -d "distribute" ]; then
-            echo "distribute_exists=true" >> $GITHUB_OUTPUT
+            echo "distribute_exists=false" >> $GITHUB_OUTPUT
           else
             echo "distribute_exists=false" >> $GITHUB_OUTPUT
           fi
 
   build_distribute:
     needs: check_distribute
-    if: needs.check_distribute.outputs.distribute_exists == 'true'
+    if: needs.check_distribute.outputs.distribute_exists == 'false'
     uses: ./.github/workflows/build-distribute.yml
 
   # All other jobs should depend on build_distribute (if run) or check_distribute (if not needed)
   list_all_versions:
     needs: [build_distribute, check_distribute]
-    if: needs.check_distribute.outputs.distribute_exists == 'true' || always()
     runs-on: ubuntu-latest
     name: List all package versions (including deps).
     steps:
@@ -67,7 +66,6 @@ jobs:
 
   list_versions:
     needs: [build_distribute, check_distribute]
-    if: needs.check_distribute.outputs.distribute_exists == 'true' || always()
     runs-on: ubuntu-latest
     name: List package versions.
     steps:
@@ -93,7 +91,6 @@ jobs:
 
   standard_workflow_install:
     needs: [build_distribute, check_distribute]
-    if: needs.check_distribute.outputs.distribute_exists == 'true' || always()
     runs-on: ubuntu-latest
     name: Standard workflow install package and cache.
     steps:
