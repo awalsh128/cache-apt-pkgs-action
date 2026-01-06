@@ -20,17 +20,17 @@ jobs:
         include:
           - goos: linux
             goarch: amd64
-            arch: x64
+            arch: X64
           - goos: linux
             goarch: arm64
-            arch: arm64
+            arch: ARM64
           - goos: linux
             goarch: arm
             goarch_variant: "6"
-            arch: arm
+            arch: ARM
           - goos: linux
             goarch: "386"
-            arch: x86
+            arch: X86
     steps:
       - name: Checkout
         uses: actions/checkout@v4
