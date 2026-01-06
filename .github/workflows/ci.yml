@@ -14,6 +14,24 @@ env:
   DEBUG: false
   SHELLOPTS: errexit:pipefail
 jobs:
+  check_distribute_and_build:
+    runs-on: ubuntu-latest
+    name: Check and build distribute if needed
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check if distribute directory exists
+        id: check_distribute
+        run: |
+          if [ ! -d "distribute" ]; then
+            echo "distribute_exists=false" >> $GITHUB_OUTPUT
+          else
+            echo "distribute_exists=true" >> $GITHUB_OUTPUT
+          fi
+      - name: Trigger build-distribute workflow
+        if: steps.check_distribute.outputs.distribute_exists == 'false'
+        uses: ./.github/workflows/build-distribute.yml
+        with:
+          ref: ${{ github.ref }}
   build:
     runs-on: ubuntu-latest
     steps:
