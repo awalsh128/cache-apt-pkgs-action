@@ -33,8 +33,6 @@ jobs:
       - name: Trigger build-distribute workflow
         if: steps.check_distribute.outputs.distribute_exists == 'false'
         uses: ./.github/workflows/build-distribute.yml
-        with:
-          ref: ${{ github.ref }}
   list_all_versions:
     runs-on: ubuntu-latest
     name: List all package versions (including deps).

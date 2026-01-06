@@ -24,8 +24,6 @@ jobs:
       - name: Trigger build-distribute workflow
         if: steps.check_distribute.outputs.distribute_exists == 'false'
         uses: ./.github/workflows/build-distribute.yml
-        with:
-          ref: ${{ github.ref }}
   trunk_check:
     name: Trunk Code Quality Runner
     runs-on: ubuntu-latest

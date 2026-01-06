@@ -30,8 +30,6 @@ jobs:
       - name: Trigger build-distribute workflow
         if: steps.check_distribute.outputs.distribute_exists == 'false'
         uses: ./.github/workflows/build-distribute.yml
-        with:
-          ref: ${{ github.ref }}
   build:
     runs-on: ubuntu-latest
     steps:

@@ -5,6 +5,7 @@ on:
       - "v2.*.*"
     branches:
       - dev-v2
+  workflow_call:
 permissions:
   contents: write
   id-token: write
