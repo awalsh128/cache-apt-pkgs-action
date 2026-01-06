@@ -11,6 +11,7 @@ permissions:
   id-token: write
 env:
   VERSION_PREFIX: "commit"
+  working_directory: ${{ github.workspace }}
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
