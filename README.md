@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml/badge.svg?branch=dev-v2.0)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Adev-v2.0)
 [![Go Report Card](https://goreportcard.com/badge/github.com/awalsh128/cache-apt-pkgs-action)](https://goreportcard.com/report/github.com/awalsh128/cache-apt-pkgs-action)
-[![Go Reference](https://pkg.go.dev/badge/github.com/awalsh128/cache-apt-pkgs-action.svg)](https://pkg.go.dev/github.com/awalsh128/cache-apt-pkgs-action)
 [![License](https://img.shields.io/github/license/awalsh128/cache-apt-pkgs-action)](https://github.com/awalsh128/cache-apt-pkgs-action/blob/dev-v2.0/LICENSE)
 [![Release](https://img.shields.io/github/v/release/awalsh128/cache-apt-pkgs-action)](https://github.com/awalsh128/cache-apt-pkgs-action/releases)
 
@@ -36,14 +35,12 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-Speed up your GitHub Actions workflows by caching APT package dependencies. This
-action integrates with [actions/cache](https://github.com/actions/cache/) to
-provide efficient package caching, significantly reducing workflow execution
-time by avoiding repeated package installations.
+Speed up your GitHub Actions workflows by caching APT package dependencies. This action integrates
+with [actions/cache](https://github.com/actions/cache/) to provide efficient package caching,
+significantly reducing workflow execution time by avoiding repeated package installations.
 
-> **Important:** We're looking for co-maintainers to help review changes and
-> investigate issues. If you're interested in contributing to this project,
-> please reach out.
+> **Important:** We're looking for co-maintainers to help review changes and investigate issues. If
+> you're interested in contributing to this project, please reach out.
 
 ## 🚀 Quick Start
 
@@ -92,10 +89,9 @@ steps:
 
 ### Version Selection
 
-> ⚠️ The action enforces immutable references. Workflows must pin
-> `awalsh128/cache-apt-pkgs-action` to a release tag or commit SHA. Referencing
-> a branch (for example `@main`) will now fail during the `setup` step. For more
-> information on blocking and SHA pinning actions, see the
+> ⚠️ The action enforces immutable references. Workflows must pin `awalsh128/cache-apt-pkgs-action`
+> to a release tag or commit SHA. Referencing a branch (for example `@main`) will now fail during
+> the `setup` step. For more information on blocking and SHA pinning actions, see the
 > [announcement on the GitHub changelog](https://github.blog/changelog/2025-08-15-github-actions-policy-now-supports-blocking-and-sha-pinning-actions).
 
 Recommended options:
@@ -103,9 +99,8 @@ Recommended options:
 - `@v2` or any other published release tag.
 - A full commit SHA such as `@4f5c863ba5ce9f1784c8ad7d8f63a9cfd3f1ab2c`.
 
-Avoid floating references such as `@latest`, `@master`, or `@dev`. The action
-will refuse to run when a branch reference is detected to protect consumers from
-involuntary updates.
+Avoid floating references such as `@latest`, `@master`, or `@dev`. The action will refuse to run
+when a branch reference is detected to protect consumers from involuntary updates.
 
 ### Example Workflows
 
@@ -210,39 +205,34 @@ permissions:
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md)
-for details.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ## 📜 License
 
-This project is licensed under the Apache License 2.0 - see the
-[LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ## Caveats
 
 ### Edge Cases
 
-This action is able to speed up installs by skipping the number of steps that
-`apt` uses.
+This action is able to speed up installs by skipping the number of steps that `apt` uses.
 
-- This means there will be certain cases that it may not be able to handle like
-  state management of other file configurations outside the package scope.
-- In cases that can't be immediately addressed or run counter to the approach of
-  this action, the packages affected should go into their own action `step` and
-  using the normal `apt` utility.
+- This means there will be certain cases that it may not be able to handle like state management of
+  other file configurations outside the package scope.
+- In cases that can't be immediately addressed or run counter to the approach of this action, the
+  packages affected should go into their own action `step` and using the normal `apt` utility.
 
 ### Non-file Dependencies
 
-This action is based on the principle that most packages can be cached as a set
-of files. There are situations though where this is not enough.
+This action is based on the principle that most packages can be cached as a set of files. There are
+situations though where this is not enough.
 
-- Pre and post installation scripts need to be run from
+- Pre-installation and post-installation scripts need to be run from
   `/var/lib/dpkg/info/{package name}.[preinst, postinst]`.
-- The Debian package database needs to be queried for scripts above (i.e.
-  `dpkg-query`).
+- The Debian package database needs to be queried for scripts above (i.e. `dpkg-query`).
 
-The `execute_install_scripts` argument can be used to attempt to execute the
-install scripts but they are no guaranteed to resolve the issue.
+The `execute_install_scripts` argument can be used to attempt to execute the install scripts but
+they are no guaranteed to resolve the issue.
 
 ```yaml
 - uses: awalsh128/cache-apt-pkgs-action@latest
@@ -252,19 +242,18 @@ install scripts but they are no guaranteed to resolve the issue.
     execute_install_scripts: true
 ```
 
-If this does not solve your issue, you will need to run `apt-get install` as a
-separate step for that particular package unfortunately.
+If this does not solve your issue, you will need to run `apt-get install` as a separate step for
+that particular package unfortunately.
 
 ```yaml
 run: apt-get install mypackage
 shell: bash
 ```
 
-Please reach out if you have found a workaround for your scenario and it can be
-generalized. There is only so much this action can do and can't get into the
-area of reverse engineering Debian package manager. It would be beyond the scope
-of this action and may result in a lot of extended support and brittleness.
-Also, it would be better to contribute to Debian packager instead at that point.
+Please reach out if you have found a workaround for your scenario and it can be generalized. There
+is only so much this action can do and can't get into the area of reverse engineering Debian package
+manager. It would be beyond the scope of this action and may result in a lot of extended support and
+brittleness. Also, it would be better to contribute to Debian packager instead at that point.
 
 For more context and information see
 [issue #57](https://github.com/awalsh128/cache-apt-pkgs-action/issues/57#issuecomment-1321024283)
@@ -272,14 +261,12 @@ which contains the investigation and conclusion.
 
 ### Cache Limits
 
-A repository can have up to 5GB of caches. Once the 5GB limit is reached, older
-caches will be evicted based on when the cache was last accessed. Caches that
-are not accessed within the last week will also be evicted. To get more
-information on how to access and manage your actions's caches, see
+A repository can have up to 5GB of caches. Once the 5GB limit is reached, older caches will be
+evicted based on when the cache was last accessed. Caches that are not accessed within the last week
+will also be evicted. To get more information on how to access and manage your actions's caches, see
 [GitHub Actions / Using workflows / Cache dependencies](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#viewing-cache-entries).
 
 ## 🌟 Acknowledgements
 
 - [actions/cache](https://github.com/actions/cache/) team
-- All our
-  [contributors](https://github.com/awalsh128/cache-apt-pkgs-action/graphs/contributors)
+- All our [contributors](https://github.com/awalsh128/cache-apt-pkgs-action/graphs/contributors)

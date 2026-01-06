@@ -86,23 +86,23 @@ export BLINK='\033[5m' # Blinking text
 #   echo_color green "Operation successful!"
 #   echo_color -n blue "Processing..."
 function echo_color() {
-  local echo_flags=()
-  # Collect valid echo flags that start with dash
-  while [[ $1 == -* ]]; do
-    if [[ $1 == "-e" || $1 == "-n" ]]; then
-      echo_flags+=("$1")
-    fi
-    shift
-  done
+	local echo_flags=()
+	# Collect valid echo flags that start with dash
+	while [[ $1 == -* ]]; do
+		if [[ $1 == "-e" || $1 == "-n" ]]; then
+			echo_flags+=("$1")
+		fi
+		shift
+	done
 
-  # Convert color name to uppercase variable name
-  local color="$1"
-  local color_var
-  color_var=$(echo "${color}" | tr '[:lower:]' '[:upper:]')
-  shift
+	# Convert color name to uppercase variable name
+	local color="$1"
+	local color_var
+	color_var=$(echo "${color}" | tr '[:lower:]' '[:upper:]')
+	shift
 
-  # Print message with color codes and any specified flags
-  echo -e "${echo_flags[@]}" "${!color_var}$*${NC}"
+	# Print message with color codes and any specified flags
+	echo -e "${echo_flags[@]}" "${!color_var}$*${NC}"
 }
 
 #==============================================================================
@@ -117,9 +117,9 @@ function echo_color() {
 #   message    The information to log
 # Respects: QUIET=true will suppress output
 function log_info() {
-  if ! ${QUIET}; then
-    echo -e "${BLUE}[INFO]${NC} $1"
-  fi
+	if ! ${QUIET}; then
+		echo -e "${BLUE}[INFO]${NC} $1"
+	fi
 }
 
 # Log a warning message to stderr
@@ -127,7 +127,7 @@ function log_info() {
 #   message    The warning to log
 # Notes: Not affected by QUIET mode
 function log_warn() {
-  echo -e "${YELLOW}[WARN]${NC} $1" >&2
+	echo -e "${YELLOW}[WARN]${NC} $1" >&2
 }
 
 # Log an error message to stderr
@@ -135,7 +135,7 @@ function log_warn() {
 #   message    The error message to log
 # Notes: Not affected by QUIET mode
 function log_error() {
-  echo -e "${RED}[ERROR]${NC} $1" >&2
+	echo -e "${RED}[ERROR]${NC} $1" >&2
 }
 
 # Log a success message to stdout
@@ -143,9 +143,9 @@ function log_error() {
 #   message    The success message to log
 # Respects: QUIET=true will suppress output
 function log_success() {
-  if ! ${QUIET}; then
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-  fi
+	if ! ${QUIET}; then
+		echo -e "${GREEN}[SUCCESS]${NC} $1"
+	fi
 }
 
 # Log a debug message to stderr if verbose mode is enabled
@@ -153,9 +153,9 @@ function log_success() {
 #   message    The debug information to log
 # Requires: VERBOSE=true to display output
 function log_debug() {
-  if ${VERBOSE}; then
-    echo -e "${DIM}[DEBUG]${NC} $1" >&2
-  fi
+	if ${VERBOSE}; then
+		echo -e "${DIM}[DEBUG]${NC} $1" >&2
+	fi
 }
 
 # Print a formatted section header with proper spacing
@@ -163,9 +163,9 @@ function log_debug() {
 #   text       The header text to display
 # Respects: QUIET=true will suppress output
 function print_header() {
-  if ! ${QUIET}; then
-    echo -en "\n${BOLD}${BLUE}$1${NC}\n"
-  fi
+	if ! ${QUIET}; then
+		echo -en "\n${BOLD}${BLUE}$1${NC}\n"
+	fi
 }
 
 #==============================================================================
@@ -185,29 +185,29 @@ function print_header() {
 #   - Removes comment markers (#) and formats for clean display
 #   - Returns early with message if script file cannot be found
 function show_help() {
-  # Extract header comment block from calling script
-  local script_file="${BASH_SOURCE[1]}"
+	# Extract header comment block from calling script
+	local script_file="${BASH_SOURCE[1]}"
 
-  if [[ ! -f ${script_file} ]]; then
-    echo "Help information not available"
-    return
-  fi
+	if [[ ! -f ${script_file} ]]; then
+		echo "Help information not available"
+		return
+	fi
 
-  # Process the header block and format output
-  local lines=$'\n'
-  local inside_header=false
-  while IFS= read -r line; do
-    if [[ ${inside_header} == true ]]; then
-      [[ ${line} =~ ^#\=+ ]] && continue
-      if [[ ${line} =~ ^# ]]; then
-        lines+="${line#\#}"$'\n'
-      else
-        break
-      fi
-    fi
-    [[ ${line} =~ ^#\=+ ]] && inside_header=true
-  done <"${script_file}"
-  printf "%s" "${lines}"
+	# Process the header block and format output
+	local lines=$'\n'
+	local inside_header=false
+	while IFS= read -r line; do
+		if [[ ${inside_header} == true ]]; then
+			[[ ${line} =~ ^#\=+ ]] && continue
+			if [[ ${line} =~ ^# ]]; then
+				lines+="${line#\#}"$'\n'
+			else
+				break
+			fi
+		fi
+		[[ ${line} =~ ^#\=+ ]] && inside_header=true
+	done <"${script_file}"
+	printf "%s" "${lines}"
 }
 
 # Process common command-line arguments used across all scripts
@@ -221,35 +221,35 @@ function show_help() {
 #   Prints any unhandled arguments to stdout for capture by caller
 #   Returns 0 on success
 function parse_common_args() {
-  while [[ $# -gt 0 ]]; do
-    case $1 in
-    -h | --help)
-      [[ $(type -t show_help) == function ]] && show_help
-      exit 0
-      ;;
-    -v | --verbose)
-      if [[ ${VERBOSE} == false ]]; then
-        export VERBOSE=true
-        log_debug "Verbose mode enabled"
-      fi
-      shift
-      ;;
-    -q | --quiet)
-      export QUIET=true
-      shift
-      ;;
-    *)
-      # Stop at first non-flag argument
-      break
-      ;;
-    esac
-  done
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+		-h | --help)
+			[[ $(type -t show_help) == function ]] && show_help
+			exit 0
+			;;
+		-v | --verbose)
+			if [[ ${VERBOSE} == false ]]; then
+				export VERBOSE=true
+				log_debug "Verbose mode enabled"
+			fi
+			shift
+			;;
+		-q | --quiet)
+			export QUIET=true
+			shift
+			;;
+		*)
+			# Stop at first non-flag argument
+			break
+			;;
+		esac
+	done
 
-  # Return any unprocessed arguments to caller
-  if [[ $# -gt 0 ]]; then
-    echo "$@"
-  fi
-  return 0
+	# Return any unprocessed arguments to caller
+	if [[ $# -gt 0 ]]; then
+		echo "$@"
+	fi
+	return 0
 }
 
 #==============================================================================
@@ -266,10 +266,10 @@ function parse_common_args() {
 #   - Automatically skipped if QUIET=true
 #   - Adds newlines before and after prompt for clean formatting
 function pause() {
-  [[ ${QUIET} == true ]] && return
-  echo
-  read -n 1 -s -r -p "Press any key to continue..."
-  echo
+	[[ ${QUIET} == true ]] && return
+	echo
+	read -n 1 -s -r -p "Press any key to continue..."
+	echo
 }
 
 # Prompt user for yes/no confirmation
@@ -284,15 +284,15 @@ function pause() {
 #   - Accepts y, yes, n, no (case insensitive)
 #   - Repeats prompt until valid input received
 function confirm() {
-  local prompt="${1:-Are you sure?}"
-  local response
+	local prompt="${1:-Are you sure?}"
+	local response
 
-  while true; do
-    read -rp "${prompt} (y/n): " response
-    case ${response} in
-    [Yy] | [Yy][Ee][Ss]) return 0 ;;
-    [Nn] | [Nn][Oo]) return 1 ;;
-    *) echo "Please answer yes or no." ;;
-    esac
-  done
+	while true; do
+		read -rp "${prompt} (y/n): " response
+		case ${response} in
+		[Yy] | [Yy][Ee][Ss]) return 0 ;;
+		[Nn] | [Nn][Oo]) return 1 ;;
+		*) echo "Please answer yes or no." ;;
+		esac
+	done
 }

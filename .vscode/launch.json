@@ -2,11 +2,13 @@
   "version": "0.2.0",
   "configurations": [
     {
+      // keep-sorted start
       "name": "Launch Package",
       "type": "go",
       "request": "launch",
       "mode": "auto",
       "program": "${fileDirname}"
+      // keep-sorted end
     }
   ]
 }

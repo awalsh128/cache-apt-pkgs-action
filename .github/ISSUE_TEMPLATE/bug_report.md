@@ -33,8 +33,8 @@ steps:
 
 ### Environment
 
-- **Runner OS**: (e.g., ubuntu-22.04, ubuntu-20.04)
-- **Action version**: (e.g., v1.4.2, latest)
+- **Runner OS**: (e.g. ubuntu-22.04, ubuntu-20.04)
+- **Action version**: (e.g. v1.4.2, latest)
 - **Repository**: (if relevant)
 
 ## Expected vs Actual Behavior

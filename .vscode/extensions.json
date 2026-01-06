@@ -3,7 +3,6 @@
     "golang.go", // Official Go extension
     "trunk.io", // trunk.io Linters
     "wayou.vscode-todo-highlight", // Highlight TODOs
-    "eamodio.gitlens", // Git integration
-    "github.vscode-github-actions" // GitHub Actions support
+    "eamodio.gitlens" // Git integration
   ]
 }

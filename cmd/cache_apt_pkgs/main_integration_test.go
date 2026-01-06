@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -8,11 +9,43 @@ import (
 
 	"awalsh128.com/cache-apt-pkgs-action/internal/logging"
 	atesting "awalsh128.com/cache-apt-pkgs-action/internal/testing"
+	"github.com/awalsh128/syspkg"
+	"github.com/awalsh128/syspkg/manager"
 )
+
+func installAptFastIfMissing(t *testing.T) error {
+	t.Helper()
+	registry, err := syspkg.New(syspkg.IncludeOptions{Apt: true})
+	if err != nil {
+		return fmt.Errorf("failed to initialize syspkg: %v", err)
+	}
+
+	// Get APT package manager (if available)
+	aptManager, err := registry.GetPackageManager("apt-fast")
+	if err != nil {
+		return fmt.Errorf("APT package manager not available: %v", err)
+	}
+
+	_, err = aptManager.ListInstalledFiles("apt-fast")
+	if err != nil {
+		logging.Info("apt-fast not installed, attempting installation.")
+		_, err := aptManager.Install(
+			[]string{"apt-fast"}, &manager.Options{AssumeYes: true, Verbose: true},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to install apt-fast: %v", err)
+		}
+	}
+	return nil
+}
 
 // SetupTest performs per-test initialization and registers cleanup hooks.
 func SetupTest(t *testing.T) {
 	logging.Init(true)
+	err := installAptFastIfMissing(t)
+	if err != nil {
+		t.Fatalf("Aborting testt: %v", err)
+	}
 	t.Cleanup(func() {
 		logging.InitDefault()
 	})

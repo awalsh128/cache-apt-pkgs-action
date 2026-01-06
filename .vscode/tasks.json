@@ -39,14 +39,7 @@
       "label": "go: test with coverage",
       "type": "shell",
       "command": "go",
-      "args": [
-        "test",
-        "-v",
-        "-race",
-        "-coverprofile=coverage.txt",
-        "-covermode=atomic",
-        "./..."
-      ],
+      "args": ["test", "-v", "-race", "-coverprofile=coverage.txt", "-covermode=atomic", "./..."],
       "problemMatcher": ["$go"],
       "presentation": {
         "reveal": "always",

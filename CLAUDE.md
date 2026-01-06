@@ -1,4 +1,4 @@
-# Code Improvements by Claude
+# Code improvements by claude
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -59,32 +59,32 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-## General Code Organization Principles
+## General code organization principles
 
-### 1. Package Structure
+### 1 . package structure
 
 - Keep packages focused and single-purpose
 - Use internal packages for code not meant to be imported
 - Organize by feature/domain rather than by type
 - Follow Go standard layout conventions
 
-### 2. Code Style and Formatting
+### 2 . code style and formatting
 
 - Use 2 spaces for indentation, never tabs
-- Consistent naming conventions (e.g., CamelCase for exported names)
+- Consistent naming conventions (for example, CamelCase for exported names)
 - Keep functions small and focused
 - Use meaningful variable names
 - Follow standard Go formatting guidelines
 - Use comments to explain "why" not "what"
 
-### 3. Error Handling
+### 3 . error handling
 
 - Return errors rather than using panics
 - Wrap errors with context when crossing package boundaries
 - Create custom error types only when needed for client handling
 - Use sentinel errors sparingly
 
-### 4. API Design
+### 4 . API design
 
 - Make zero values useful
 - Keep interfaces small and focused, observing the
@@ -98,9 +98,9 @@
 - Use option patterns for complex configurations
 - Make dependencies explicit
 
-### 5. Documentation Practices
+### 5 . documentation practices
 
-#### Go Code Documentation Standards
+#### Go code documentation standards
 
 Following the official [Go Documentation Guidelines](https://go.dev/blog/godoc):
 
@@ -170,7 +170,7 @@ Following the official [Go Documentation Guidelines](https://go.dev/blog/godoc):
    - Keep examples up to date and passing
    - Update docs when changing behavior
 
-#### Code Documentation
+#### Code documentation
 
 - Write package documentation with examples
 - Document exported symbols comprehensively
@@ -201,7 +201,7 @@ Example:
 package cache
 ```
 
-#### Project Documentation
+#### Project documentation
 
 - Maintain a comprehensive README
 - Include getting started guide
@@ -210,9 +210,9 @@ package cache
 - Keep changelog updated
 - Include contribution guidelines
 
-### 6. Testing Strategy
+### 6 . testing strategy
 
-#### Types of Tests
+#### Types of tests
 
 1. **Unit Tests**
    - Test individual components
@@ -229,7 +229,7 @@ package cache
    - Use real external services
    - Verify key user scenarios
 
-#### Test Coverage Strategy
+#### Test coverage strategy
 
 - Aim for high but meaningful coverage
 - Focus on critical paths
@@ -237,9 +237,9 @@ package cache
 - Balance cost vs benefit of testing
 - Document untested scenarios
 
-### 7. Security Best Practices
+### 7 . security best practices
 
-#### Input Validation
+#### Input validation
 
 - Validate all external input
 - Use strong types over strings
@@ -247,7 +247,7 @@ package cache
 - Assert array bounds
 - Validate file paths
 
-#### Secure Coding
+#### Secure coding
 
 - Use latest dependencies
 - Implement proper error handling
@@ -255,7 +255,7 @@ package cache
 - Use secure random numbers
 - Follow principle of least privilege
 
-#### Secrets Management
+#### Secrets management
 
 - Never commit secrets
 - Use environment variables
@@ -263,7 +263,7 @@ package cache
 - Rotate credentials regularly
 - Log access to sensitive operations
 
-### 8. Performance Considerations
+### 8 . performance considerations
 
 - Minimize allocations in hot paths
 - Use `sync.Pool` for frequently allocated objects
@@ -271,9 +271,9 @@ package cache
 - Profile before optimizing
 - Document performance characteristics
 
-### 9. Profiling and Benchmarking
+### 9 . profiling and benchmarking
 
-#### CPU Profiling
+#### CPU profiling
 
 ```go
 import "runtime/pprof"
@@ -295,7 +295,7 @@ View with:
 go tool pprof cpu.prof
 ```
 
-#### Memory Profiling
+#### Memory profiling
 
 ```go
 import "runtime/pprof"
@@ -333,7 +333,7 @@ Run with:
 go test -bench=. -benchmem
 ```
 
-#### Trace Profiling
+#### Trace profiling
 
 ```go
 import "runtime/trace"
@@ -354,7 +354,7 @@ View with:
 go tool trace trace.out
 ```
 
-#### Common Profiling Tasks
+#### Common profiling tasks
 
 1. **CPU Usage**
 
@@ -388,7 +388,7 @@ go tool trace trace.out
    go tool pprof mutex.prof
    ```
 
-#### `pprof` Web Interface
+#### `pprof` web interface
 
 For visual analysis:
 
@@ -396,7 +396,7 @@ For visual analysis:
 go tool pprof -http=:8080 cpu.prof
 ```
 
-#### Key Metrics to Watch
+#### Key metrics to watch
 
 1. **CPU Profile**
    - Hot functions
@@ -422,7 +422,7 @@ go tool pprof -http=:8080 cpu.prof
    - Goroutine scheduling
    - Network/syscall blocking
 
-### 10. Concurrency Patterns
+### 10 . concurrency patterns
 
 - Use channels for coordination, mutexes for state
 - Keep critical sections small
@@ -430,7 +430,7 @@ go tool pprof -http=:8080 cpu.prof
 - Use context for cancellation
 - Consider rate limiting and load shedding
 
-### 11. Configuration Management
+### 11 . configuration management
 
 - Use environment variables for deployment-specific values
 - Validate configuration at startup
@@ -438,7 +438,7 @@ go tool pprof -http=:8080 cpu.prof
 - Support multiple configuration sources
 - Document all configuration options
 
-### 12. Logging and Observability
+### 12 . logging and observability
 
 - Use structured logging
 - Include relevant context in logs
@@ -446,11 +446,11 @@ go tool pprof -http=:8080 cpu.prof
 - Add tracing for complex operations
 - Include metrics for important operations
 
-## Non-Go Files
+## Non - go files
 
-### GitHub Actions
+### Github actions
 
-#### Action File Formatting
+#### Action file formatting
 
 - Minimize the amount of shell code and put complex logic in the Go code
 - Use clear step `id` names that use dashes between words and active verbs
@@ -458,38 +458,38 @@ go tool pprof -http=:8080 cpu.prof
   for REST API, GITHUB_GRAPHQL_URL for GraphQL) or the @actions/github toolkit for dynamic URL
   handling
 
-##### Release Management
+##### Release management
 
-- Use semantic versioning for releases (e.g., v1.0.0)
+- Use semantic versioning for releases (for example, v1.0.0)
 - Recommend users reference major version tags (v1) instead of the default branch for stability.
 - Update major version tags to point to the latest release
 
-##### Create a README File
+##### Create a README file
 
 Include a detailed description, required/optional inputs and outputs, secrets, environment
 variables, and usage examples
 
-##### Testing and Automation
+##### Testing and automation
 
 - Add workflows to test your action on feature branches and pull requests
 - Automate releases using workflows triggered by publishing or editing a release.
 
-##### Community Engagement
+##### Community engagement
 
 - Maintain a clear README with examples.
 - Add community health files like CODE_OF_CONDUCT and CONTRIBUTING.
 - Use badges to display workflow status.
 
-##### Further Guidance
+##### Further guidance
 
 For more details, visit:
 
 - <https://docs.github.com/en/actions/how-tos/create-and-publish-actions/manage-custom-actions>
 - <https://docs.github.com/en/actions/how-tos/create-and-publish-actions/release-and-maintain-actions>
 
-### YAML Formatting
+### YAML formatting
 
-#### Quoting Guidelines
+#### Quoting guidelines
 
 Follow these rules for consistent YAML formatting:
 
@@ -515,7 +515,7 @@ value: "null" # String "null", not null value
 enable: "false" # String "false", not boolean false
 ```
 
-**DO NOT quote simple values:**
+**do not quote simple values:**
 
 ```yaml
 # Booleans
@@ -531,7 +531,7 @@ name: ubuntu-latest
 step: checkout
 action: setup-node
 
-# GitHub Actions expressions (never quote these)
+# Github actions expressions ( never quote these )
 if: github.event_name == 'push'
 with: ${{ secrets.TOKEN }}
 ```
@@ -543,7 +543,7 @@ with: ${{ secrets.TOKEN }}
 uses: actions/checkout@v4
 uses: ./path/to/local/action
 
-# Boolean inputs - don't quote
+# Boolean inputs - don ' t quote
 debug: false
 cache: true
 
@@ -555,7 +555,7 @@ if: ${{ github.ref == 'refs/heads/main' }}
 run: echo "${{ github.actor }}"
 ```
 
-#### Formatting Standards
+#### Formatting standards
 
 - Use 2 spaces for indentation
 - Use `-` for list items with proper indentation
@@ -587,11 +587,11 @@ jobs:
           DEBUG: false
 ```
 
-### Bash Scripts
+### Bash scripts
 
 Project scripts should follow these guidelines:
 
-#### File and Directory Structure
+#### File and directory structure
 
 All scripts must go into the project's script directory with specific guidance below
 
@@ -626,11 +626,15 @@ scripts
 - Add new development script functionality to the `scripts/dev/menu.sh` script for easy access
 - Always use `template.sh` when creating a script
 
-#### Style and Format Rules
+#### Style and format rules
 
-- **MANDATORY:** All Bash scripts must strictly follow the [Google Bash Style Guide](https://google.github.io/styleguide/shellguide) for naming, formatting, comments, and best practices.
-- **MANDATORY:** All Bash scripts must pass [ShellCheck](https://github.com/koalaman/shellcheck/wiki) with no warnings or errors.
-- **MANDATORY:** All script comments and header blocks must wrap at a maximum line length of 80 characters.
+- **MANDATORY:** All Bash scripts must strictly follow the
+  [Google Bash Style Guide](https://google.github.io/styleguide/shellguide) for naming, formatting,
+  comments, and best practices.
+- **MANDATORY:** All Bash scripts must pass
+  [ShellCheck](https://github.com/koalaman/shellcheck/wiki) with no warnings or errors.
+- **MANDATORY:** All script comments and header blocks must wrap at a maximum line length of 80
+  characters.
 - Use the `function` keyword before all function definitions: `function my_function() {`
 - Use imperative verb form for script names:
   - Good: `export_version.sh`, `build_package.sh`, `run_tests.sh`
@@ -649,33 +653,33 @@ For functions:
 - Always follow the format described in
   [Google Bash Style Guide: Function Comments](https://google.github.io/styleguide/shellguide#function-comments)
 
-#### Script Header Requirements (MANDATORY)
+#### Script header requirements ( MANDATORY )
 
 Every Bash script must begin with a standardized header block, formatted as follows:
 
 ```bash
 #!/bin/bash
 #==============================================================================
-# <script_name>.sh
+# < script_name > . sh
 #==============================================================================
 #
-# DESCRIPTION:
-#   <Detailed description of the script's purpose and functionality>
+# DESCRIPTION :
+# < detailed description of the script ' s purpose and functionality >
 #
-# USAGE:
-#   <script_name>.sh <command> [args]
+# USAGE :
+# < script_name > . sh < command > [ args ]
 #
-# COMMANDS:
-#   <command_1>   <Description of command_1>
-#   <command_2>   <Description of command_2>
-#   ...
+# COMMANDS :
+# < command_1 > < description of command_1 >
+# < command_2 > < description of command_2 >
+# . . .
 #
-# OPTIONS:
-#   -h, --help    Show this help message
-#   ...           <Other options and their descriptions>
+# OPTIONS :
+# - h , - - help show this help message
+# . . . < other options and their descriptions >
 #
-# DEPENDENCIES:
-#   <List required dependencies, e.g. external tools, environment variables>
+# DEPENDENCIES :
+# < list required dependencies , e . g . external tools , environment variables >
 #==============================================================================
 ```
 
@@ -687,9 +691,10 @@ Checklist for script headers:
 - Command and option documentation
 - Required dependencies
 
-All new and updated scripts must comply with this format. Non-compliant scripts will be flagged in code review and CI.
+All new and updated scripts must comply with this format. Non-compliant scripts will be flagged in
+code review and CI.
 
-#### Script Testing
+#### Script testing
 
 All scripts must have corresponding tests in the `tests` sub-directory using the common test
 library:
@@ -717,7 +722,7 @@ library:
    - Test execution is part of the validate-scripts job
    - Test failures block PR merges
 
-##### Test Framework Architecture Pattern
+##### Test framework architecture pattern
 
 All tests must start with `scripts/template_test.sh`
 
@@ -732,7 +737,7 @@ All tests must start with `scripts/template_test.sh`
 - **Framework Integration**: Call `start_tests "$@"` before running tests to handle argument parsing
   and setup
 
-##### Centralized Configuration Management
+##### Centralized configuration management
 
 The project implements centralized version management using the `.env` file as a single source of
 truth:
@@ -740,7 +745,7 @@ truth:
 **Configuration Structure:**
 
 ```bash
-# .env file contents
+# . env file contents
 GO_VERSION=1.23.4
 GO_TOOLCHAIN=go1.23.4
 ```
@@ -748,7 +753,7 @@ GO_TOOLCHAIN=go1.23.4
 **GitHub Actions Integration:**
 
 ```yaml
-# .github/workflows/ci.yml pattern
+# . github / workflows / ci . yml pattern
 jobs:
   setup:
     runs-on: ubuntu-latest
@@ -776,9 +781,9 @@ jobs:
 - Ensures consistency between environment configuration and Go module requirements
 - Can be extended for other configuration synchronization needs
 
-## Testing Principles
+## Testing principles
 
-### 1. Test Organization Strategy
+### 1 . test organization strategy
 
 We established a balanced approach to test organization:
 
@@ -787,9 +792,9 @@ We established a balanced approach to test organization:
   cannot be shared amongst other cases
 - Group related test cases that operate on the same API method / function
 
-### 2. Code Structure
+### 2 . code structure
 
-#### Constants and Variables
+#### Constants and variables
 
 ```go
 const (
@@ -809,7 +814,7 @@ var (
 - Group related constants and variables together
 - Do not prefix constants or variables with `test`
 
-#### Helper Functions
+#### Helper functions
 
 Simple examples of factory and assert functions.
 
@@ -892,9 +897,9 @@ func TestAddPrefixToDescription_WithValidInput_AddsPrefix(t *testing.T) {
 - Keep helpers focused and single-purpose
 - Helper functions that require logic should go into their own file and have tests
 
-### 3. Test Case Patterns
+### 3 . test case patterns
 
-#### Table-Driven Tests (for simple cases)
+#### Table - driven tests ( for simple cases )
 
 ```go
 // Each test case is its own function - no loops or conditionals in test body
@@ -948,7 +953,7 @@ func assertFormatError(t *testing.T, actual string, err error, expectedErrMsg st
 }
 ```
 
-#### Individual Tests (for complex cases)
+#### Individual tests ( for complex cases )
 
 ```go
 func TestProcessTransaction_WithConcurrentUpdates_PreservesConsistency(t *testing.T) {
@@ -1001,7 +1006,7 @@ func assertBalanceEquals(t *testing.T, expected, actual decimal.Decimal) {
 }
 ```
 
-### 4. Best Practices Applied
+### 4 . best practices applied
 
 1. **Clear Naming**
    - Name test data clearly and meaningfully
@@ -1009,7 +1014,7 @@ func assertBalanceEquals(t *testing.T, expected, actual decimal.Decimal) {
    - Use `expected` for expected values
    - Use `actual` for function results
    - Keep test variables consistent across all tests
-   - Always use "Arrange", "Act", "Assert" as step comments in tests
+   - Always use "Arrange," "Act," "Assert" as step comments in tests
    - Use descriptive test name arrangement and expectation parts
    - Use test name formats in a 3 part structure
      - `Test<function>_<arrangement>_<expectation>` for free functions, and
@@ -1084,7 +1089,7 @@ func assertBalanceEquals(t *testing.T, expected, actual decimal.Decimal) {
    - Group related assertions logically
    - Test one concept per assertion
 
-### 5. Examples of Improvements
+### 5 . examples of improvements
 
 #### Before
 
@@ -1156,7 +1161,7 @@ func TestValidateConfig_WithEmptyPath_ReturnsError(t *testing.T) {
 }
 ```
 
-## Key Benefits
+## Key benefits
 
 1. **Maintainability**
    - Easier to update and modify tests

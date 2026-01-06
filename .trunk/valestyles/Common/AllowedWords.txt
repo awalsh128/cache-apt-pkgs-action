@@ -1,0 +1,22 @@
+CLAUDE
+gRPC
+apt
+cache-apt-pkgs
+trunk
+Trunk
+awalsh128
+pkg
+EOF
+
+# Add technical/project tokens
+pprof
+cpu.prof
+mem.prof
+block.prof
+mutex
+goroutine
+GC
+cpuprofile
+
+# Regex fragments
+lication

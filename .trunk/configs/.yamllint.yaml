@@ -1,9 +1,35 @@
+extends: default
+
 rules:
-  quoted-strings: disable
-  key-duplicates: {}
-  octal-values:
-    forbid-implicit-octal: true
+  line-length:
+    max: 100
+    level: warning
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+
+  # Other customizations
+  comments:
+    min-spaces-from-content: 1
+
+  document-start:
+    present: false
+
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+
   empty-lines:
     max: 2
     max-start: 0
     max-end: 0
+
+  quoted-strings: disable
+  key-duplicates: {}
+  octal-values:
+    forbid-implicit-octal: true
+
+  # Strict whitespace rules
+  trailing-spaces: enable
+  new-line-at-end-of-file: enable
+  new-lines:
+    type: unix

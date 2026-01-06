@@ -1,0 +1,23 @@
+name: Pull Request
+# trunk-ignore(yamllint/truthy)
+on: [push, pull_request]
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions: read-all
+
+jobs:
+  trunk_check:
+    name: Trunk Code Quality Runner
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write # For trunk to post annotations
+      contents: read # For repo checkout
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Trunk Code Quality
+        uses: trunk-io/trunk-action@v1

@@ -1,11 +1,9 @@
 ---
-
 name: Feature Request
 about: Suggest an idea or enhancement for this action
-title: "\[FEATURE] "
+title: "[FEATURE] "
 labels: enhancement
 assignees: awalsh128
-
 ---
 
 ## Feature Summary
@@ -14,8 +12,8 @@ A clear and concise description of what you want to happen.
 
 ## Problem Statement
 
-What problem would this feature solve? Is your feature request related to a
-problem you're experiencing?
+What problem would this feature solve? Is your feature request related to a problem you're
+experiencing?
 
 ```txt
 Example: I'm frustrated when [specific scenario] because [reason]
@@ -31,8 +29,7 @@ Describe any alternative solutions or features you've considered.
 
 ## Use Case
 
-Describe your specific use case and how this feature would benefit you and
-others.
+Describe your specific use case and how this feature would benefit you and others.
 
 ```yaml
 # Example workflow showing how the feature would be used

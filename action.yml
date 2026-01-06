@@ -7,19 +7,22 @@ branding:
 inputs:
   packages:
     description: >
-      Space delimited list of packages to install. Version can be specified optionally using APT command syntax of <name>=<version> (e.g. xdot=1.2-2).
+      Space delimited list of packages to install. Version can be specified optionally using APT
+      command syntax of <name>=<version> (e.g. xdot=1.2-2).
 
     required: true
     default: ""
   version:
     description: >
-      Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
+      Version of cache to load. Each version will have its own cache. Note, all characters except
+      spaces are allowed.
 
     required: false
     default: ""
   execute_install_scripts:
     description: >
-      Execute Debian package pre and post install script upon restore. See README.md caveats for  more information.
+      Execute Debian package pre and post install script upon restore. See README.md caveats
+      for  more information.
 
     required: false
     default: "false"
@@ -35,14 +38,22 @@ outputs:
     value: ${{ steps.load-cache.outputs.cache-hit || false }}
   package-version-list:
     description: >
-      The main requested packages and versions that are installed. Represented as a comma delimited  list with equals delimit on the package version (i.e. <package>:<version,<package>:<version>).
+      The main requested packages and versions that are installed. Represented as a comma
+      delimited  list with equals delimit on the package version (i.e.
+      <package>:<version,<package>:<version>).
 
-    value: ${{ steps.install-pkgs.outputs.package-version-list || steps.restore-pkgs.outputs.package-version-list }}
+    value:
+      ${{ steps.install-pkgs.outputs.package-version-list ||
+      steps.restore-pkgs.outputs.package-version-list }}
   all-package-version-list:
     description: >
-      All the pulled in packages and versions, including dependencies, that are installed.  Represented as a comma delimited list with equals delimit on the package version (i.e.  <package>:<version,<package>:<version>).
+      All the pulled in packages and versions, including dependencies, that are
+      installed.  Represented as a comma delimited list with equals delimit on the package version
+      (i.e.  <package>:<version,<package>:<version>).
 
-    value: ${{ steps.install-pkgs.outputs.all-package-version-list || steps.restore-pkgs.outputs.all-package-version-list }}
+    value:
+      ${{ steps.install-pkgs.outputs.all-package-version-list ||
+      steps.restore-pkgs.outputs.all-package-version-list }}
 runs:
   using: composite
   steps:
