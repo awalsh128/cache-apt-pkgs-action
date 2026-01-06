@@ -34,7 +34,7 @@ jobs:
 
   build_distribute:
     needs: check_distribute
-    if: needs.check_distribute.outputs.distribute_exists == 'false'
+    if: needs.check_distribute.outputs.distribute_exists == 'true'
     uses: ./.github/workflows/build-distribute.yml
 
   # All other jobs should depend on build_distribute (if run) or check_distribute (if not needed)
