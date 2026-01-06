@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v3.1.0
       - name: Execute
         id: execute
-        uses: awalsh128/cache-apt-pkgs-action@master
+        uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: xdot=1.3-1
           version: ${{ github.run_id }}-${{ github.run_attempt }}-list_all_versions
@@ -49,7 +49,7 @@ jobs:
       - uses: actions/checkout@v3.1.0
       - name: Execute
         id: execute
-        uses: awalsh128/cache-apt-pkgs-action@master
+        uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: xdot rolldice
           version: ${{ github.run_id }}-${{ github.run_attempt }}-list_versions
@@ -59,7 +59,7 @@ jobs:
           steps.execute.outputs.cache-hit != 'false' || steps.execute.outputs.package-version-list
           != 'rolldice=1.16-1build3,xdot=1.3-1'
         run: |
-          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}" 
+          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
           echo "package-version-list = ${{ steps.execute.outputs.package-version-list }}"
           echo "diff package-version-list"
           diff  <(echo "${{ steps.execute.outputs.package-version-list }}" ) <(echo "rolldice=1.16-1build3,xdot=1.3-1")
@@ -73,7 +73,7 @@ jobs:
       - uses: actions/checkout@v3.1.0
       - name: Execute
         id: execute
-        uses: awalsh128/cache-apt-pkgs-action@master
+        uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: xdot rolldice
           version: ${{ github.run_id }}-${{ github.run_attempt }}-standard_workflow
@@ -93,12 +93,11 @@ jobs:
       - uses: actions/checkout@v3.1.0
       - name: Execute
         id: execute
-        uses: awalsh128/cache-apt-pkgs-action@master
+        uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: xdot rolldice
           version:
-            ${{ github.run_id }}-${{ github.run_attempt
-            }}-standard_workflow_install_with_new_version
+            ${{ github.run_id }}-${{ github.run_attempt}}-standard_workflow_install_with_new_version
           debug: ${{ env.DEBUG }}
       - name: Verify
         if: steps.execute.outputs.cache-hit != 'false'
@@ -115,7 +114,7 @@ jobs:
       - uses: actions/checkout@v3.1.0
       - name: Execute
         id: execute
-        uses: awalsh128/cache-apt-pkgs-action@master
+        uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: xdot rolldice
           version: ${{ github.run_id }}-${{ github.run_attempt }}-standard_workflow
@@ -135,7 +134,7 @@ jobs:
       - uses: actions/checkout@v3.1.0
       - name: Execute
         id: execute
-        uses: awalsh128/cache-apt-pkgs-action@master
+        uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: rolldice xdot
           version: ${{ github.run_id }}-${{ github.run_attempt }}-standard_workflow
@@ -155,7 +154,7 @@ jobs:
       - uses: actions/checkout@v3.1.0
       - name: Execute
         id: execute
-        uses: awalsh128/cache-apt-pkgs-action@master
+        uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: xdot rolldice distro-info-data
           version: ${{ github.run_id }}-${{ github.run_attempt }}-standard_workflow
@@ -175,7 +174,7 @@ jobs:
       - uses: actions/checkout@v3.1.0
       - name: Execute
         id: execute
-        uses: awalsh128/cache-apt-pkgs-action@master
+        uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: xdot rolldice distro-info-data
           version: ${{ github.run_id }}-${{ github.run_attempt }}-standard_workflow
@@ -193,7 +192,7 @@ jobs:
     steps:
       - name: Execute
         id: execute
-        uses: awalsh128/cache-apt-pkgs-action@master
+        uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: ""
         continue-on-error: true
@@ -208,7 +207,7 @@ jobs:
     steps:
       - name: Execute
         id: execute
-        uses: awalsh128/cache-apt-pkgs-action@master
+        uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: package_that_doesnt_exist
         continue-on-error: true
@@ -223,7 +222,7 @@ jobs:
     steps:
       - name: Execute
         id: execute
-        uses: awalsh128/cache-apt-pkgs-action@master
+        uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: xdot
           version: 123 abc
@@ -239,7 +238,7 @@ jobs:
     name: "Reinstall existing package (regression issue #36)."
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: libgtk-3-dev
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_36
@@ -250,7 +249,7 @@ jobs:
     name: "Install with reported package dependencies not installed (regression issue #37)."
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: libosmesa6-dev libgl1-mesa-dev python3-tk pandoc git-restore-mtime
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_37
@@ -261,7 +260,7 @@ jobs:
     name: Debug disabled.
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: xdot
           version: ${{ github.run_id }}-${{ github.run_attempt }}-list-all-package-versions
@@ -272,7 +271,7 @@ jobs:
     name: "Cache Java CA certs package v1 (regression issue #72)."
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: openjdk-11-jre
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_72
@@ -283,7 +282,7 @@ jobs:
     name: "Cache Java CA certs package v2 (regression issue #72)."
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: default-jre
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_72
@@ -301,7 +300,7 @@ jobs:
           sudo apt-get install -y intel-oneapi-runtime-libs intel-oneapi-runtime-opencl;
           sudo apt-get install -y opencl-headers ocl-icd-opencl-dev;
           sudo apt-get install -y libsundials-dev;
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: intel-oneapi-runtime-libs
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_76
@@ -312,7 +311,7 @@ jobs:
     name: "Tar error with libboost-dev (regression issue #79)."
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: libboost-dev
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_79
@@ -323,7 +322,7 @@ jobs:
     name: "Tar error with alsa-ucm-conf (regression issue #81)."
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages:
             libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcups2 libdrm2 libgbm1
@@ -336,7 +335,7 @@ jobs:
     name: "Install multiline package listing using literal block style (regression issue #84)."
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: >
             xdot  rolldice distro-info-data
@@ -351,7 +350,7 @@ jobs:
       - uses: actions/checkout@v3.1.0
       - name: Execute
         id: execute
-        uses: awalsh128/cache-apt-pkgs-action@master
+        uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: xdot rolldice distro-info-data
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_84_literal_block
@@ -368,7 +367,7 @@ jobs:
     name: "Install multiline package listing using literal block style (regression issue #84)."
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: |
             xdot \
@@ -384,7 +383,7 @@ jobs:
       - uses: actions/checkout@v3.1.0
       - name: Execute
         id: execute
-        uses: awalsh128/cache-apt-pkgs-action@master
+        uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: xdot rolldice distro-info-data
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_84_folded_block
@@ -401,7 +400,7 @@ jobs:
     name: "Upload logs artifact name (regression issue #89)."
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: libgtk-3-dev:amd64
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_89
@@ -412,7 +411,7 @@ jobs:
     name: "Install error due to SHELLOPTS override (regression issue #98)."
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: git-restore-mtime libgl1-mesa-dev libosmesa6-dev pandoc
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_98
@@ -423,7 +422,7 @@ jobs:
     name: "Stale apt repo not finding package on restore, install phase (regression issue #106)."
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: libtk8.6
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_106
@@ -435,7 +434,7 @@ jobs:
     name: "Stale apt repo not finding package on restore, restore phase (regression issue #106)."
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: libtk8.6
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_106
@@ -446,7 +445,7 @@ jobs:
     name: "Cache packages with multi-arch cache key."
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: libfuse2
           version: ${{ github.run_id }}-${{ github.run_attempt }}-multi_arch_cache_key
@@ -457,7 +456,7 @@ jobs:
     name: "Cache virtual package."
     steps:
       - uses: actions/checkout@v3.1.0
-      - uses: awalsh128/cache-apt-pkgs-action@master
+      - uses: awalsh128/cache-apt-pkgs-action@dev-v2.0
         with:
           packages: libvips
           version: ${{ github.run_id }}-${{ github.run_attempt }}-virtual_package
