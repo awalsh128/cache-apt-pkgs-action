@@ -17,23 +17,30 @@ env:
   SHELLOPTS: errexit:pipefail
 
 jobs:
-  check_distribute_and_build:
+  check_distribute:
     runs-on: ubuntu-latest
-    name: Check and build distribute if needed
+    outputs:
+      distribute_exists: ${{ steps.check_distribute.outputs.distribute_exists }}
     steps:
       - uses: actions/checkout@v4
       - name: Check if distribute directory exists
         id: check_distribute
         run: |
-          if [ ! -d "distribute" ]; then
-            echo "distribute_exists=false" >> $GITHUB_OUTPUT
-          else
+          if [ -d "distribute" ]; then
             echo "distribute_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "distribute_exists=false" >> $GITHUB_OUTPUT
           fi
-      - name: Trigger build-distribute workflow
-        if: steps.check_distribute.outputs.distribute_exists == 'false'
-        uses: ./.github/workflows/build-distribute.yml
+
+  build_distribute:
+    needs: check_distribute
+    if: needs.check_distribute.outputs.distribute_exists == 'false'
+    uses: ./.github/workflows/build-distribute.yml
+
+  # All other jobs should depend on build_distribute (if run) or check_distribute (if not needed)
   list_all_versions:
+    needs: [build_distribute, check_distribute]
+    if: needs.check_distribute.outputs.distribute_exists == 'true' || always()
     runs-on: ubuntu-latest
     name: List all package versions (including deps).
     steps:
@@ -59,6 +66,8 @@ jobs:
         shell: bash
 
   list_versions:
+    needs: [build_distribute, check_distribute]
+    if: needs.check_distribute.outputs.distribute_exists == 'true' || always()
     runs-on: ubuntu-latest
     name: List package versions.
     steps:
@@ -83,6 +92,8 @@ jobs:
         shell: bash
 
   standard_workflow_install:
+    needs: [build_distribute, check_distribute]
+    if: needs.check_distribute.outputs.distribute_exists == 'true' || always()
     runs-on: ubuntu-latest
     name: Standard workflow install package and cache.
     steps:
@@ -102,7 +113,7 @@ jobs:
         shell: bash
 
   standard_workflow_install_with_new_version:
-    needs: standard_workflow_install
+    needs: [standard_workflow_install, build_distribute, check_distribute]
     runs-on: ubuntu-latest
     name: Standard workflow packages with new version.
     steps:
@@ -123,7 +134,7 @@ jobs:
         shell: bash
 
   standard_workflow_restore:
-    needs: standard_workflow_install
+    needs: [standard_workflow_install, build_distribute, check_distribute]
     runs-on: ubuntu-latest
     name: Standard workflow restore cached packages.
     steps:
@@ -143,7 +154,7 @@ jobs:
         shell: bash
 
   standard_workflow_restore_with_packages_out_of_order:
-    needs: standard_workflow_install
+    needs: [standard_workflow_install, build_distribute, check_distribute]
     runs-on: ubuntu-latest
     name: Standard workflow restore with packages out of order.
     steps:
@@ -163,7 +174,7 @@ jobs:
         shell: bash
 
   standard_workflow_add_package:
-    needs: standard_workflow_install
+    needs: [standard_workflow_install, build_distribute, check_distribute]
     runs-on: ubuntu-latest
     name: Standard workflow add another package.
     steps:
@@ -183,7 +194,7 @@ jobs:
         shell: bash
 
   standard_workflow_restore_add_package:
-    needs: standard_workflow_add_package
+    needs: [standard_workflow_add_package, build_distribute, check_distribute]
     runs-on: ubuntu-latest
     name: Standard workflow restore added package.
     steps:
@@ -359,7 +370,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_84_literal_block_restore:
-    needs: regression_84_literal_block_install
+    needs: [regression_84_literal_block_install, build_distribute, check_distribute]
     runs-on: ubuntu-latest
     name: "Restore multiline package listing using literal block style (regression issue #84)."
     steps:
@@ -392,7 +403,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_84_folded_block_restore:
-    needs: regression_84_folded_block_install
+    needs: [regression_84_folded_block_install, build_distribute, check_distribute]
     runs-on: ubuntu-latest
     name: "Restore multiline package listing using literal block style (regression issue #84)."
     steps:
@@ -445,7 +456,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_106_restore:
-    needs: regression_106_install
+    needs: [regression_106_install, build_distribute, check_distribute]
     runs-on: ubuntu-latest
     name: "Stale apt repo not finding package on restore, restore phase (regression issue #106)."
     steps:
