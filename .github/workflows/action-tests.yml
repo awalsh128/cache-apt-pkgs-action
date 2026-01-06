@@ -18,11 +18,7 @@ env:
 
 jobs:
   build_binaries:
-    runs-on: ubuntu-latest
-    name: Build binaries
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/workflows/build-distribute.yml
+    uses: ./.github/workflows/build-distribute.yml
 
   # All other jobs should depend on build_binaries (if run) or check_distribute (if not needed)
   list_all_versions:
