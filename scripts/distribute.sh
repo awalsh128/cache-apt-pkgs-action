@@ -27,7 +27,10 @@
 
 set -eEuo pipefail
 
-source "$(git rev-parse --show-toplevel)/scripts/lib.sh"
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+cd "${ROOT_DIR}"
+
+source "${ROOT_DIR}/scripts/lib.sh"
 
 log_info "Using shared library functions for enhanced logging and utilities."
 
@@ -79,10 +82,10 @@ function build_binary() {
 
 	local build_flags="-ldflags=-s -w -X main.version=${version} -X main.commit=${full_sha}"
 
-	go build "${build_flags}" -o "distribute/${arch}/${binary_name}" ./cmd/cache_apt_pkgs
+	go build "${build_flags}" -o "./distribute/${arch}/${binary_name}" ./cmd/cache_apt_pkgs
 
 	# Make executable (no-op on Windows but harmless)
-	chmod +x "distribute/${arch}/${binary_name}"
+	chmod +x "./distribute/${arch}/${binary_name}"
 }
 
 # Generate checksums for binaries
@@ -101,10 +104,10 @@ function generate_checksums() {
 # Verify build output
 function verify_build() {
 	local arch="$1"
-	ls -la "distribute/${arch}/"
-	if [[ -f "distribute/${arch}/cache_apt_pkgs" ]]; then
+	ls -la "./distribute/${arch}/"
+	if [[ -f "./distribute/${arch}/cache_apt_pkgs" ]]; then
 		log_info "Binary built successfully"
-		file "distribute/${arch}/cache_apt_pkgs"
+		file "./distribute/${arch}/cache_apt_pkgs"
 	else
 		log_error "Binary not found!"
 		exit 1
@@ -113,18 +116,18 @@ function verify_build() {
 
 # Reorganize artifacts
 function reorganize_artifacts() {
-	mkdir -p distribute
-	for arch_dir in distribute-artifacts/cache-apt-pkgs-*; do
+	mkdir -p ./distribute
+	for arch_dir in ./distribute-artifacts/cache-apt-pkgs-*; do
 		if [[ -d ${arch_dir} ]]; then
 			local arch_name
 			arch_name=$(basename "${arch_dir}" | sed 's/cache-apt-pkgs-\(.*\)-[a-f0-9]*/\1/')
-			cp -r "${arch_dir}"/* "distribute/${arch_name}/" 2>/dev/null || mkdir -p "distribute/${arch_name}"
-			cp "${arch_dir}"/* "distribute/${arch_name}/" 2>/dev/null || true
+			cp -r "${arch_dir}"/* "./distribute/${arch_name}/" 2>/dev/null || mkdir -p "./distribute/${arch_name}"
+			cp "${arch_dir}"/* "./distribute/${arch_name}/" 2>/dev/null || true
 		fi
 	done
 
 	log_info "Final distribute structure:"
-	find distribute -type f -exec ls -la {} \;
+	find ./distribute -type f -exec ls -la {} \;
 }
 
 # Main script logic
