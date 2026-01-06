@@ -1,0 +1,118 @@
+name: Build and Release Distribute Artifacts
+on:
+  push:
+    tags:
+      - "v2.*.*"
+    branches:
+      - dev-v2
+  workflow_call:
+permissions:
+  contents: write
+  id-token: write
+env:
+  VERSION_PREFIX: "commit"
+  working_directory: ${{ github.workspace }}
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            arch: X64
+          - goos: linux
+            goarch: arm64
+            arch: ARM64
+          - goos: linux
+            goarch: arm
+            goarch_variant: "6"
+            arch: ARM
+          - goos: linux
+            goarch: "386"
+            arch: X86
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.24
+      - name: Generate version from commit SHA
+        id: version
+        run: ./scripts/distribute.sh generate-version
+      - name: Create distribute directory
+        run: ./scripts/distribute.sh create-distribute-directory "${{ matrix.arch }}"
+      - name: Clone apt-fast repository
+        run: ./scripts/distribute.sh clone-apt-fast
+      - name: Build binary for ${{ matrix.goos }}/${{ matrix.goarch }}
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarch_variant }}
+          CGO_ENABLED: 0
+        run: |
+          ./scripts/distribute.sh build-binary \
+            "${{ matrix.goos }}" \
+            "${{ matrix.goarch }}" \
+            "${{ matrix.goarch_variant }}" \
+            "${{ matrix.arch }}"
+      - name: Generate checksums
+        run: ./scripts/distribute.sh generate-checksums "${{ matrix.arch }}"
+      - name: Verify build
+        run: |
+          ./scripts/distribute.sh verify-build "${{ matrix.arch }}"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cache-apt-pkgs-${{ matrix.arch }}-${{ steps.version.outputs.commit_sha }}
+          path: distribute/${{ matrix.arch }}/*
+          retention-days: 30
+  create-release:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Generate version from commit SHA
+        id: version
+        run: |
+          COMMIT_SHA="${GITHUB_SHA:0:8}"
+          VERSION="${{ env.VERSION_PREFIX }}-${COMMIT_SHA}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "commit_sha=${COMMIT_SHA}" >> $GITHUB_OUTPUT
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: distribute-artifacts
+      - name: Reorganize artifacts
+        run: |
+          ./scripts/distribute.sh reorganize-artifacts
+      - name: Create or update release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: "${{ steps.version.outputs.version }}"
+          generate_release_notes: true
+          files: |
+            distribute/x64/*
+            distribute/arm64/*
+            distribute/arm/*
+            distribute/x86/*
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Clean up old pre-releases
+        run: |
+          echo "Cleaning up old commit-based releases..."
+          # Keep last 10 commit-based releases, delete older ones
+          gh release list --limit 50 --json tagName,isPrerelease | \
+            jq -r '.[] | select(.isPrerelease == true and (.tagName | startswith("commit-"))) | .tagName' | \
+            tail -n +11 | \
+            xargs -I {} gh release delete {} --yes --cleanup-tag || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
