@@ -473,3 +473,50 @@ jobs:
           packages: libvips
           version: ${{ github.run_id }}-${{ github.run_attempt }}-virtual_package
           debug: ${{ env.DEBUG }}
+
+  # === dpkg Registration Tests ===
+
+  dpkg_status_install:
+    runs-on: ubuntu-latest
+    name: "dpkg knows about packages after install (phase 1)."
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: rolldice
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-dpkg_status
+          debug: ${{ env.DEBUG }}
+      - name: Verify dpkg knows the package
+        run: |
+          dpkg -s rolldice | grep -q 'Status: install ok installed'
+          echo "dpkg reports rolldice as installed after fresh install."
+        shell: bash
+
+  dpkg_status_restore:
+    needs: dpkg_status_install
+    runs-on: ubuntu-latest
+    name: "dpkg knows about packages after cache restore (phase 2)."
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: rolldice
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-dpkg_status
+          debug: ${{ env.DEBUG }}
+      - name: Verify cache hit
+        run: test "${{ steps.execute.outputs.cache-hit }}" = "true"
+        shell: bash
+      - name: Verify dpkg knows the package after cache restore
+        run: |
+          dpkg -s rolldice | grep -q 'Status: install ok installed'
+          echo "dpkg reports rolldice as installed after cache restore."
+        shell: bash
+      - name: Verify the binary works
+        run: |
+          rolldice 2d6
+          echo "rolldice binary works after cache restore."
+        shell: bash
