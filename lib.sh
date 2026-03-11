@@ -54,14 +54,14 @@ function get_install_script_filepath {
 #   The list of colon delimited action syntax pairs with each pair equals
 #   delimited. <name>:<version> <name>:<version>...
 ###############################################################################
-function get_installed_packages {   
+function get_installed_packages {
   local install_log_filepath="${1}"
-  local regex="^Unpacking ([^ :]+)([^ ]+)? (\[[^ ]+\]\s)?\(([^ )]+)"  
-  local dep_packages=""  
+  local regex="^Unpacking ([^ :]+)([^ ]+)? (\[[^ ]+\]\s)?\(([^ )]+)"
+  local dep_packages=""
   while read -r line; do
     # ${regex} should be unquoted since it isn't a literal.
     if [[ "${line}" =~ ${regex} ]]; then
-      dep_packages="${dep_packages}${BASH_REMATCH[1]}=${BASH_REMATCH[4]} "      
+      dep_packages="${dep_packages}${BASH_REMATCH[1]}${BASH_REMATCH[2]}=${BASH_REMATCH[4]} "
     else
       log_err "Unable to parse package name and version from \"${line}\""
       exit 2
