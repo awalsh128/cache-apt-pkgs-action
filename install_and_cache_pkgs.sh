@@ -76,21 +76,19 @@ install_log_filepath="${cache_dir}/install.log"
 
 log "Clean installing ${package_count} packages..."
 # Zero interaction while installing or upgrading the system via apt.
-sudo DEBIAN_FRONTEND=noninteractive apt-fast --yes install ${packages} > "${install_log_filepath}"
-log "done"
-log "Installation log written to ${install_log_filepath}"
+# Explicitly check exit status since set +e (from lib.sh) is active.
+sudo DEBIAN_FRONTEND=noninteractive apt-fast --yes install ${packages} 2>&1 | tee "${install_log_filepath}"
+install_rc=${PIPESTATUS[0]}
+
+if [ "${install_rc}" -ne 0 ]; then
+  log_err "Failed to install packages. apt-fast exited with an error (see messages above)."
+  exit 5
+fi
+log "Install completed successfully."
 
 log_empty_line
 
 installed_packages=$(get_installed_packages "${install_log_filepath}")
-log "Installed package list:"
-for installed_package in ${installed_packages}; do
-  # Reformat for human friendly reading.  
-  log "- $(echo ${installed_package} | awk -F\= '{print $1" ("$2")"}')"
-done
-
-log_empty_line
-
 installed_packages_count=$(wc -w <<< "${installed_packages}")
 log "Caching ${installed_packages_count} installed packages..."
 for installed_package in ${installed_packages}; do
