@@ -111,6 +111,16 @@ if [ "${cpu_arch}" != "x86_64" ]; then
   log "- Architecture '${cpu_arch}' added to value."
 fi
 
+# Include a hash of pre-installed packages so runners with different base
+# images (e.g., GPU runners with CUDA pre-installed vs plain Ubuntu) get
+# different cache keys. This prevents a cache built on runner A (where some
+# packages were already installed) from being restored on runner B (where
+# those packages are missing).
+base_pkgs_hash="$(dpkg-query -W -f='${binary:Package}\n' | sha1sum | cut -f1 -d' ')"
+value="${value} base:${base_pkgs_hash}"
+log "- Base packages hash '${base_pkgs_hash}' added to value."
+echo "::notice::Runner base image fingerprint: ${base_pkgs_hash}. Runners with different pre-installed packages produce different fingerprints and cannot share caches."
+
 log "- Value to hash is '${value}'."
 
 key="$(echo "${value}" | md5sum | cut -f1 -d' ')"
