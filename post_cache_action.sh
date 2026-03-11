@@ -28,13 +28,16 @@ test "${debug}" = "true" && set -x
 # Repositories to add before installing packages.
 add_repository="${6}"
 
+# GPG-signed third-party repository sources.
+apt_sources="${7}"
+
 # List of the packages to use.
-packages="${@:7}"
+packages="${@:8}"
 
 if test "${cache_hit}" = "true"; then
   ${script_dir}/restore_pkgs.sh "${cache_dir}" "${cache_restore_root}" "${execute_install_scripts}" "${debug}"
 else
-  ${script_dir}/install_and_cache_pkgs.sh "${cache_dir}" "${debug}" "${add_repository}" ${packages}
+  ${script_dir}/install_and_cache_pkgs.sh "${cache_dir}" "${debug}" "${add_repository}" "${apt_sources}" ${packages}
 fi
 
 log_empty_line

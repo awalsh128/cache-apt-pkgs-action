@@ -27,8 +27,11 @@ debug="${4}"
 # Repositories to add before installing packages.
 add_repository="${5}"
 
+# GPG-signed third-party repository sources.
+apt_sources="${6}"
+
 # List of the packages to use.
-input_packages="${@:6}"
+input_packages="${@:7}"
 
 # Trim commas, excess spaces, and sort.
 log "Normalizing package list..."
@@ -80,6 +83,32 @@ if [ -n "${add_repository}" ]; then
   log "done"
 fi
 
+# Validate apt-sources parameter
+if [ -n "${apt_sources}" ]; then
+  log "Validating apt-sources parameter..."
+  while IFS= read -r line; do
+    # Skip empty lines.
+    if [ -z "$(echo "${line}" | tr -d '[:space:]')" ]; then
+      continue
+    fi
+    # Each line must contain a pipe separator.
+    if ! echo "${line}" | grep -q '|'; then
+      log "aborted"
+      log "apt-sources line missing '|' separator: ${line}" >&2
+      log "Expected format: key_url | source_spec" >&2
+      exit 7
+    fi
+    # Key URL must start with https://
+    key_url_check=$(echo "${line}" | cut -d'|' -f1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    if ! echo "${key_url_check}" | grep -qE '^https://'; then
+      log "aborted"
+      log "apt-sources key URL must start with https:// but got: ${key_url_check}" >&2
+      exit 7
+    fi
+  done <<< "${apt_sources}"
+  log "done"
+fi
+
 log "done"
 
 log_empty_line
@@ -105,11 +134,28 @@ if [ -n "${add_repository}" ]; then
   log "- Repositories '${add_repository}' added to value."
 fi
 
+# Include apt-sources in cache key (normalize to single line for stable hashing)
+if [ -n "${apt_sources}" ]; then
+  normalized_sources=$(echo "${apt_sources}" | sed '/^[[:space:]]*$/d' | sort | tr '\n' '|')
+  value="${value} apt-sources:${normalized_sources}"
+  log "- Apt sources added to value."
+fi
+
 # Don't invalidate existing caches for the standard Ubuntu runners
 if [ "${cpu_arch}" != "x86_64" ]; then
   value="${value} ${cpu_arch}"
   log "- Architecture '${cpu_arch}' added to value."
 fi
+
+# Include a hash of pre-installed packages so runners with different base
+# images (e.g., GPU runners with CUDA pre-installed vs plain Ubuntu) get
+# different cache keys. This prevents a cache built on runner A (where some
+# packages were already installed) from being restored on runner B (where
+# those packages are missing).
+base_pkgs_hash="$(dpkg-query -W -f='${binary:Package}\n' | sha1sum | cut -f1 -d' ')"
+value="${value} base:${base_pkgs_hash}"
+log "- Base packages hash '${base_pkgs_hash}' added to value."
+echo "::notice::Runner base image fingerprint: ${base_pkgs_hash}. Runners with different pre-installed packages produce different fingerprints and cannot share caches."
 
 log "- Value to hash is '${value}'."
 

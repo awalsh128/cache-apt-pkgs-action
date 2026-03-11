@@ -1,0 +1,715 @@
+name: Action Tests
+on:
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: "Run in debug mode."
+        type: boolean
+        required: false
+        default: false
+  push:
+    branches: [master, dev, staging]
+  pull_request:
+    types: [opened, synchronize]
+
+env:
+  DEBUG: ${{ github.event.inputs.debug || false }}
+  # Test for overrides in built in shell options (regression issue 98).
+  SHELLOPTS: errexit:pipefail
+
+jobs:
+
+  # === Core Functionality ===
+
+  list_all_versions:
+    runs-on: ubuntu-latest
+    name: List all package versions (including deps).
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: xdot=1.3-1
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-list_all_versions
+          debug: ${{ env.DEBUG }}
+      - name: Verify
+        run: |
+          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
+          echo "package-version-list = ${{ steps.execute.outputs.package-version-list }}"
+          echo "all-package-version-list = ${{ steps.execute.outputs.all-package-version-list }}"
+          # Verify cache miss on first run.
+          test "${{ steps.execute.outputs.cache-hit }}" = "false"
+          # Verify the main package is in the all-packages list.
+          echo "${{ steps.execute.outputs.all-package-version-list }}" | grep -q "xdot=1.3-1"
+        shell: bash
+
+  list_versions:
+    runs-on: ubuntu-latest
+    name: List package versions.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: xdot rolldice
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-list_versions
+          debug: ${{ env.DEBUG }}
+      - name: Verify
+        run: |
+          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
+          echo "package-version-list = ${{ steps.execute.outputs.package-version-list }}"
+          test "${{ steps.execute.outputs.cache-hit }}" = "false"
+          echo "${{ steps.execute.outputs.package-version-list }}" | grep -q "xdot="
+          echo "${{ steps.execute.outputs.package-version-list }}" | grep -q "rolldice="
+        shell: bash
+
+  standard_workflow_install:
+    runs-on: ubuntu-latest
+    name: Standard workflow install package and cache.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: xdot rolldice
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-standard_workflow
+          debug: ${{ env.DEBUG }}
+      - name: Verify
+        if: steps.execute.outputs.cache-hit != 'false'
+        run: |
+          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
+          exit 1
+        shell: bash
+
+  standard_workflow_install_with_new_version:
+    needs: standard_workflow_install
+    runs-on: ubuntu-latest
+    name: Standard workflow packages with new version.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: xdot rolldice
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-standard_workflow_install_with_new_version
+          debug: ${{ env.DEBUG }}
+      - name: Verify
+        if: steps.execute.outputs.cache-hit != 'false'
+        run: |
+          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
+          exit 1
+        shell: bash
+
+  standard_workflow_restore:
+    needs: standard_workflow_install
+    runs-on: ubuntu-latest
+    name: Standard workflow restore cached packages.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: xdot rolldice
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-standard_workflow
+          debug: ${{ env.DEBUG }}
+      - name: Verify
+        if: steps.execute.outputs.cache-hit != 'true'
+        run: |
+          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
+          exit 1
+        shell: bash
+
+  standard_workflow_restore_with_packages_out_of_order:
+    needs: standard_workflow_install
+    runs-on: ubuntu-latest
+    name: Standard workflow restore with packages out of order.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: rolldice xdot
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-standard_workflow
+          debug: ${{ env.DEBUG }}
+      - name: Verify
+        if: steps.execute.outputs.cache-hit != 'true'
+        run: |
+          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
+          exit 1
+        shell: bash
+
+  standard_workflow_add_package:
+    needs: standard_workflow_install
+    runs-on: ubuntu-latest
+    name: Standard workflow add another package.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: xdot rolldice distro-info-data
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-standard_workflow
+          debug: ${{ env.DEBUG }}
+      - name: Verify
+        if: steps.execute.outputs.cache-hit != 'false'
+        run: |
+          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
+          exit 1
+        shell: bash
+
+  standard_workflow_restore_add_package:
+    needs: standard_workflow_add_package
+    runs-on: ubuntu-latest
+    name: Standard workflow restore added package.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: xdot rolldice distro-info-data
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-standard_workflow
+          debug: ${{ env.DEBUG }}
+      - name: Verify
+        if: steps.execute.outputs.cache-hit != 'true'
+        run: |
+          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
+          exit 1
+        shell: bash
+
+  # === Error Handling ===
+
+  no_packages:
+    runs-on: ubuntu-latest
+    name: No packages passed.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: ""
+        continue-on-error: true
+      - name: Verify
+        if: steps.execute.outcome != 'failure'
+        run: |
+          echo "Expected failure but got: ${{ steps.execute.outcome }}"
+          exit 1
+        shell: bash
+
+  package_not_found:
+    runs-on: ubuntu-latest
+    name: Package not found.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: package_that_doesnt_exist
+        continue-on-error: true
+      - name: Verify
+        if: steps.execute.outcome != 'failure'
+        run: |
+          echo "Expected failure but got: ${{ steps.execute.outcome }}"
+          exit 1
+        shell: bash
+
+  version_contains_spaces:
+    runs-on: ubuntu-latest
+    name: Version contains spaces.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: xdot
+          version: 123 abc
+          debug: ${{ env.DEBUG }}
+        continue-on-error: true
+      - name: Verify
+        if: steps.execute.outcome != 'failure'
+        run: |
+          echo "Expected failure but got: ${{ steps.execute.outcome }}"
+          exit 1
+        shell: bash
+
+  debug_disabled:
+    runs-on: ubuntu-latest
+    name: Debug disabled.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: xdot
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-debug_disabled
+          debug: false
+
+  # === Regression Tests ===
+
+  regression_36:
+    runs-on: ubuntu-latest
+    name: "Reinstall existing package (regression issue #36)."
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: libgtk-3-dev
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_36
+          debug: ${{ env.DEBUG }}
+
+  regression_37:
+    runs-on: ubuntu-latest
+    name: "Install with reported package deps not installed (regression issue #37)."
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: libosmesa6-dev libgl1-mesa-dev python3-tk pandoc git-restore-mtime
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_37
+          debug: ${{ env.DEBUG }}
+
+  regression_72_1:
+    runs-on: ubuntu-latest
+    name: "Cache Java CA certs package v1 (regression issue #72)."
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: openjdk-11-jre
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_72
+          debug: ${{ env.DEBUG }}
+
+  regression_72_2:
+    runs-on: ubuntu-latest
+    name: "Cache Java CA certs package v2 (regression issue #72)."
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: default-jre
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_72
+          debug: ${{ env.DEBUG }}
+
+  regression_76:
+    runs-on: ubuntu-latest
+    name: "Cache empty archive (regression issue #76)."
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor | sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null;
+          echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list;
+          sudo apt-get -qq update;
+          sudo apt-get install -y intel-oneapi-runtime-libs intel-oneapi-runtime-opencl;
+          sudo apt-get install -y opencl-headers ocl-icd-opencl-dev;
+          sudo apt-get install -y libsundials-dev;
+      - uses: ./
+        with:
+          packages: intel-oneapi-runtime-libs
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_76
+          debug: ${{ env.DEBUG }}
+
+  regression_79:
+    runs-on: ubuntu-latest
+    name: "Tar error with libboost-dev (regression issue #79)."
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: libboost-dev
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_79
+          debug: ${{ env.DEBUG }}
+
+  regression_81:
+    runs-on: ubuntu-latest
+    name: "Tar error with alsa-ucm-conf (regression issue #81)."
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcups2 libdrm2 libgbm1 libnspr4 libnss3 libxcomposite1 libxdamage1 libxfixes3 libxkbcommon0 libxrandr2
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_81
+          debug: ${{ env.DEBUG }}
+
+  regression_84_literal_block_install:
+    runs-on: ubuntu-latest
+    name: "Install multiline package listing - literal block (regression issue #84)."
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: >
+            xdot
+            rolldice distro-info-data
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_84_literal_block
+          debug: ${{ env.DEBUG }}
+
+  regression_84_literal_block_restore:
+    needs: regression_84_literal_block_install
+    runs-on: ubuntu-latest
+    name: "Restore multiline package listing - literal block (regression issue #84)."
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: xdot rolldice distro-info-data
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_84_literal_block
+          debug: ${{ env.DEBUG }}
+      - name: Verify
+        if: steps.execute.outputs.cache-hit != 'true'
+        run: |
+          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
+          exit 1
+        shell: bash
+
+  regression_84_folded_block_install:
+    runs-on: ubuntu-latest
+    name: "Install multiline package listing - folded block (regression issue #84)."
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: |
+            xdot \
+            rolldice distro-info-data
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_84_folded_block
+          debug: ${{ env.DEBUG }}
+
+  regression_84_folded_block_restore:
+    needs: regression_84_folded_block_install
+    runs-on: ubuntu-latest
+    name: "Restore multiline package listing - folded block (regression issue #84)."
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: xdot rolldice distro-info-data
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_84_folded_block
+          debug: ${{ env.DEBUG }}
+      - name: Verify
+        if: steps.execute.outputs.cache-hit != 'true'
+        run: |
+          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
+          exit 1
+        shell: bash
+
+  regression_89:
+    runs-on: ubuntu-latest
+    name: "Upload logs artifact name (regression issue #89)."
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: libgtk-3-dev:amd64
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_89
+          debug: ${{ env.DEBUG }}
+
+  regression_98:
+    runs-on: ubuntu-latest
+    name: "Install error due to SHELLOPTS override (regression issue #98)."
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: git-restore-mtime libgl1-mesa-dev libosmesa6-dev pandoc
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_98
+          debug: ${{ env.DEBUG }}
+
+  regression_106_install:
+    runs-on: ubuntu-latest
+    name: "Stale apt repo - install phase (regression issue #106)."
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: libtk8.6
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_106
+          debug: ${{ env.DEBUG }}
+
+  regression_106_restore:
+    needs: regression_106_install
+    runs-on: ubuntu-latest
+    name: "Stale apt repo - restore phase (regression issue #106)."
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: libtk8.6
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_106
+          debug: ${{ env.DEBUG }}
+
+  # === Special Cases ===
+
+  multi_arch_cache_key:
+    runs-on: ubuntu-latest
+    name: "Cache packages with multi-arch cache key."
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: libfuse2
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-multi_arch_cache_key
+          debug: ${{ env.DEBUG }}
+
+  virtual_package:
+    runs-on: ubuntu-latest
+    name: "Cache virtual package."
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          packages: libvips
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-virtual_package
+          debug: ${{ env.DEBUG }}
+
+  # === dpkg Registration Tests ===
+
+  dpkg_status_install:
+    runs-on: ubuntu-latest
+    name: "dpkg knows about packages after install (phase 1)."
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: rolldice
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-dpkg_status
+          debug: ${{ env.DEBUG }}
+      - name: Verify dpkg knows the package
+        run: |
+          dpkg -s rolldice | grep -q 'Status: install ok installed'
+          echo "dpkg reports rolldice as installed after fresh install."
+        shell: bash
+
+  dpkg_status_restore:
+    needs: dpkg_status_install
+    runs-on: ubuntu-latest
+    name: "dpkg knows about packages after cache restore (phase 2)."
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: rolldice
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-dpkg_status
+          debug: ${{ env.DEBUG }}
+      - name: Verify cache hit
+        run: test "${{ steps.execute.outputs.cache-hit }}" = "true"
+        shell: bash
+      - name: Verify dpkg knows the package after cache restore
+        run: |
+          dpkg -s rolldice | grep -q 'Status: install ok installed'
+          echo "dpkg reports rolldice as installed after cache restore."
+        shell: bash
+      - name: Verify the binary works
+        run: |
+          rolldice 2d6
+          echo "rolldice binary works after cache restore."
+        shell: bash
+
+  # === apt-sources Tests ===
+
+  apt_sources_empty:
+    runs-on: ubuntu-latest
+    name: "Empty apt-sources has no effect (backward compat)."
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: xdot
+          apt-sources: ""
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-apt_sources_empty
+          debug: ${{ env.DEBUG }}
+      - name: Verify
+        run: |
+          test "${{ steps.execute.outputs.cache-hit }}" = "false"
+          echo "${{ steps.execute.outputs.package-version-list }}" | grep -q "xdot="
+        shell: bash
+
+  apt_sources_inline_install:
+    runs-on: ubuntu-latest
+    name: "apt-sources with inline deb line - install."
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: gh
+          apt-sources: |
+            https://cli.github.com/packages/githubcli-archive-keyring.gpg | deb [arch=amd64] https://cli.github.com/packages stable main
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-apt_sources_inline
+          debug: ${{ env.DEBUG }}
+      - name: Verify
+        run: |
+          test "${{ steps.execute.outputs.cache-hit }}" = "false"
+          echo "${{ steps.execute.outputs.package-version-list }}" | grep -q "gh="
+          # Verify the keyring was created.
+          test -f /usr/share/keyrings/cli-github-com-packages-githubcli-archive-keyring-gpg.gpg
+          # Verify the source list was created.
+          test -f /etc/apt/sources.list.d/cli-github-com-packages-githubcli-archive-keyring-gpg.list
+        shell: bash
+
+  apt_sources_inline_restore:
+    needs: apt_sources_inline_install
+    runs-on: ubuntu-latest
+    name: "apt-sources with inline deb line - restore."
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: gh
+          apt-sources: |
+            https://cli.github.com/packages/githubcli-archive-keyring.gpg | deb [arch=amd64] https://cli.github.com/packages stable main
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-apt_sources_inline
+          debug: ${{ env.DEBUG }}
+      - name: Verify
+        if: steps.execute.outputs.cache-hit != 'true'
+        run: |
+          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
+          exit 1
+        shell: bash
+
+  apt_sources_cache_key_changes:
+    runs-on: ubuntu-latest
+    name: "apt-sources changes invalidate cache."
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install with one source
+        id: install1
+        uses: ./
+        with:
+          packages: xdot
+          apt-sources: |
+            https://cli.github.com/packages/githubcli-archive-keyring.gpg | deb [arch=amd64] https://cli.github.com/packages stable main
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-apt_sources_cache_key
+          debug: ${{ env.DEBUG }}
+      - name: Verify first install is cache miss
+        run: test "${{ steps.install1.outputs.cache-hit }}" = "false"
+        shell: bash
+
+  apt_sources_validation_missing_pipe:
+    runs-on: ubuntu-latest
+    name: "apt-sources rejects lines missing pipe separator."
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: xdot
+          apt-sources: |
+            https://example.com/key.gpg deb https://example.com/repo stable main
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-apt_sources_no_pipe
+          debug: ${{ env.DEBUG }}
+        continue-on-error: true
+      - name: Verify
+        if: steps.execute.outcome != 'failure'
+        run: |
+          echo "Expected failure but got: ${{ steps.execute.outcome }}"
+          exit 1
+        shell: bash
+
+  apt_sources_validation_http_key:
+    runs-on: ubuntu-latest
+    name: "apt-sources rejects non-HTTPS key URLs."
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: xdot
+          apt-sources: |
+            http://example.com/key.gpg | deb https://example.com/repo stable main
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-apt_sources_http_key
+          debug: ${{ env.DEBUG }}
+        continue-on-error: true
+      - name: Verify
+        if: steps.execute.outcome != 'failure'
+        run: |
+          echo "Expected failure but got: ${{ steps.execute.outcome }}"
+          exit 1
+        shell: bash
+
+  apt_sources_conflicting_source:
+    runs-on: ubuntu-latest
+    name: "apt-sources replaces conflicting pre-existing source."
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pre-create conflicting source
+        run: |
+          # Simulate a runner that already has the GitHub CLI repo configured
+          # with a different keyring path (like NVIDIA runners have for CUDA).
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/fake-old-keyring.gpg] https://cli.github.com/packages stable main" \
+            | sudo tee /etc/apt/sources.list.d/existing-gh-repo.list
+          # Create a dummy keyring file so the source looks legitimate.
+          sudo touch /usr/share/keyrings/fake-old-keyring.gpg
+        shell: bash
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: gh
+          apt-sources: |
+            https://cli.github.com/packages/githubcli-archive-keyring.gpg | deb [arch=amd64] https://cli.github.com/packages stable main
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-apt_sources_conflict
+          debug: ${{ env.DEBUG }}
+      - name: Verify
+        run: |
+          # Action should succeed despite the pre-existing conflicting source.
+          test "${{ steps.execute.outputs.cache-hit }}" = "false"
+          echo "${{ steps.execute.outputs.package-version-list }}" | grep -q "gh="
+          # The conflicting source file should have been removed.
+          test ! -f /etc/apt/sources.list.d/existing-gh-repo.list
+          # Our source file should exist.
+          test -f /etc/apt/sources.list.d/cli-github-com-packages-githubcli-archive-keyring-gpg.list
+          # gh should be callable.
+          gh --version
+        shell: bash
+
+  apt_sources_force_update:
+    runs-on: ubuntu-latest
+    name: "apt-sources forces apt update even if lists are fresh."
+    steps:
+      - uses: actions/checkout@v4
+      - name: Freshen apt lists
+        run: |
+          # Ensure apt lists are fresh so the 5-minute staleness check would
+          # normally skip the update. The action should force update anyway
+          # because apt-sources is specified.
+          sudo apt-get update -qq
+        shell: bash
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: gh
+          apt-sources: |
+            https://cli.github.com/packages/githubcli-archive-keyring.gpg | deb [arch=amd64] https://cli.github.com/packages stable main
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-apt_sources_force_update
+          debug: ${{ env.DEBUG }}
+      - name: Verify
+        run: |
+          test "${{ steps.execute.outputs.cache-hit }}" = "false"
+          echo "${{ steps.execute.outputs.package-version-list }}" | grep -q "gh="
+          gh --version
+        shell: bash
