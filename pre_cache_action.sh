@@ -27,8 +27,11 @@ debug="${4}"
 # Repositories to add before installing packages.
 add_repository="${5}"
 
+# GPG-signed third-party repository sources.
+apt_sources="${6}"
+
 # List of the packages to use.
-input_packages="${@:6}"
+input_packages="${@:7}"
 
 # Trim commas, excess spaces, and sort.
 log "Normalizing package list..."
@@ -80,6 +83,32 @@ if [ -n "${add_repository}" ]; then
   log "done"
 fi
 
+# Validate apt-sources parameter
+if [ -n "${apt_sources}" ]; then
+  log "Validating apt-sources parameter..."
+  while IFS= read -r line; do
+    # Skip empty lines.
+    if [ -z "$(echo "${line}" | tr -d '[:space:]')" ]; then
+      continue
+    fi
+    # Each line must contain a pipe separator.
+    if ! echo "${line}" | grep -q '|'; then
+      log "aborted"
+      log "apt-sources line missing '|' separator: ${line}" >&2
+      log "Expected format: key_url | source_spec" >&2
+      exit 7
+    fi
+    # Key URL must start with https://
+    key_url_check=$(echo "${line}" | cut -d'|' -f1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    if ! echo "${key_url_check}" | grep -qE '^https://'; then
+      log "aborted"
+      log "apt-sources key URL must start with https:// but got: ${key_url_check}" >&2
+      exit 7
+    fi
+  done <<< "${apt_sources}"
+  log "done"
+fi
+
 log "done"
 
 log_empty_line
@@ -103,6 +132,13 @@ value="${packages} @ ${version} ${force_update_inc}"
 if [ -n "${add_repository}" ]; then
   value="${value} ${add_repository}"
   log "- Repositories '${add_repository}' added to value."
+fi
+
+# Include apt-sources in cache key (normalize to single line for stable hashing)
+if [ -n "${apt_sources}" ]; then
+  normalized_sources=$(echo "${apt_sources}" | sed '/^[[:space:]]*$/d' | sort | tr '\n' '|')
+  value="${value} apt-sources:${normalized_sources}"
+  log "- Apt sources added to value."
 fi
 
 # Don't invalidate existing caches for the standard Ubuntu runners

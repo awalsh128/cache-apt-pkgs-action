@@ -37,6 +37,7 @@ There are three kinds of version labels you can use.
 - `execute_install_scripts` - Execute Debian package pre and post install script upon restore. See [Caveats / Non-file Dependencies](#non-file-dependencies) for more information.
 - `empty_packages_behavior` - Desired behavior when the given `packages` is empty. `'error'` (default), `'warn'` or `'ignore'`.
 - `add-repository` - Space delimited list of repositories to add via `apt-add-repository` before installing packages. Supports PPA (e.g., `ppa:user/repo`) and other repository formats.
+- `apt-sources` - Multi-line list of GPG-signed third-party repository sources. Each line has the format `key_url | source_spec` where `key_url` is an HTTPS URL to a GPG signing key and `source_spec` is either a URL to a `.list` file or an inline `deb` line. See [Using with Signed Third-party Repositories](#using-with-signed-third-party-repositories).
 
 ### Outputs
 
@@ -118,6 +119,61 @@ install_from_multiple_repos:
       with:
         packages: package1 package2
         add-repository: ppa:user/repo1 ppa:user/repo2
+        version: 1.0
+```
+
+### Using with Signed Third-party Repositories
+
+Many third-party repositories (Docker, NVIDIA, GitHub CLI, etc.) require a GPG signing key and a `signed-by=` source entry. The `apt-sources` parameter handles this two-step setup automatically.
+
+Each line in `apt-sources` has the format:
+```
+key_url | source_spec
+```
+
+- `key_url` — HTTPS URL to the GPG signing key (will be dearmored and saved to `/usr/share/keyrings/`). Both ASCII-armored and binary keys are supported.
+- `source_spec` — Either a URL to a source file (downloaded and `signed-by` injected) or an inline `deb` line. Both traditional `.list` format and modern deb822 `.sources` format are auto-detected and handled.
+
+```yaml
+# NVIDIA Container Toolkit (source spec is a URL to a .list file)
+install_nvidia_toolkit:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: nvidia-container-toolkit
+        apt-sources: |
+          https://nvidia.github.io/libnvidia-container/gpgkey | https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list
+        version: 1.0
+```
+
+```yaml
+# Docker CE (inline deb line)
+install_docker:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: docker-ce docker-ce-cli
+        apt-sources: |
+          https://download.docker.com/linux/ubuntu/gpg | deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable
+        version: 1.0
+```
+
+```yaml
+# Multiple signed sources
+install_multiple:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: nvidia-container-toolkit docker-ce
+        apt-sources: |
+          https://nvidia.github.io/libnvidia-container/gpgkey | https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list
+          https://download.docker.com/linux/ubuntu/gpg | deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable
         version: 1.0
 ```
 

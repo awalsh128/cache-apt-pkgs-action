@@ -135,6 +135,257 @@ function get_tar_relpath {
   fi
 }
 
+###############################################################################
+# Injects signed-by into a deb line if not already present.
+# Arguments:
+#   The deb line to process.
+#   The keyring filepath to reference.
+# Returns:
+#   The deb line with signed-by injected.
+###############################################################################
+function inject_signed_by {
+  local line="${1}"
+  local keyring="${2}"
+
+  # Already has signed-by, return unchanged.
+  if echo "${line}" | grep -q 'signed-by='; then
+    echo "${line}"
+    return
+  fi
+
+  # Match deb or deb-src lines with existing options bracket.
+  # e.g. "deb [arch=amd64] https://..." -> "deb [arch=amd64 signed-by=...] https://..."
+  if echo "${line}" | grep -qE '^deb(-src)?\s+\['; then
+    echo "${line}" | sed -E "s|^(deb(-src)?)\s+\[([^]]*)\]|\1 [\3 signed-by=${keyring}]|"
+    return
+  fi
+
+  # Match deb or deb-src lines without options bracket.
+  # e.g. "deb https://..." -> "deb [signed-by=...] https://..."
+  if echo "${line}" | grep -qE '^deb(-src)?\s+'; then
+    echo "${line}" | sed -E "s|^(deb(-src)?)\s+|\1 [signed-by=${keyring}] |"
+    return
+  fi
+
+  # Not a deb line, return unchanged.
+  echo "${line}"
+}
+
+###############################################################################
+# Injects Signed-By into deb822-format (.sources) content if not already
+# present. deb822 uses multi-line key-value blocks separated by blank lines.
+# Arguments:
+#   The full deb822 content string.
+#   The keyring filepath to reference.
+# Returns:
+#   The content with Signed-By injected into each block that lacks it.
+###############################################################################
+function inject_signed_by_deb822 {
+  local content="${1}"
+  local keyring="${2}"
+
+  # If Signed-By already present anywhere, return unchanged.
+  if echo "${content}" | grep -qi '^Signed-By:'; then
+    echo "${content}"
+    return
+  fi
+
+  # Insert Signed-By after the Types: line in each block.
+  echo "${content}" | sed "/^Types:/a\\
+Signed-By: ${keyring}
+"
+}
+
+###############################################################################
+# Detects whether content is in deb822 format (.sources) or traditional
+# one-line format (.list).
+# Arguments:
+#   The source file content.
+# Returns:
+#   Exit code 0 if deb822, 1 if traditional.
+###############################################################################
+function is_deb822_format {
+  echo "${1}" | grep -qE '^Types:\s+'
+}
+
+###############################################################################
+# Derives a keyring name from a URL.
+# Arguments:
+#   URL to derive name from.
+# Returns:
+#   A sanitized name suitable for a keyring filename (without extension).
+###############################################################################
+function derive_keyring_name {
+  local url="${1}"
+  # Use full URL (minus scheme) with non-alphanumeric chars replaced by hyphens.
+  # This avoids collisions when two keys share a domain but differ in path.
+  echo "${url}" | sed -E 's|https?://||; s|[/.]+|-|g; s|-+$||'
+}
+
+###############################################################################
+# Extracts the repo URL from a deb line, stripping the deb prefix and options.
+# Arguments:
+#   A deb or deb-src line.
+# Returns:
+#   The repo URL (first URL after stripping prefix and options bracket).
+###############################################################################
+function extract_repo_url {
+  echo "${1}" | sed -E 's/^deb(-src)?[[:space:]]+(\[[^]]*\][[:space:]]+)?//' | awk '{print $1}'
+}
+
+###############################################################################
+# Removes existing apt source files that reference the same repo URL.
+# This prevents "Conflicting values set for option Signed-By" errors when
+# the runner already has a source configured (e.g., NVIDIA CUDA repo on
+# GPU runners) and we add a new source with a different keyring path.
+# Arguments:
+#   The repo URL to check for conflicts.
+#   The file path we're about to write (excluded from removal).
+###############################################################################
+function remove_conflicting_sources {
+  local repo_url="${1}"
+  local our_list_path="${2}"
+
+  # Nothing to check if repo_url is empty.
+  if [ -z "${repo_url}" ]; then
+    return
+  fi
+
+  for src_file in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+    # Skip if glob didn't match any files.
+    test -f "${src_file}" || continue
+    # Skip our own file.
+    test "${src_file}" = "${our_list_path}" && continue
+    # Check if this file references the same repo URL (fixed-string match).
+    if grep -qF "${repo_url}" "${src_file}" 2>/dev/null; then
+      log "  Removing conflicting source: ${src_file}"
+      sudo rm -f "${src_file}"
+    fi
+  done
+}
+
+###############################################################################
+# Sets up GPG-signed third-party apt sources.
+# Arguments:
+#   Multi-line string where each line is: key_url | source_spec
+# Returns:
+#   Log lines from setup.
+###############################################################################
+function setup_apt_sources {
+  local apt_sources="${1}"
+
+  if [ -z "${apt_sources}" ]; then
+    return
+  fi
+
+  log "Setting up GPG-signed apt sources..."
+
+  while IFS= read -r line; do
+    # Skip empty lines.
+    if [ -z "$(echo "${line}" | tr -d '[:space:]')" ]; then
+      continue
+    fi
+
+    # Split on pipe separator, trim whitespace with sed instead of xargs.
+    local key_url=$(echo "${line}" | cut -d'|' -f1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    local source_spec=$(echo "${line}" | cut -d'|' -f2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+    if [ -z "${key_url}" ] || [ -z "${source_spec}" ]; then
+      log_err "Invalid apt-sources line (missing key_url or source_spec): ${line}"
+      exit 7
+    fi
+
+    local keyring_name=$(derive_keyring_name "${key_url}")
+    local keyring_path="/usr/share/keyrings/${keyring_name}.gpg"
+
+    # Download GPG key to temp file, then detect format and convert if needed.
+    log "- Downloading GPG key from ${key_url}..."
+    local tmpkey=$(mktemp)
+    if ! curl -fsSL "${key_url}" -o "${tmpkey}"; then
+      log_err "Failed to download GPG key from ${key_url}"
+      rm -f "${tmpkey}"
+      exit 7
+    fi
+
+    # Detect if key is ASCII-armored or already binary.
+    # "PGP public key block" = ASCII-armored, needs dearmoring.
+    # "PGP/GPG key public ring" or other = already binary, copy directly.
+    if file "${tmpkey}" | grep -qi 'PGP public key block$'; then
+      # ASCII-armored key, dearmor it.
+      if ! sudo gpg --batch --yes --dearmor -o "${keyring_path}" < "${tmpkey}"; then
+        log_err "Failed to dearmor GPG key from ${key_url}"
+        rm -f "${tmpkey}"
+        exit 7
+      fi
+    else
+      # Already in binary format, copy directly.
+      sudo cp "${tmpkey}" "${keyring_path}"
+    fi
+    rm -f "${tmpkey}"
+    log "  Keyring saved to ${keyring_path}"
+
+    # Determine if source_spec is a URL (download source file) or inline deb line.
+    if echo "${source_spec}" | grep -qE '^https?://'; then
+      # Source spec is a URL to a source file - download it.
+      local list_name="${keyring_name}"
+      log "- Downloading source list from ${source_spec}..."
+      local list_content
+      if ! list_content=$(curl -fsSL "${source_spec}"); then
+        log_err "Failed to download source list from ${source_spec}"
+        exit 7
+      fi
+
+      if is_deb822_format "${list_content}"; then
+        # deb822 format (.sources file) - inject Signed-By as a field.
+        local list_path="/etc/apt/sources.list.d/${list_name}.sources"
+        # Remove any existing source files that reference the same repo URLs
+        # to prevent signed-by conflicts.
+        local repo_urls=$(echo "${list_content}" | grep -i '^URIs:' | sed 's/^URIs:[[:space:]]*//')
+        for url in ${repo_urls}; do
+          remove_conflicting_sources "${url}" "${list_path}"
+        done
+        local processed_content=$(inject_signed_by_deb822 "${list_content}" "${keyring_path}")
+        echo "${processed_content}" | sudo tee "${list_path}" > /dev/null
+        log "  Source list (deb822) written to ${list_path}"
+      else
+        # Traditional one-line format (.list file) - inject signed-by per line.
+        local list_path="/etc/apt/sources.list.d/${list_name}.list"
+        # Remove conflicting sources for each deb line's repo URL.
+        while IFS= read -r deb_line; do
+          if echo "${deb_line}" | grep -qE '^deb(-src)?[[:space:]]+'; then
+            local repo_url=$(extract_repo_url "${deb_line}")
+            remove_conflicting_sources "${repo_url}" "${list_path}"
+          fi
+        done <<< "${list_content}"
+        local processed_content=""
+        while IFS= read -r deb_line; do
+          if [ -n "${deb_line}" ]; then
+            processed_content="${processed_content}$(inject_signed_by "${deb_line}" "${keyring_path}")
+"
+          fi
+        done <<< "${list_content}"
+        echo "${processed_content}" | sudo tee "${list_path}" > /dev/null
+        log "  Source list written to ${list_path}"
+      fi
+
+    else
+      # Source spec is an inline deb line.
+      local list_name="${keyring_name}"
+      local list_path="/etc/apt/sources.list.d/${list_name}.list"
+      # Remove any existing source files that reference the same repo URL.
+      local repo_url=$(extract_repo_url "${source_spec}")
+      remove_conflicting_sources "${repo_url}" "${list_path}"
+      local processed_line=$(inject_signed_by "${source_spec}" "${keyring_path}")
+      echo "${processed_line}" | sudo tee "${list_path}" > /dev/null
+      log "- Inline source written to ${list_path}"
+    fi
+
+  done <<< "${apt_sources}"
+
+  log "done"
+  log_empty_line
+}
+
 function log { echo "${@}"; }
 function log_err { >&2 echo "${@}"; }
 
