@@ -104,8 +104,8 @@ for installed_package in ${installed_packages}; do
     # Pipe all package files (no folders), including symlinks, their targets, and installation control data to Tar.
     tar -cf "${cache_filepath}" -C / --verbatim-files-from --files-from <(
       { dpkg -L "${package_name}" &&
-        get_install_script_filepath "" "${package_name}" "preinst" &&
-        get_install_script_filepath "" "${package_name}" "postinst" ; } |
+        { get_install_script_filepath "/" "${package_name}" "preinst" ;
+        get_install_script_filepath "/" "${package_name}" "postinst" ; } ; } |
       while IFS= read -r f; do
         if test -f "${f}" -o -L "${f}"; then
           get_tar_relpath "${f}"
