@@ -11,9 +11,9 @@ EXECUTION-OBJ-END
 2025/03/15 22:29:14 EXECUTION-OBJ-START
 {
  "Cmd": "apt-cache showpkg libvips",
- "Stdout": "libvips42 8.9.1-2 (= )\n",
+ "Stdout": "Package: libvips\nReverse Provides:\nlibvips42 8.9.1-2 (= )\n",
  "Stderr": "",
- "CombinedOut": "libvips42 8.9.1-2 (= )\n",
+ "CombinedOut": "Package: libvips\nReverse Provides:\nlibvips42 8.9.1-2 (= )\n",
  "ExitCode": 0
 }
 EXECUTION-OBJ-END

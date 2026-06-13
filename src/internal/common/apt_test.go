@@ -8,11 +8,11 @@ import (
 	execpkg "awalsh128.com/cache-apt-pkgs-action/src/internal/exec"
 )
 
-type stubExecutor struct {
+type mockExecutor struct {
 	executions map[string]*execpkg.Execution
 }
 
-func (s stubExecutor) Exec(name string, arg ...string) *execpkg.Execution {
+func (s mockExecutor) Exec(name string, arg ...string) *execpkg.Execution {
 	cmd := name + " " + strings.Join(arg, " ")
 	execution, ok := s.executions[cmd]
 	if !ok {
@@ -21,8 +21,8 @@ func (s stubExecutor) Exec(name string, arg ...string) *execpkg.Execution {
 	return execution
 }
 
-func TestGetNonVirtualPackage_IgnoresWarningsAfterReverseProvides(t *testing.T) {
-	executor := stubExecutor{
+func TestGetNonVirtualPackage_WithWarningsInReverseProvides(t *testing.T) {
+	executor := mockExecutor{
 		executions: map[string]*execpkg.Execution{
 			"apt-cache showpkg libopenblas0-openmp": {
 				Cmd: "apt-cache showpkg libopenblas0-openmp",
