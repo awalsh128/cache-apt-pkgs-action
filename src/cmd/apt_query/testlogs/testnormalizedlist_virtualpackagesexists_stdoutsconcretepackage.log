@@ -10,7 +10,7 @@
 EXECUTION-OBJ-END
 2025/03/15 22:29:14 EXECUTION-OBJ-START
 {
- "Cmd": "bash -c apt-cache showpkg libvips | grep -A 1 \"Reverse Provides\" | tail -1",
+ "Cmd": "apt-cache showpkg libvips",
  "Stdout": "libvips42 8.9.1-2 (= )\n",
  "Stderr": "",
  "CombinedOut": "libvips42 8.9.1-2 (= )\n",
