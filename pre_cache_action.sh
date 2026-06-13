@@ -101,13 +101,20 @@ value="${packages} @ ${version} ${force_update_inc}"
 
 # Include runner image metadata in cache key when available to avoid stale
 # cache hits when GitHub rotates images.
-if [ -n "${ImageOS}" ]; then
-  value="${value} image_os:${ImageOS}"
-  log "- Runner image OS '${ImageOS}' added to value."
+image_os="$(echo "${ImageOS}" | tr -cd '[:alnum:]._-')"
+if [ -n "${image_os}" ]; then
+  value="${value} image_os:${image_os}"
+  log "- Runner image OS '${image_os}' added to value."
+elif [ -n "${ImageOS}" ]; then
+  log "- Runner image OS '${ImageOS}' ignored due to unsupported characters."
 fi
-if [ -n "${ImageVersion}" ]; then
-  value="${value} image_version:${ImageVersion}"
-  log "- Runner image version '${ImageVersion}' added to value."
+
+image_version="$(echo "${ImageVersion}" | tr -cd '[:alnum:]._-')"
+if [ -n "${image_version}" ]; then
+  value="${value} image_version:${image_version}"
+  log "- Runner image version '${image_version}' added to value."
+elif [ -n "${ImageVersion}" ]; then
+  log "- Runner image version '${ImageVersion}' ignored due to unsupported characters."
 fi
 
 # Include repositories in cache key to ensure different repos get different caches
