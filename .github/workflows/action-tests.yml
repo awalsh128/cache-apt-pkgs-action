@@ -12,6 +12,9 @@ on:
   pull_request:
     types: [opened, synchronize]
 
+permissions:
+  contents: read
+
 env:
   DEBUG: ${{ github.event.inputs.debug || false }}
   # Test for overrides in built in shell options (regression issue 98).

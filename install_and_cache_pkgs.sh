@@ -108,8 +108,8 @@ for installed_package in ${installed_packages}; do
         # Include all dpkg info files for this package (list, md5sums,
         # conffiles, triggers, preinst, postinst, prerm, postrm, etc.)
         # so dpkg recognizes the package after cache restore.
-        ls -1 /var/lib/dpkg/info/${package_name}.* 2>/dev/null &&
-        ls -1 /var/lib/dpkg/info/${package_name}:*.* 2>/dev/null ; } |
+        ls -1 /var/lib/dpkg/info/${package_name}.* 2>/dev/null ||:
+        ls -1 /var/lib/dpkg/info/${package_name}:*.* 2>/dev/null ||:; } |
       while IFS= read -r f; do
         if test -f "${f}" -o -L "${f}"; then
           get_tar_relpath "${f}"

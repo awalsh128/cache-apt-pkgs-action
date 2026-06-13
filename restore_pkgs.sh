@@ -69,7 +69,7 @@ dpkg_status_dir="${cache_dir}"
 status_files=$(ls -1 "${dpkg_status_dir}"/*.dpkg-status 2>/dev/null || true)
 if test -n "${status_files}"; then
   log "Registering restored packages with dpkg..."
-  for status_file in ${status_files}; do
+  while IFS= read -r status_file; do
     pkg_name=$(head -1 "${status_file}" | sed 's/^Package: //')
     # Skip if dpkg already knows about this package (e.g., it was pre-installed).
     if dpkg -s "${pkg_name}" > /dev/null 2>&1; then
@@ -83,6 +83,6 @@ if test -n "${status_files}"; then
     echo "" | sudo tee -a "${cache_restore_root}var/lib/dpkg/status" > /dev/null
     cat "${status_file}" | sudo tee -a "${cache_restore_root}var/lib/dpkg/status" > /dev/null
     log "- ${pkg_name} registered."
-  done
+  done <<< "${status_files}"
   log "done"
 fi
