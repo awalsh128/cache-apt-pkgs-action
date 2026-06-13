@@ -46,7 +46,7 @@ There are three kinds of version labels you can use.
 
 ### Cache scopes
 
-The cache is scoped to the packages given and the branch. The default branch cache is available to other branches.
+The cache is scoped to the packages given and the branch. The default branch cache is available to other branches. The cache key also includes runner image metadata (`ImageOS`, `ImageVersion`) when available so caches are invalidated as runner images change.
 
 ### Example workflow
 

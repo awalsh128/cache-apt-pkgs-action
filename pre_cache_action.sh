@@ -99,6 +99,17 @@ log "- CPU architecture is '${cpu_arch}'."
 
 value="${packages} @ ${version} ${force_update_inc}"
 
+# Include runner image metadata in cache key when available to avoid stale
+# cache hits when GitHub rotates images.
+if [ -n "${ImageOS}" ]; then
+  value="${value} image_os:${ImageOS}"
+  log "- Runner image OS '${ImageOS}' added to value."
+fi
+if [ -n "${ImageVersion}" ]; then
+  value="${value} image_version:${ImageVersion}"
+  log "- Runner image version '${ImageVersion}' added to value."
+fi
+
 # Include repositories in cache key to ensure different repos get different caches
 if [ -n "${add_repository}" ]; then
   value="${value} ${add_repository}"
