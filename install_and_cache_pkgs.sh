@@ -105,16 +105,11 @@ for installed_package in ${installed_packages}; do
     # and all dpkg metadata (info files) to Tar.
     tar -cf "${cache_filepath}" -C / --verbatim-files-from --files-from <(
       { dpkg -L "${package_name}" &&
-<<<<<<< HEAD
-        { get_install_script_filepath "/" "${package_name}" "preinst" ;
-        get_install_script_filepath "/" "${package_name}" "postinst" ; } ; } |
-=======
         # Include all dpkg info files for this package (list, md5sums,
         # conffiles, triggers, preinst, postinst, prerm, postrm, etc.)
         # so dpkg recognizes the package after cache restore.
         ls -1 /var/lib/dpkg/info/${package_name}.* 2>/dev/null &&
         ls -1 /var/lib/dpkg/info/${package_name}:*.* 2>/dev/null ; } |
->>>>>>> origin/pr/190
       while IFS= read -r f; do
         if test -f "${f}" -o -L "${f}"; then
           get_tar_relpath "${f}"
