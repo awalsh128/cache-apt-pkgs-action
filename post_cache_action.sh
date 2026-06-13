@@ -26,10 +26,14 @@ debug="${5}"
 test "${debug}" = "true" && set -x
 
 # Repositories to add before installing packages.
-add_repository="${6}"
-
-# List of the packages to use.
-packages="${@:7}"
+# Keep compatibility with older action versions that only passed 6 args.
+if [ "$#" -ge 7 ]; then
+  add_repository="${6}"
+  packages="${@:7}"
+else
+  add_repository=""
+  packages="${@:6}"
+fi
 
 if test "${cache_hit}" = "true"; then
   ${script_dir}/restore_pkgs.sh "${cache_dir}" "${cache_restore_root}" "${execute_install_scripts}" "${debug}"

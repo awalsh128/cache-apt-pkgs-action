@@ -25,10 +25,14 @@ execute_install_scripts="${3}"
 debug="${4}"
 
 # Repositories to add before installing packages.
-add_repository="${5}"
-
-# List of the packages to use.
-input_packages="${@:6}"
+# Keep compatibility with older action versions that only passed 5 args.
+if [ "$#" -ge 6 ]; then
+  add_repository="${5}"
+  input_packages="${@:6}"
+else
+  add_repository=""
+  input_packages="${@:5}"
+fi
 
 # Trim commas, excess spaces, and sort.
 log "Normalizing package list..."
