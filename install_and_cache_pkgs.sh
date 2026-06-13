@@ -135,7 +135,7 @@ for installed_package in ${installed_packages}; do
             done
 
             if [ -L "${symlink_path}" ] && [ ${symlink_depth} -ge ${max_symlink_depth} ]; then
-              log "    warning: max symlink depth ${max_symlink_depth} reached for ${f}. Possible symlink loop or excessive chain depth."
+              log "    warning: max symlink depth ${max_symlink_depth} reached while traversing ${f}; current link ${symlink_path}. Possible symlink loop or excessive chain depth."
             fi
           fi
         fi

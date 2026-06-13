@@ -959,7 +959,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_156_restore:
-    needs: [regression_156_install, build_binaries]
+    needs: [regression_156_install]
     runs-on: ubuntu-24.04
     name: "Restore ffmpegthumbnailer shared libraries (regression issue #156, restore phase)."
     steps:
