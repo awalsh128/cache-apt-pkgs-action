@@ -50,7 +50,7 @@ for cached_filepath in ${cached_filepaths}; do
   sudo tar -xf "${cached_filepath}" -C "${cache_restore_root}" > /dev/null
   log "  done"
 
-  # Execute install scripts if available.    
+  # Execute install scripts if available.
   if test ${execute_install_scripts} == "true"; then
     # May have to add more handling for extracting pre-install script before extracting all files.
     # Keeping it simple for now.
@@ -59,3 +59,30 @@ for cached_filepath in ${cached_filepaths}; do
   fi
 done
 log "done"
+
+log_empty_line
+
+# Register packages with dpkg so they appear as installed.
+# The tar extraction restores dpkg info files (list, md5sums, etc.) but the
+# main status database (/var/lib/dpkg/status) also needs updating.
+dpkg_status_dir="${cache_dir}"
+status_files=$(ls -1 "${dpkg_status_dir}"/*.dpkg-status 2>/dev/null || true)
+if test -n "${status_files}"; then
+  log "Registering restored packages with dpkg..."
+  for status_file in ${status_files}; do
+    pkg_name=$(head -1 "${status_file}" | sed 's/^Package: //')
+    # Skip if dpkg already knows about this package (e.g., it was pre-installed).
+    if dpkg -s "${pkg_name}" > /dev/null 2>&1; then
+      existing_status=$(dpkg -s "${pkg_name}" 2>/dev/null | grep '^Status:' | head -1)
+      if echo "${existing_status}" | grep -q 'install ok installed'; then
+        log "- ${pkg_name} already registered, skipping."
+        continue
+      fi
+    fi
+    # Append the status entry (with blank line separator) to the dpkg database.
+    echo "" | sudo tee -a "${cache_restore_root}var/lib/dpkg/status" > /dev/null
+    cat "${status_file}" | sudo tee -a "${cache_restore_root}var/lib/dpkg/status" > /dev/null
+    log "- ${pkg_name} registered."
+  done
+  log "done"
+fi
