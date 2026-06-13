@@ -106,13 +106,11 @@ for installed_package in ${installed_packages}; do
           get_tar_relpath "${f}"
           if [ -L "${f}" ]; then
             symlink_path="${f}"
-            # Guard against circular links; 40 is intentionally high for alternatives chains.
+            # Alternatives chains are typically short; keep a high ceiling to avoid loops.
             max_symlink_depth=40
-            for i in $(seq 1 ${max_symlink_depth}); do
-              if [ ! -L "${symlink_path}" ]; then
-                break
-              fi
-
+            symlink_depth=0
+            while [ -L "${symlink_path}" ] && [ ${symlink_depth} -lt ${max_symlink_depth} ]; do
+              symlink_depth=$((symlink_depth + 1))
               target="$(readlink "${symlink_path}")"
               case "${target}" in
                 /*)
@@ -135,6 +133,10 @@ for installed_package in ${installed_packages}; do
                 break
               fi
             done
+
+            if [ -L "${symlink_path}" ] && [ ${symlink_depth} -ge ${max_symlink_depth} ]; then
+              log "    warning: max symlink depth ${max_symlink_depth} reached for ${f}."
+            fi
           fi
         fi
       done
