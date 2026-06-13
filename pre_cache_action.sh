@@ -32,6 +32,10 @@ input_packages="${@:6}"
 
 # Trim commas, excess spaces, and sort.
 log "Normalizing package list..."
+
+# Ensure APT package lists are updated if stale (for nektos/act compatibility)
+update_apt_lists_if_stale
+
 packages="$(get_normalized_package_list "${input_packages}")"
 log "done"
 

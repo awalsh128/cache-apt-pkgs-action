@@ -42,12 +42,7 @@ if [ -n "${add_repository}" ]; then
 fi
 
 log "Updating APT package list..."
-if [[ -z "$(find -H /var/lib/apt/lists -maxdepth 0 -mmin -5)" ]]; then
-  sudo apt-fast update > /dev/null
-  log "done"
-else
-  log "skipped (fresh within at least 5 minutes)"
-fi
+update_apt_lists_if_stale
 
 log_empty_line
 
