@@ -53,6 +53,9 @@ func getNonVirtualPackage(executor exec.Executor, name string) (pkg *AptPackage,
 		if !inReverseProvides || strings.HasPrefix(trimmed, "W: ") || isErrLine(trimmed) {
 			continue
 		}
+		if strings.HasSuffix(trimmed, ":") {
+			break
+		}
 		splitLine := GetSplitLine(trimmed, " ", 3)
 		if len(splitLine.Words) < 2 {
 			continue
