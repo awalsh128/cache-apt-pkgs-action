@@ -106,7 +106,7 @@ for installed_package in ${installed_packages}; do
           get_tar_relpath "${f}"
           if [ -L "${f}" ]; then
             symlink_path="${f}"
-            # Guard against circular links while still supporting deep alternatives chains.
+            # Guard against circular links; 40 is intentionally high for alternatives chains.
             max_symlink_depth=40
             for i in $(seq 1 ${max_symlink_depth}); do
               if [ ! -L "${symlink_path}" ]; then
@@ -119,7 +119,12 @@ for installed_package in ${installed_packages}; do
                   target_path="${target}"
                   ;;
                 *)
-                  target_path="$(dirname "${symlink_path}")/${target}"
+                  target_dir="$(dirname "${symlink_path}")"
+                  if [ "${target_dir}" = "/" ]; then
+                    target_path="/${target}"
+                  else
+                    target_path="${target_dir}/${target}"
+                  fi
                   ;;
               esac
 
