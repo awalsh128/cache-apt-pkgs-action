@@ -33,20 +33,33 @@ func isErrLine(line string) bool {
 
 // Resolves virtual packages names to their concrete one.
 func getNonVirtualPackage(executor exec.Executor, name string) (pkg *AptPackage, err error) {
-	execution := executor.Exec("bash", "-c", fmt.Sprintf("apt-cache showpkg %s | grep -A 1 \"Reverse Provides\" | tail -1", name))
+	execution := executor.Exec("apt-cache", "showpkg", name)
 	err = execution.Error()
 	if err != nil {
 		logging.Fatal(err)
 		return pkg, err
 	}
-	if isErrLine(execution.CombinedOut) {
-		return pkg, execution.Error()
+
+	inReverseProvides := false
+	for _, line := range strings.Split(execution.CombinedOut, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		if trimmed == "Reverse Provides:" {
+			inReverseProvides = true
+			continue
+		}
+		if !inReverseProvides || strings.HasPrefix(trimmed, "W: ") || isErrLine(trimmed) {
+			continue
+		}
+		splitLine := GetSplitLine(trimmed, " ", 3)
+		if len(splitLine.Words) < 2 {
+			continue
+		}
+		return &AptPackage{Name: splitLine.Words[0], Version: splitLine.Words[1]}, nil
 	}
-	splitLine := GetSplitLine(execution.CombinedOut, " ", 3)
-	if len(splitLine.Words) < 2 {
-		return pkg, fmt.Errorf("unable to parse space delimited line's package name and version from apt-cache showpkg output below:\n%s", execution.CombinedOut)
-	}
-	return &AptPackage{Name: splitLine.Words[0], Version: splitLine.Words[1]}, nil
+	return pkg, fmt.Errorf("unable to parse reverse provides package name and version from apt-cache showpkg output below:\n%s", execution.CombinedOut)
 }
 
 func getPackage(executor exec.Executor, paragraph string) (pkg *AptPackage, err error) {
