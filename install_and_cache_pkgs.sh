@@ -106,7 +106,7 @@ for installed_package in ${installed_packages}; do
           get_tar_relpath "${f}"
           if [ -L "${f}" ]; then
             symlink_path="${f}"
-            # Alternatives chains are typically short; keep a high ceiling to avoid loops.
+            # Alternatives chains are typically only a few links; 40 is a high safety ceiling.
             max_symlink_depth=40
             symlink_depth=0
             while [ -L "${symlink_path}" ] && [ ${symlink_depth} -lt ${max_symlink_depth} ]; do
@@ -135,7 +135,7 @@ for installed_package in ${installed_packages}; do
             done
 
             if [ -L "${symlink_path}" ] && [ ${symlink_depth} -ge ${max_symlink_depth} ]; then
-              log "    warning: max symlink depth ${max_symlink_depth} reached for ${f}."
+              log "    warning: max symlink depth ${max_symlink_depth} reached for ${f}. Possible symlink loop or excessive chain depth."
             fi
           fi
         fi
