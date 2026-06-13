@@ -925,6 +925,77 @@ jobs:
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_106
           debug: ${{ env.DEBUG }}
 
+  regression_156_install:
+    needs: [build_binaries]
+    runs-on: ubuntu-24.04
+    name: "Restore ffmpegthumbnailer shared libraries (regression issue #156, install phase)."
+    steps:
+      - uses: actions/checkout@v3.1.0
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: cache-apt-pkgs-*
+          path: distribute-artifacts
+      - name: Setup distribute directory
+        shell: bash
+        run: |
+          mkdir -p distribute/X64 distribute/X86 distribute/ARM64 distribute/ARM
+          for artifact_dir in distribute-artifacts/cache-apt-pkgs-*; do
+            if [ -d "$artifact_dir" ]; then
+              arch=$(basename "$artifact_dir" | sed 's/cache-apt-pkgs-\([^-]*\)-.*/\1/')
+              echo "Copying artifacts for architecture: $arch"
+              cp -r "$artifact_dir"/* "distribute/$arch/" 2>/dev/null || true
+            fi
+          done
+          ls -la distribute/*/ || true
+      - uses: ./
+        with:
+          packages: ffmpegthumbnailer
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_156
+          execute_install_scripts: true
+          debug: ${{ env.DEBUG }}
+
+  regression_156_restore:
+    needs: [regression_156_install, build_binaries]
+    runs-on: ubuntu-24.04
+    name: "Restore ffmpegthumbnailer shared libraries (regression issue #156, restore phase)."
+    steps:
+      - uses: actions/checkout@v3.1.0
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: cache-apt-pkgs-*
+          path: distribute-artifacts
+      - name: Setup distribute directory
+        shell: bash
+        run: |
+          mkdir -p distribute/X64 distribute/X86 distribute/ARM64 distribute/ARM
+          for artifact_dir in distribute-artifacts/cache-apt-pkgs-*; do
+            if [ -d "$artifact_dir" ]; then
+              arch=$(basename "$artifact_dir" | sed 's/cache-apt-pkgs-\([^-]*\)-.*/\1/')
+              echo "Copying artifacts for architecture: $arch"
+              cp -r "$artifact_dir"/* "distribute/$arch/" 2>/dev/null || true
+            fi
+          done
+          ls -la distribute/*/ || true
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: ffmpegthumbnailer
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_156
+          execute_install_scripts: true
+          debug: ${{ env.DEBUG }}
+      - name: Verify cache hit
+        if: steps.execute.outputs.cache-hit != 'true'
+        run: |
+          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
+          exit 1
+        shell: bash
+      - name: Verify binary
+        run: ffmpegthumbnailer -h > /dev/null
+        shell: bash
+
   multi_arch_cache_key:
     needs: [build_binaries]
     runs-on: ubuntu-latest

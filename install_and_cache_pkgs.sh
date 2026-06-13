@@ -105,10 +105,26 @@ for installed_package in ${installed_packages}; do
         if test -f "${f}" -o -L "${f}"; then
           get_tar_relpath "${f}"
           if [ -L "${f}" ]; then
-            target="$(readlink -f "${f}")"
-            if [ -f "${target}" ]; then
-              get_tar_relpath "${target}"
-            fi
+            symlink_path="${f}"
+            for i in $(seq 1 40); do
+              if [ ! -L "${symlink_path}" ]; then
+                break
+              fi
+
+              target="$(readlink "${symlink_path}")"
+              if [ "${target:0:1}" = "/" ]; then
+                target_path="${target}"
+              else
+                target_path="$(dirname "${symlink_path}")/${target}"
+              fi
+
+              if [ -f "${target_path}" ] || [ -L "${target_path}" ]; then
+                get_tar_relpath "${target_path}"
+                symlink_path="${target_path}"
+              else
+                break
+              fi
+            done
           fi
         fi
       done
