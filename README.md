@@ -32,11 +32,12 @@ There are three kinds of version labels you can use.
 
 ### Inputs
 
-- `packages` - Space delimited list of packages to install.
+- `packages` - Space delimited list of packages to install. If not provided, packages will be read from `Aptfile` at the repository root if it exists and `use_aptfile` is true. Packages from both the input and `Aptfile` will be merged if both are provided.
 - `version` - Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
 - `execute_install_scripts` - Execute Debian package pre and post install script upon restore. See [Caveats / Non-file Dependencies](#non-file-dependencies) for more information.
 - `empty_packages_behavior` - Desired behavior when the given `packages` is empty. `'error'` (default), `'warn'` or `'ignore'`.
 - `add-repository` - Space delimited list of repositories to add via `apt-add-repository` before installing packages. Supports PPA (e.g., `ppa:user/repo`) and other repository formats.
+- `use_aptfile` - Whether to read packages from `Aptfile` at repository root. Set to `true` to enable Aptfile usage if `Aptfile` exists. Default is `false`.
 
 ### Outputs
 
@@ -119,6 +120,63 @@ install_from_multiple_repos:
         packages: package1 package2
         add-repository: ppa:user/repo1 ppa:user/repo2
         version: 1.0
+```
+
+### Using Aptfile
+
+You can use an `Aptfile` at your repository root to specify packages. To enable Aptfile reading, set `use_aptfile` to `true`. Comments (lines starting with `#`) and inline comments are supported.
+
+**Example Aptfile:**
+```
+# Core development tools
+cmake
+autoconf
+git
+gh
+
+# Build dependencies
+build-essential
+libssl-dev
+python3-dev
+```
+
+**Example workflow using Aptfile:**
+```yaml
+name: Build with Aptfile
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          version: v1
+          use_aptfile: true  # Enable Aptfile reading
+          # packages input can be omitted if using Aptfile only
+      - name: Build
+        run: make
+```
+
+You can also combine packages from both the input and `Aptfile`:
+```yaml
+- uses: awalsh128/cache-apt-pkgs-action@latest
+  with:
+    version: v1
+    use_aptfile: true  # Enable Aptfile reading
+    packages: protobuf-compiler sd  # Additional packages beyond Aptfile
+```
+
+### Disabling Aptfile Usage
+
+By default, Aptfile reading is disabled (`use_aptfile: false`). If you want to explicitly disable it or ensure it stays disabled, you can set `use_aptfile` to `false`:
+
+```yaml
+- uses: awalsh128/cache-apt-pkgs-action@latest
+  with:
+    version: v1
+    packages: cmake build-essential
+    use_aptfile: false  # Ignore Aptfile even if it exists
 ```
 
 ## Caveats

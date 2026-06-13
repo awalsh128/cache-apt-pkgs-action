@@ -66,5 +66,5 @@ func TestNormalizedList_NoPackagesGiven_StderrsArgMismatch(t *testing.T) {
 
 func TestNormalizedList_VirtualPackagesExists_StdoutsConcretePackage(t *testing.T) {
 	result := cmdtesting.New(t, createReplayLogs).Run("normalized-list", "libvips")
-	result.ExpectSuccessfulOut("libvips42=8.9.1-2")
+	result.ExpectSuccessfulOut("libvips42t64=8.16.0-2build1")
 }

@@ -1,19 +1,15 @@
-2025/03/15 22:29:14 Debug log created at /home/awalsh128/cache-apt-pkgs-action/src/cmd/apt_query/apt_query.log
-2025/03/15 22:29:14 EXECUTION-OBJ-START
+2025/11/03 18:58:07 Debug log created at /Users/mac/Documents/src/cache-apt-pkgs-action/src/cmd/apt_query/apt_query.log
+2025/11/03 18:58:07 EXECUTION-OBJ-START
 {
  "Cmd": "apt-cache --quiet=0 --no-all-versions show libvips",
- "Stdout": "",
- "Stderr": "N: Can't select candidate version from package libvips as it has no candidate\nN: Can't select versions from package 'libvips' as it is purely virtual\nN: No packages found\n",
  "CombinedOut": "N: Can't select candidate version from package libvips as it has no candidate\nN: Can't select versions from package 'libvips' as it is purely virtual\nN: No packages found\n",
  "ExitCode": 0
 }
 EXECUTION-OBJ-END
-2025/03/15 22:29:14 EXECUTION-OBJ-START
+2025/11/03 18:58:07 EXECUTION-OBJ-START
 {
  "Cmd": "bash -c apt-cache showpkg libvips | grep -A 1 \"Reverse Provides\" | tail -1",
- "Stdout": "libvips42 8.9.1-2 (= )\n",
- "Stderr": "",
- "CombinedOut": "libvips42 8.9.1-2 (= )\n",
+ "CombinedOut": "libvips42t64 8.16.0-2build1 (= )\n",
  "ExitCode": 0
 }
 EXECUTION-OBJ-END

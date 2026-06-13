@@ -10,7 +10,7 @@ source "${script_dir}/lib.sh"
 # Setup first before other operations.
 debug="${4}"
 validate_bool "${debug}" debug 1
-test ${debug} == "true" && set -x
+test "${debug}" == "true" && set -x
 
 # Directory that holds the cached packages.
 cache_dir="${1}"
@@ -27,40 +27,107 @@ debug="${4}"
 # Repositories to add before installing packages.
 add_repository="${5}"
 
-# List of the packages to use.
-input_packages="${@:6}"
+# Whether to use Aptfile
+use_aptfile="${6}"
+validate_bool "${use_aptfile}" use_aptfile 5
 
-# Trim commas, excess spaces, and sort.
-log "Normalizing package list..."
-packages="$(get_normalized_package_list "${input_packages}")"
-log "done"
+# List of the packages to use.
+input_packages="${*:7}"
+
+# Check for Aptfile at repository root and merge with input packages
+aptfile_path="${GITHUB_WORKSPACE:-.}/Aptfile"
+aptfile_packages=""
+if test "${use_aptfile}" = "true"; then
+  if test -n "${GITHUB_WORKSPACE}" && test -f "${aptfile_path}"; then
+    log "Found Aptfile at ${aptfile_path}, parsing packages..."
+    aptfile_packages="$(parse_aptfile "${aptfile_path}")"
+    if test -n "${aptfile_packages}"; then
+      log "Parsed $(echo "${aptfile_packages}" | wc -w) package(s) from Aptfile"
+    else
+      log "Aptfile is empty or contains only comments"
+    fi
+  elif test -z "${GITHUB_WORKSPACE}"; then
+    log "GITHUB_WORKSPACE not set, skipping Aptfile check"
+  else
+    log "No Aptfile found at ${aptfile_path}"
+  fi
+else
+  log "Aptfile usage is disabled (use_aptfile=false)"
+fi
+
+# Merge input packages with Aptfile packages
+if test -n "${input_packages}" && test -n "${aptfile_packages}"; then
+  combined_packages="${input_packages} ${aptfile_packages}"
+  log "Merging packages from input and Aptfile..."
+elif test -n "${aptfile_packages}"; then
+  combined_packages="${aptfile_packages}"
+  log "Using packages from Aptfile only..."
+elif test -n "${input_packages}"; then
+  combined_packages="${input_packages}"
+  log "Using packages from input only..."
+else
+  combined_packages=""
+fi
+
+# Deduplicate packages after combining
+if test -n "${combined_packages}"; then
+  combined_packages="$(deduplicate_packages "${combined_packages}")"
+  log "Deduplicated packages: '${combined_packages}'"
+fi
 
 # Create cache directory so artifacts can be saved.
-mkdir -p ${cache_dir}
+mkdir -p "${cache_dir}"
 
-log "Validating action arguments (version='${version}', packages='${packages}')...";
+log "Validating action arguments (version='${version}', packages='${combined_packages}')...";
 if grep -q " " <<< "${version}"; then
   log "aborted" 
   log "Version value '${version}' cannot contain spaces." >&2
   exit 2
 fi
 
-# Is length of string zero?
-if test -z "${packages}"; then
+# Check if packages are empty before calling get_normalized_package_list
+# (which would error if called with empty input)
+if test -z "${combined_packages}"; then
   case "$EMPTY_PACKAGES_BEHAVIOR" in
     ignore)
       exit 0
       ;;
     warn)
-      echo "::warning::Packages argument is empty."
+      if test "${use_aptfile}" = "true"; then
+        echo "::warning::Packages argument is empty. Please provide packages via the 'packages' input or create an Aptfile at the repository root."
+      else
+        echo "::warning::Packages argument is empty. Please provide packages via the 'packages' input."
+      fi
       exit 0
       ;;
     *)
       log "aborted"
-      log "Packages argument is empty." >&2
+      if test "${use_aptfile}" = "true"; then
+        log "Packages argument cannot be empty. Please provide packages via the 'packages' input or create an Aptfile at the repository root." >&2
+      else
+        log "Packages argument cannot be empty. Please provide packages via the 'packages' input." >&2
+      fi
       exit 3
       ;;
   esac
+fi
+
+# Trim commas, excess spaces, and sort.
+log "Normalizing package list..."
+# Ensure apt database is updated before calling apt_query (which uses apt-cache)
+if [[ -z "$(find -H /var/lib/apt/lists -maxdepth 0 -mmin -5 2>/dev/null)" ]]; then
+  log "Updating APT package list for normalization..."
+  sudo apt-get update -qq > /dev/null 2>&1
+  log "done"
+fi
+packages="$(get_normalized_package_list "${combined_packages}")"
+log "normalized packages: '${packages}'"
+
+# Check if normalization failed (empty result means failure)
+if [ -z "${packages}" ]; then
+  log "aborted"
+  log "Failed to normalize package list. The apt_query binary may have failed or the packages may be invalid." >&2
+  exit 4
 fi
 
 validate_bool "${execute_install_scripts}" execute_install_scripts 4
@@ -77,10 +144,10 @@ if [ -n "${add_repository}" ]; then
       exit 6
     fi
   done
-  log "done"
+  log "done validating repository parameter"
 fi
 
-log "done"
+log "done validating action arguments"
 
 log_empty_line
 
@@ -119,5 +186,14 @@ log "- Value hashed as '${key}'."
 log "done"
 
 key_filepath="${cache_dir}/cache_key.md5"
-echo ${key} > ${key_filepath}
+echo "${key}" > "${key_filepath}"
 log "Hash value written to ${key_filepath}"
+
+# Save normalized packages to file so post_cache_action.sh can use them
+packages_filepath="${cache_dir}/packages.txt"
+echo "${packages}" > "${packages_filepath}"
+if test ! -f "${packages_filepath}"; then
+  log "Failed to write packages.txt" >&2
+  exit 4
+fi
+log "Normalized packages saved to ${packages_filepath}"
