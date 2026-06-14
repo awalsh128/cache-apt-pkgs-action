@@ -1,0 +1,16 @@
+name: Update latest tag
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  update_latest_tag:
+    runs-on: ubuntu-latest
+    name: Move latest tag
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: EndBug/latest-tag@latest
