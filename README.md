@@ -29,6 +29,8 @@ There are two kinds of version labels you can use.
   - `@staging` - Most recent automated tested code and can sometimes contain experimental features. Is pulled from dev stable code.
   - `@dev` - Very unstable and contains experimental features. Automated testing may not show breaks since CI is also updated based on code in dev.
 
+Please note that the `latest` symbol has been deprecated and will no longer be updated. Actions should be pinned to a well known version instead.
+
 ### Inputs
 
 - `packages` - Space delimited list of packages to install.
