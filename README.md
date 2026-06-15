@@ -21,9 +21,8 @@ Create a workflow `.yml` file in your repositories `.github/workflows` directory
 
 ### Versions
 
-There are three kinds of version labels you can use.
+There are two kinds of version labels you can use.
 
-- `@latest` - This will give you the latest release.
 - `@v#` - Major only will give you the latest release for that major version only (e.g. `v1`).
 - Branch
   - `@master` - Most recent manual and automated tested code. Possibly unstable since it is pre-release.
@@ -61,7 +60,7 @@ jobs:
     name: Build Doxygen documentation and deploy
     steps:
       - uses: actions/checkout@v4
-      - uses: awalsh128/cache-apt-pkgs-action@latest
+      - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
           version: 1.0
@@ -85,7 +84,7 @@ install_doxygen_deps:
   runs-on: ubuntu-latest
   steps:
     - uses: actions/checkout@v4
-    - uses: awalsh128/cache-apt-pkgs-action@latest
+    - uses: awalsh128/cache-apt-pkgs-action@v1
       with:
         packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
         version: 1.0
@@ -100,7 +99,7 @@ install_from_ppa:
   runs-on: ubuntu-latest
   steps:
     - uses: actions/checkout@v4
-    - uses: awalsh128/cache-apt-pkgs-action@latest
+    - uses: awalsh128/cache-apt-pkgs-action@v1
       with:
         packages: chromium-browser
         add-repository: ppa:canonical-chromium-builds/stage
@@ -114,7 +113,7 @@ install_from_multiple_repos:
   runs-on: ubuntu-latest
   steps:
     - uses: actions/checkout@v4
-    - uses: awalsh128/cache-apt-pkgs-action@latest
+    - uses: awalsh128/cache-apt-pkgs-action@v1
       with:
         packages: package1 package2
         add-repository: ppa:user/repo1 ppa:user/repo2
@@ -133,7 +132,7 @@ This action is based on the principle that most packages can be cached as a file
 The `execute_install_scripts` argument can be used to attempt to execute the install scripts but they are no guaranteed to resolve the issue.
 
 ```yaml
-- uses: awalsh128/cache-apt-pkgs-action@latest
+- uses: awalsh128/cache-apt-pkgs-action@v1
   with:
     packages: mypackage
     version: 1.0
