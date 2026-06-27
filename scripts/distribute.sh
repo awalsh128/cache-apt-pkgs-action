@@ -98,7 +98,9 @@ case "${COMMAND}" in
     CHECKSUM_FILE="${DIST_DIR}/checksums.txt"
 
     echo "Generating checksums for ${DIST_DIR}..."
-    (cd "${DIST_DIR}" && sha256sum -- * > checksums.txt)
+    # Generate checksums for all files except the checksums file itself.
+    (cd "${DIST_DIR}" && find . -maxdepth 1 -type f ! -name "checksums.txt" \
+      -exec sha256sum {} + | sed 's|\./||' | sort > checksums.txt)
     echo "Checksums written to ${CHECKSUM_FILE}"
     cat "${CHECKSUM_FILE}"
     ;;
@@ -140,14 +142,17 @@ case "${COMMAND}" in
   ###############################################################################
   reorganize-artifacts)
     echo "Reorganizing artifacts..."
+    # Use nullglob so the loop does not run if no directories match.
+    shopt -s nullglob
     for artifact_dir in distribute-artifacts/cache-apt-pkgs-*/; do
-      if [[ ! -d "${artifact_dir}" ]]; then
+      dir_name="$(basename "${artifact_dir}")"
+      # Extract arch from the format "cache-apt-pkgs-<ARCH>-<8-char-commit-sha>".
+      # The commit SHA is exactly 8 hex characters at the end.
+      arch_upper="$(echo "${dir_name}" | sed 's/^cache-apt-pkgs-//; s/-[0-9a-f]\{8\}$//')"
+      if [[ -z "${arch_upper}" ]]; then
+        echo "Warning: Could not extract architecture from ${dir_name}, skipping" >&2
         continue
       fi
-
-      dir_name="$(basename "${artifact_dir}")"
-      # Extract arch: strip prefix "cache-apt-pkgs-" and trailing "-<commit_sha>"
-      arch_upper="$(echo "${dir_name}" | sed 's/^cache-apt-pkgs-//; s/-[^-]*$//')"
       arch_lower="$(echo "${arch_upper}" | tr '[:upper:]' '[:lower:]')"
       dest_dir="distribute/${arch_lower}"
 
@@ -155,6 +160,7 @@ case "${COMMAND}" in
       cp -r "${artifact_dir}"* "${dest_dir}/"
       echo "Reorganized ${artifact_dir} -> ${dest_dir}"
     done
+    shopt -u nullglob
     echo "Artifact reorganization complete"
     ;;
 
