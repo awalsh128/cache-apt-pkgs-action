@@ -6,6 +6,12 @@
 
 This action allows caching of Advanced Package Tool (APT) package dependencies to improve workflow execution time instead of installing the packages on every run.
 
+> [!NOTE]
+> The open source projects that I maintain are a labor of love. If you find this useful and want to support open source, **please consider donating and [Buy Me a Coffe](http://buymeacoffee.com/awalsh128)**.
+
+> [!NOTE]
+> Version 2 of the action is now available! See [Version 2 FAQ](V2_FAQ.MD) for more information.
+
 > [!IMPORTANT]
 > Looking for co-maintainers to help review changes, and investigate issues. I haven't had as much time to stay on top of this action as I would like to and want to make sure it is still responsive and reliable for the community. If you are interested, please reach out.
 
@@ -43,6 +49,58 @@ There are three kinds of version labels you can use.
 - `package-version-list` - The main requested packages and versions that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. \<package1>=<version1\>,\<package2>=\<version2>,...).
 - `all-package-version-list` - All the pulled in packages and versions, including dependencies, that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. \<package1>=<version1\>,\<package2>=\<version2>,...).
 
+### Security Compliance
+
+This action runs as a JavaScript GitHub Action on the `node20` runtime and does not require consumers to run `npm install` in their workflow in order to use it. The implementation dependency surface is limited to the action runtime packages declared in `package.json`: `@actions/cache`, `@actions/core`, `tar`, `winston`, and `ts-apt`.
+
+For workflows with stricter compliance requirements, the main security characteristics are:
+
+- `packages` should be treated as an allowlisted input in your workflow. Prefer explicit package names and versions where reproducibility matters.
+- `version` can be used as a cache namespace so you can intentionally rotate caches when package policy or runner baselines change.
+- `empty_packages_behavior` can be left at the default `error` to fail closed when an expected package list is missing.
+- `execute_install_scripts` is disabled by default. Enable it only when required, because Debian maintainer scripts execute arbitrary package-provided shell logic during restore.
+- `debug` is disabled by default. Enable it only for investigation and review logs before sharing them outside your organization.
+
+#### Features
+
+Security-relevant action features:
+
+- Package inputs are normalized before cache lookup, which reduces accidental cache divergence from ordering, commas, backslashes, or duplicate whitespace in the package list.
+- Unpinned package names are resolved to concrete package versions before the cache key is generated, which improves traceability of what was actually cached for a run.
+- Cache keys are derived from the normalized package set, the user-provided `version`, and the runner architecture, which helps isolate caches across package changes and incompatible platforms.
+- The action rejects invalid boolean inputs and rejects `version` values containing spaces, reducing ambiguous workflow configuration.
+- When creating archives, the action records installed package manifests and only archives existing files and symlinks from installed packages, plus maintainer scripts when present.
+- The `package-version-list` and `all-package-version-list` outputs can be captured by downstream workflow steps for audit logs, attestation inputs, or compliance reporting.
+
+#### Usage Recommendations
+
+For GitHub Actions workflow hardening, prefer the following controls around this action:
+
+- Pin this action to a major version you trust, or to a full commit SHA for stricter supply chain control.
+- Use the minimum required workflow `permissions` instead of broad defaults.
+- Run on GitHub-hosted or otherwise trusted runners with controlled APT sources.
+- Limit who can modify workflow files and package lists through branch protection and pull request review.
+- Review whether cached APT contents are acceptable for your repository's cache retention policy and data handling requirements.
+
+Example hardened usage:
+
+```yaml
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: awalsh128/cache-apt-pkgs-action@v2
+        with:
+          packages: curl=8.5.0-2ubuntu10.6 jq=1.7.1-3build1
+          version: ubuntu-24.04-v1
+          empty_packages_behavior: error
+          execute_install_scripts: false
+```
+
 ### Cache scopes
 
 The cache is scoped to the packages given and the branch. The default branch cache is available to other branches.
@@ -78,7 +136,6 @@ jobs:
 ```
 
 ```yaml
-
 ---
 install_doxygen_deps:
   runs-on: ubuntu-latest
