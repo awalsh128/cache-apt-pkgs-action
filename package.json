@@ -1,38 +1,38 @@
 {
   "name": "cache-apt-pkgs-action",
   "version": "2.0.0",
-  "private": true,
   "description": "GitHub Action to install and cache APT packages",
   "author": "Andrew Walsh",
   "license": "Apache-2.0",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "scripts": {
-    "prepare:ts-apt": "cd ../ts-apt && npx tsc -p tsconfig.build.json",
-    "postinstall": "npm run prepare:ts-apt",
-    "prelint": "npm run prepare:ts-apt",
-    "pretypecheck": "npm run prepare:ts-apt",
-    "pretest": "npm run prepare:ts-apt",
-    "prebuild": "npm run prepare:ts-apt",
     "build": "tsc -p tsconfig.build.json",
     "clean": "rm -rf dist coverage",
     "lint": "eslint src test --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "typecoverage": "type-coverage --at-least 95",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "docs:api": "typedoc --entryPointStrategy expand --entryPoints src --out docs/api",
+    "release:preflight": "node ./dev_scripts/release-preflight.mjs"
   },
   "dependencies": {
     "@actions/cache": "^6.1.0",
     "@actions/core": "^1.11.1",
     "tar": "^7.4.3",
-    "ts-apt": "file:../ts-apt",
+    "ts-apt": "^0.1.0",
     "winston": "^3.19.0"
   },
   "devDependencies": {
-    "@types/node": "^22.15.30",
+    "@types/node": "^22.20.0",
     "@typescript-eslint/parser": "^8.46.3",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.31.0",
+    "type-coverage": "^2.29.7",
+    "typedoc": "^0.28.19",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   }

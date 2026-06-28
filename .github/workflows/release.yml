@@ -22,12 +22,11 @@ jobs:
       RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}
     steps:
       - name: Checkout repository
-        uses: 'actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0' # v7.0.0
+        uses: "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0" # v7.0.0
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
 
-      # Preflight checks (validate tag format, version consistency, etc.)
       - name: Release preflight (tag/version)
         run: npm run release:preflight
 
@@ -42,7 +41,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout repository
-        uses: 'actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0' # v7.0.0
+        uses: "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0" # v7.0.0
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
@@ -68,19 +67,19 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub release
-        uses: 'softprops/action-gh-release@2bb465e97f322d3cb2a965294d483e0d26a67aa9' # v3.0.1
+        uses: "softprops/action-gh-release@2bb465e97f322d3cb2a965294d483e0d26a67aa9" # v3.0.1
         with:
           generate_release_notes: true
           tag_name: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}
 
       - name: Setup Pages
-        uses: 'actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d' # v6.0.0
+        uses: "actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d" # v6.0.0
 
       - name: Upload Pages artifact
-        uses: 'actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9' # v5.0.0
+        uses: "actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9" # v5.0.0
         with:
           path: docs/api
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: 'actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128' # v5.0.0
+        uses: "actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128" # v5.0.0

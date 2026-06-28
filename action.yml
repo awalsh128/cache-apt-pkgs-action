@@ -42,5 +42,5 @@ outputs:
     description: "All the pulled in packages and versions, including dependencies, that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. <package>:<version,<package>:<version>)."
 
 runs:
-  using: "node20"
+  using: "node24"
   main: "dist/index.js"

@@ -51,7 +51,7 @@ There are three kinds of version labels you can use.
 
 ### Security Compliance
 
-This action runs as a JavaScript GitHub Action on the `node20` runtime and does not require consumers to run `npm install` in their workflow in order to use it. The implementation dependency surface is limited to the action runtime packages declared in `package.json`: `@actions/cache`, `@actions/core`, `tar`, `winston`, and `ts-apt`.
+This action runs as a JavaScript GitHub Action on the `node24` runtime and does not require consumers to run `npm install` in their workflow in order to use it. The implementation dependency surface is limited to the action runtime packages declared in `package.json`: `@actions/cache`, `@actions/core`, `tar`, `winston`, and `ts-apt`.
 
 For workflows with stricter compliance requirements, the main security characteristics are:
 

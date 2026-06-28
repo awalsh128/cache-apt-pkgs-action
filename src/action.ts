@@ -1,23 +1,27 @@
-import cache from "@actions/cache";
+import * as cache from "@actions/cache";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
   createPackageManager,
-  type AptPackageManager,
-  type PackageManager,
   type CommandRunner,
   DefaultCommandRunner,
-} from "../../ts-apt/dist/index.js";
+  type PackageManager,
+} from "../node_modules/ts-apt/dist/index.js";
+import { type PackageName } from "../node_modules/ts-apt/dist/types.js";
 import { isAptListsFresh } from "./io.js";
-import { readManifest, writeManifest } from "./manifest.js";
+import { readManifestAsCsv, writeManifest } from "./manifest.js";
 import * as tar from "tar";
 import winston from "winston";
 
 type TarModule = typeof import("tar");
 
 type EmptyPackageBehavior = "error" | "warn" | "ignore";
+
+const FORCE_UPDATE_INCREMENT = "4";
+const CACHE_DIRNAME = "cache-apt-pkgs";
+const CACHE_PREFIX = "cache-apt-pkgs_";
 
 export interface ActionInputs {
   readonly packages: string;
@@ -33,25 +37,24 @@ export interface ActionOutputs {
   readonly allPackageVersionList: string;
 }
 
-export class ActionPackageName implements Comparable<ActionPackageName> {
+export class ActionPackageName implements PackageName {
   constructor(
     readonly name: string,
     readonly version?: string,
+    readonly distro?: string,
   ) {}
 
-  serialize() {
-    if (this.version) {
-      return this.name + "=" + this.version;
-    }
-    return this.name;
+  serialize(): string {
+    return this.version ? `${this.name}=${this.version}` : this.name;
   }
 }
 
-export function deserializePackageName(text: string): ActionPackageName | null {
-  const [name, version] = text.split("=");
+function toPackageName(packageSpecifier: string): ActionPackageName {
+  const [name, version] = packageSpecifier.split("=");
   if (!name) {
-    return null;
+    throw new Error("Package name cannot be empty.");
   }
+
   return new ActionPackageName(name, version);
 }
 
@@ -68,9 +71,7 @@ export function parseBoolean(value: string, fieldName: string): boolean {
   );
 }
 
-export function normalizeInputPackages(
-  inputPackages: string,
-): ActionPackageName[] {
+export function normalizeInputPackages(inputPackages: string): string[] {
   return inputPackages
     .replace(/[,\\]/g, " ")
     .replace(/\s+/g, " ")
@@ -78,9 +79,7 @@ export function normalizeInputPackages(
     .split(" ")
     .map((part) => part.trim())
     .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b))
-    .map((part) => deserializePackageName(part))
-    .filter((pkg): pkg is ActionPackageName => pkg !== null);
+    .sort((a, b) => a.localeCompare(b));
 }
 
 export class ActionRunner {
@@ -102,7 +101,7 @@ export class ActionRunner {
     return parseBoolean(value, fieldName);
   }
 
-  normalizeInputPackages(inputPackages: string): ActionPackageName[] {
+  normalizeInputPackages(inputPackages: string): string[] {
     return normalizeInputPackages(inputPackages);
   }
 
@@ -110,27 +109,31 @@ export class ActionRunner {
     packageManager: PackageManager,
     packageName: string,
   ): Promise<string> {
-    const packageInfo = await packageManager.getPackageInfo([packageName]);
+    const packageInfo = await packageManager.getPackageInfo([
+      toPackageName(packageName),
+    ]);
     const version = packageInfo[0]?.version;
     if (!version) {
       throw new Error(
         `Unable to resolve package version for '${packageName}'.`,
       );
     }
+
     return version;
   }
 
   async normalizePackagesWithVersions(
     packageManager: PackageManager,
     inputPackages: string,
-  ): Promise<ActionPackageName[]> {
+  ): Promise<string[]> {
     const raw = this.normalizeInputPackages(inputPackages);
     const packages = await Promise.all(
       raw.map(async (pkg) => {
-        if (pkg.version) {
-          return pkg.serialize();
+        if (pkg.includes("=")) {
+          return pkg;
         }
-        return `${pkg.name}=${await this.resolvePackageVersion(packageManager, pkg.name)}`;
+
+        return `${pkg}=${await this.resolvePackageVersion(packageManager, pkg)}`;
       }),
     );
 
@@ -165,9 +168,7 @@ export class ActionRunner {
     normalizedPackages: string[],
     version: string,
   ): Promise<string> {
-    const architecture = await (
-      await this.commandRunner.run("arch")
-    ).stdout.trim();
+    const architecture = (await this.commandRunner.run("arch")).stdout.trim();
     let value = `${normalizedPackages.join(" ")} @ ${version} ${FORCE_UPDATE_INCREMENT}`;
 
     if (architecture !== "x86_64") {
@@ -209,7 +210,9 @@ export class ActionRunner {
     packageManager: PackageManager,
     packageName: string,
   ): Promise<string[]> {
-    const files = (await packageManager.listInstalledFiles(packageName))
+    const files = (
+      await packageManager.listInstalledFiles(toPackageName(packageName))
+    )
       .filter((filePath) => {
         if (!fs.existsSync(filePath)) {
           return false;
@@ -251,10 +254,11 @@ export class ActionRunner {
     packageManager: PackageManager,
   ): Promise<void> {
     await this.updateAptLists(packageManager);
-
     writeManifest(path.join(cacheDir, "manifest_main.log"), packages);
 
-    const installedPackages = await packageManager.install(packages);
+    const installedPackages = await packageManager.install(
+      packages.map(toPackageName),
+    );
 
     const manifestAll: string[] = [];
     for (const pkg of installedPackages) {
@@ -394,10 +398,10 @@ export class ActionRunner {
 
     return {
       cacheHit,
-      packageVersionList: readManifest(
+      packageVersionList: readManifestAsCsv(
         path.join(cacheDir, "manifest_main.log"),
       ),
-      allPackageVersionList: readManifest(
+      allPackageVersionList: readManifestAsCsv(
         path.join(cacheDir, "manifest_all.log"),
       ),
     };
@@ -408,13 +412,7 @@ export async function runAction(
   inputs: ActionInputs,
   logger: winston.Logger,
 ): Promise<ActionOutputs> {
-  const packageManager = (await createPackageManager(
-    true,
-    logger,
-    logger,
-  )) as AptPackageManager;
   const commandRunner = new DefaultCommandRunner(logger, logger);
   const actionRunner = new ActionRunner(commandRunner, tar, logger);
-
   return await actionRunner.runAction(inputs);
 }

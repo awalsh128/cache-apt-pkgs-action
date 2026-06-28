@@ -10,6 +10,14 @@ runs:
         node-version: 24
         cache: "npm"
 
+    - name: Verify ts-apt dependency is not locally switched
+      shell: bash
+      run: |
+        if bash ./dev_scripts/switch_tsapt_local.sh --is_local_switched; then
+          echo "Error: ts-apt dependency is switched to a local workspace path. Switch it back before pushing or opening a pull request."
+          exit 1
+        fi
+
     - name: Install dependencies
       shell: bash
       run: npm ci

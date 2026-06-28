@@ -1,15 +1,21 @@
-import * as fs from "fs";
-import * as path from "path";
-import * as crypto from "crypto";
-import * as os from "os";
-import { type CommandRunner } from "../../ts-apt/dist/index.js";
+import * as crypto from "node:crypto";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { type CommandRunner } from "../node_modules/ts-apt/dist/index.js";
+
+const FORCE_UPDATE_INCREMENT = "4";
+const CACHE_DIRNAME = "cache-apt-pkgs";
+const CACHE_PREFIX = "cache-apt-pkgs_";
 
 export function isAptListsFresh(): boolean {
   const aptListsPath = "/var/lib/apt/lists";
   const maxDepth = 5;
 
   function search(currentPath: string, currentDepth: number): boolean {
-    if (currentDepth > maxDepth) return false;
+    if (currentDepth > maxDepth) {
+      return false;
+    }
 
     try {
       const stats = fs.statSync(currentPath);
@@ -24,9 +30,10 @@ export function isAptListsFresh(): boolean {
       } else {
         return true;
       }
-    } catch (error) {
-      // Ignore permission errors or inaccessible paths
+    } catch {
+      // Ignore permission errors or inaccessible paths.
     }
+
     return false;
   }
 
@@ -44,22 +51,13 @@ export class Package {
   }
 }
 
-const FORCE_UPDATE_INCREMENT = "4";
-const CACHE_DIRNAME = "cache-apt-pkgs";
-const CACHE_PREFIX = "cache-apt-pkgs_";
-
 export class CacheKey {
-  readonly version: string,
+  constructor(
+    readonly version: string,
     readonly forceUpdateIncrement: string,
     readonly arch: string,
-    readonly normalizedPackages: PackageName[],
-
-  constructor(version: string, forceUpdateIncrement: string, arch: string, normalizedPackages: PackageName[]) {
-    this.version = version;
-    this.forceUpdateIncrement = forceUpdateIncrement;
-    this.arch  = arch;
-    this.normalizedPackages = normalizedPackages;
-  }
+    readonly normalizedPackages: string[],
+  ) {}
 
   serialize(): string {
     return `${this.version}|${this.forceUpdateIncrement}|${this.arch}|${this.normalizedPackages.join(",")}`;
@@ -71,13 +69,13 @@ export function deserializeCacheKey(serialized: string): CacheKey {
   if (parts.length !== 4) {
     throw new Error(`Invalid serialized cache key: ${serialized}`);
   }
+
   const [version, forceUpdateIncrement, arch, normalizedPackagesStr] = parts;
-  const normalizedPackages = normalizedPackagesStr!.split(",");
   return new CacheKey(
     version!,
     forceUpdateIncrement!,
     arch!,
-    normalizedPackages,
+    normalizedPackagesStr!.split(","),
   );
 }
 
@@ -90,10 +88,12 @@ export class Cache {
     this.commandRunner = commandRunner;
   }
 
+  get path(): string {
+    return this.cachePath;
+  }
+
   async getKey(normalizedPackages: string[], version: string): Promise<string> {
-    const architecture = await (
-      await this.commandRunner.run("arch")
-    ).stdout.trim();
+    const architecture = (await this.commandRunner.run("arch")).stdout.trim();
     let value = `${normalizedPackages.join(" ")} @ ${version} ${FORCE_UPDATE_INCREMENT}`;
 
     if (architecture !== "x86_64") {
