@@ -40,13 +40,15 @@ log "done"
 log_empty_line
 
 # Only search for archived results. Manifest and cache key also live here.
-cached_filepaths=$(ls -1 "${cache_dir}"/*.tar 2>/dev/null | sort)
-cached_filecount=$(echo ${cached_filepaths} | wc -w)
+manifest_all="${cache_dir}/manifest_all.log"
+mapfile -t packages <"${manifest_all}"
 
+cached_filecount="${#packages[@]}"
 log "Restoring ${cached_filecount} packages from cache..."
-for cached_filepath in ${cached_filepaths}; do
 
-  log "- $(basename "${cached_filepath}") restoring..."
+for package in "${packages[@]}"; do
+  cached_filepath="${cache_dir}/${package}.tar"
+  log "- ${package} restoring..."
   sudo tar -xf "${cached_filepath}" -C "${cache_restore_root}" > /dev/null
   log "  done"
 

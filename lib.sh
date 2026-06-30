@@ -148,7 +148,9 @@ function get_tar_relpath {
 function update_apt_lists_if_stale {
   # Only check for stale package lists when running in nektos/act
   # GitHub Actions runners have fresh package lists, so skip this overhead
-  if [ "${ACT}" = "true" ]; then
+  # ACT comes from the environment
+  # shellcheck disable=SC2154
+  if [[ "${ACT}" = "true" ]]; then
     if [[ -z "$(find -H /var/lib/apt/lists -maxdepth 0 -mmin -5 2>/dev/null)" ]]; then
       log "APT package lists are stale, updating..."
       if command -v apt-fast > /dev/null 2>&1; then
@@ -200,7 +202,7 @@ function write_manifest {
   else
     log "Writing ${1} packages manifest to ${3}..."
     # 0:-1 to remove trailing comma, delimit by newline and sort.
-    echo "${2:0:-1}" | tr ',' '\n' | sort > ${3}
+    echo "${2:0:-1}" | tr ',' '\n' > "${3}"
     log "done"
   fi
 }
