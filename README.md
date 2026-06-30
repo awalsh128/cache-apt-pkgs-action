@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build Doxygen documentation and deploy
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
@@ -85,7 +85,7 @@ jobs:
 install_doxygen_deps:
   runs-on: ubuntu-latest
   steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - uses: awalsh128/cache-apt-pkgs-action@v1
       with:
         packages: dia doxygen doxygen-doc doxygen-gui doxygen-latex graphviz mscgen
@@ -100,7 +100,7 @@ This example shows how to install packages from a third-party PPA:
 install_from_ppa:
   runs-on: ubuntu-latest
   steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - uses: awalsh128/cache-apt-pkgs-action@v1
       with:
         packages: chromium-browser
@@ -114,7 +114,7 @@ You can also add multiple repositories:
 install_from_multiple_repos:
   runs-on: ubuntu-latest
   steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - uses: awalsh128/cache-apt-pkgs-action@v1
       with:
         packages: package1 package2

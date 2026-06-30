@@ -1,23 +1,23 @@
-name: 'Cache APT Packages'
-description: 'Install APT based packages and cache them for future runs.'
+name: "Cache APT Packages"
+description: "Install APT based packages and cache them for future runs."
 author: awalsh128
 branding:
-  icon: 'hard-drive'  
-  color: 'green'
+  icon: "hard-drive"
+  color: "green"
 
 inputs:
   packages:
-    description: 'Space delimited list of packages to install. Version can be specified optionally using APT command syntax of <name>=<version> (e.g. xdot=1.2-2).'
+    description: "Space delimited list of packages to install. Version can be specified optionally using APT command syntax of <name>=<version> (e.g. xdot=1.2-2)."
     required: true
-    default: ''
+    default: ""
   version:
-    description: 'Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.'
+    description: "Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed."
     required: false
-    default: '' 
+    default: ""
   execute_install_scripts:
-    description: 'Execute Debian package pre and post install script upon restore. See README.md caveats for more information.'
+    description: "Execute Debian package pre and post install script upon restore. See README.md caveats for more information."
     required: false
-    default: 'false'
+    default: "false"
   empty_packages_behavior:
     description: >
       Desired behavior when the provided package list is empty.
@@ -27,30 +27,30 @@ inputs:
         warn: Output a warning without failing the action
         ignore: Proceed silently without warnings or errors
     required: false
-    default: 'error'
+    default: "error"
   refresh:
-    description: 'OBSOLETE: Refresh is not used by the action, use version instead.'
-    deprecationMessage: 'Refresh is not used by the action, use version instead.'
+    description: "OBSOLETE: Refresh is not used by the action, use version instead."
+    deprecationMessage: "Refresh is not used by the action, use version instead."
   debug:
-    description: 'Enable debugging when there are issues with action. Minor performance penalty.'
+    description: "Enable debugging when there are issues with action. Minor performance penalty."
     required: false
-    default: 'false'
+    default: "false"
   add-repository:
-    description: 'Space delimited list of repositories to add via apt-add-repository before installing packages. Supports PPA (ppa:user/repo) and other repository formats.'
+    description: "Space delimited list of repositories to add via apt-add-repository before installing packages. Supports PPA (ppa:user/repo) and other repository formats."
     required: false
-    default: ''
+    default: ""
 
 outputs:
   cache-hit:
-    description: 'A boolean value to indicate a cache was found for the packages requested.'
+    description: "A boolean value to indicate a cache was found for the packages requested."
     # This compound expression is needed because lhs can be empty.
     # Need to output true and false instead of true and nothing.
     value: ${{ steps.load-cache.outputs.cache-hit || false }}
   package-version-list:
-    description: 'The main requested packages and versions that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. <package>:<version,<package>:<version>).'
+    description: "The main requested packages and versions that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. <package>:<version,<package>:<version>)."
     value: ${{ steps.post-cache.outputs.package-version-list }}
   all-package-version-list:
-    description: 'All the pulled in packages and versions, including dependencies, that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. <package>:<version,<package>:<version>).'
+    description: "All the pulled in packages and versions, including dependencies, that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. <package>:<version,<package>:<version>)."
     value: ${{ steps.post-cache.outputs.all-package-version-list }}
 
 runs:
@@ -72,16 +72,16 @@ runs:
         fi
       shell: bash
       env:
-         VERSION: "${{ inputs.version }}"
-         EXEC_INSTALL_SCRIPTS: "${{ inputs.execute_install_scripts }}"
-         EMPTY_PACKAGES_BEHAVIOR: "${{ inputs.empty_packages_behavior }}"
-         DEBUG: "${{ inputs.debug }}"
-         ADD_REPOSITORY: "${{ inputs.add-repository }}"
-         PACKAGES: "${{ inputs.packages }}"
+        VERSION: "${{ inputs.version }}"
+        EXEC_INSTALL_SCRIPTS: "${{ inputs.execute_install_scripts }}"
+        EMPTY_PACKAGES_BEHAVIOR: "${{ inputs.empty_packages_behavior }}"
+        DEBUG: "${{ inputs.debug }}"
+        ADD_REPOSITORY: "${{ inputs.add-repository }}"
+        PACKAGES: "${{ inputs.packages }}"
 
     - id: load-cache
       if: ${{ env.CACHE_KEY }}
-      uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/cache-apt-pkgs
         key: cache-apt-pkgs_${{ env.CACHE_KEY }}
@@ -102,11 +102,11 @@ runs:
         echo "all-package-version-list=$(create_list all)" >> $GITHUB_OUTPUT
       shell: bash
       env:
-         CACHE_HIT: "${{ steps.load-cache.outputs.cache-hit }}"
-         EXEC_INSTALL_SCRIPTS: "${{ inputs.execute_install_scripts }}"
-         DEBUG: "${{ inputs.debug }}"
-         ADD_REPOSITORY: "${{ inputs.add-repository }}"
-         PACKAGES: "${{ inputs.packages }}"
+        CACHE_HIT: "${{ steps.load-cache.outputs.cache-hit }}"
+        EXEC_INSTALL_SCRIPTS: "${{ inputs.execute_install_scripts }}"
+        DEBUG: "${{ inputs.debug }}"
+        ADD_REPOSITORY: "${{ inputs.add-repository }}"
+        PACKAGES: "${{ inputs.packages }}"
 
     - id: upload-logs
       if: ${{ env.CACHE_KEY && inputs.debug == 'true' }}
@@ -117,7 +117,7 @@ runs:
 
     - id: save-cache
       if: ${{ env.CACHE_KEY && ! steps.load-cache.outputs.cache-hit }}
-      uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/cache-apt-pkgs
         key: ${{ steps.load-cache.outputs.cache-primary-key }}

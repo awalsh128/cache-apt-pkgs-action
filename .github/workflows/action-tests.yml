@@ -26,9 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     name: List all package versions (including deps).
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -69,9 +69,9 @@ jobs:
     runs-on: ubuntu-latest
     name: List package versions.
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -111,9 +111,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Standard workflow install package and cache.
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -148,9 +148,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Standard workflow packages with new version.
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -186,9 +186,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Standard workflow restore cached packages.
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -223,9 +223,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Standard workflow restore with packages out of order.
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -260,9 +260,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Standard workflow add another package.
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -297,9 +297,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Standard workflow restore added package.
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -334,9 +334,9 @@ jobs:
     runs-on: ubuntu-latest
     name: No packages passed.
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -368,9 +368,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Package not found.
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -402,9 +402,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Version contains spaces.
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -438,9 +438,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Reinstall existing package (regression issue #36)."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -467,9 +467,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Install with reported package dependencies not installed (regression issue #37)."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -496,9 +496,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Debug disabled.
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -525,9 +525,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Cache Java CA certs package v1 (regression issue #72)."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -554,9 +554,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Cache Java CA certs package v2 (regression issue #72)."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -583,9 +583,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Cache empty archive (regression issue #76)."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -619,9 +619,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Tar error with libboost-dev (regression issue #79)."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -648,9 +648,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Tar error with alsa-ucm-conf (regression issue #81)."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -679,9 +679,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Install multiline package listing using literal block style (regression issue #84)."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -709,9 +709,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Restore multiline package listing using literal block style (regression issue #84)."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -746,9 +746,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Install multiline package listing using literal block style (regression issue #84)."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -777,9 +777,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Restore multiline package listing using literal block style (regression issue #84)."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -814,9 +814,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Upload logs artifact name (regression issue #89)."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -843,9 +843,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Install error due to SHELLOPTS override (regression issue #98)."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -872,9 +872,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Stale apt repo not finding package on restore, install phase (regression issue #106)."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -901,9 +901,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Stale apt repo not finding package on restore, restore phase (regression issue #106)."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -930,9 +930,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Cache packages with multi-arch cache key."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
@@ -959,9 +959,9 @@ jobs:
     runs-on: ubuntu-latest
     name: "Cache virtual package."
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: cache-apt-pkgs-*
           path: distribute-artifacts
