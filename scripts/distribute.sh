@@ -164,6 +164,68 @@ case "${COMMAND}" in
     echo "Artifact reorganization complete"
     ;;
 
+  ###############################################################################
+  # Consolidate all per-architecture artifacts into a single flat
+  # distribute/release/ directory for upload to GitHub Releases.
+  # Common files (shell scripts, action.yml, apt-fast) are copied once from the
+  # first available architecture directory. Architecture-specific binaries
+  # (apt_query-*) are copied from every architecture directory. A combined
+  # checksums.txt is generated at the end.
+  ###############################################################################
+  consolidate-release)
+    RELEASE_DIR="distribute/release"
+    ARCH_DIRS=(distribute/x64 distribute/arm64 distribute/arm distribute/x86)
+    mkdir -p "${RELEASE_DIR}"
+    echo "Consolidating release artifacts into ${RELEASE_DIR}..."
+
+    # Find first available arch directory to source common files from.
+    FIRST_ARCH_DIR=""
+    for arch_dir in "${ARCH_DIRS[@]}"; do
+      if [[ -d "${arch_dir}" ]]; then
+        FIRST_ARCH_DIR="${arch_dir}"
+        break
+      fi
+    done
+
+    if [[ -z "${FIRST_ARCH_DIR}" ]]; then
+      echo "Error: No architecture directories found under distribute/" >&2
+      exit 1
+    fi
+
+    # Copy common files (everything except arch-specific binaries and checksums)
+    # from the first arch directory.
+    shopt -s nullglob
+    for f in "${FIRST_ARCH_DIR}"/*; do
+      filename="$(basename "${f}")"
+      if [[ "${filename}" == apt_query-* ]] || [[ "${filename}" == checksums.txt ]]; then
+        continue
+      fi
+      cp "${f}" "${RELEASE_DIR}/"
+      echo "Copied common file: ${filename}"
+    done
+    shopt -u nullglob
+
+    # Copy architecture-specific binaries from every arch directory.
+    shopt -s nullglob
+    for arch_dir in "${ARCH_DIRS[@]}"; do
+      [[ -d "${arch_dir}" ]] || continue
+      for binary in "${arch_dir}"/apt_query-*; do
+        cp "${binary}" "${RELEASE_DIR}/"
+        echo "Copied binary: $(basename "${binary}")"
+      done
+    done
+    shopt -u nullglob
+
+    # Generate a combined checksums file for all release assets.
+    (cd "${RELEASE_DIR}" && find . -maxdepth 1 -type f ! -name "checksums.txt" \
+      -exec sha256sum {} + | sed 's|\./||' | sort > checksums.txt)
+    echo "Generated combined checksums:"
+    cat "${RELEASE_DIR}/checksums.txt"
+
+    echo "Consolidation complete. Release directory contents:"
+    ls -la "${RELEASE_DIR}/"
+    ;;
+
   *)
     echo "Error: Unknown command: ${COMMAND}" >&2
     echo "Usage: distribute.sh <command> [args...]" >&2
@@ -175,6 +237,7 @@ case "${COMMAND}" in
     echo "  generate-checksums <arch>" >&2
     echo "  verify-build <arch>" >&2
     echo "  reorganize-artifacts" >&2
+    echo "  consolidate-release" >&2
     exit 1
     ;;
 
