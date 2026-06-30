@@ -7,6 +7,9 @@
 This action allows caching of Advanced Package Tool (APT) package dependencies to improve workflow execution time instead of installing the packages on every run.
 
 > [!IMPORTANT]
+> Version 1 will be in maintenance mode. Due to recently instability in the releases and to create consistent reliability, I am going to lock v1. Version 2 beta will be coming soon to have better testing, and less reliability on Bash script where it has triggered more than one major break.
+
+> [!IMPORTANT]
 > Looking for co-maintainers to help review changes, and investigate issues. I haven't had as much time to stay on top of this action as I would like to and want to make sure it is still responsive and reliable for the community. If you are interested, please reach out.
 
 ## Documentation
