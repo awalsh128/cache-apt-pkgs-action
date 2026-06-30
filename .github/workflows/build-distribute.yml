@@ -6,6 +6,11 @@ on:
     branches:
       - dev-v2
   workflow_call:
+    inputs:
+      create_release:
+        description: 'Create a GitHub release (disabled by default for dry-run/PR builds)'
+        default: false
+        type: boolean
 permissions:
   contents: write
   id-token: write
@@ -73,7 +78,7 @@ jobs:
   create-release:
     needs: build-and-release
     runs-on: ubuntu-latest
-    if: success()
+    if: success() && (github.event_name != 'workflow_call' || inputs.create_release == true)
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

@@ -17,16 +17,14 @@ set +e
 #   Filepath of the install script, otherwise an empty string.
 ###############################################################################
 function execute_install_script {
-  local package_name
-  package_name=$(basename "${2}" | awk -F= '{print $1}')  
-  local install_script_filepath
-  install_script_filepath=$(\
+  local package_name=$(basename ${2} | awk -F\= '{print $1}')  
+  local install_script_filepath=$(\
     get_install_script_filepath "${1}" "${package_name}" "${3}")
   if test ! -z "${install_script_filepath}"; then
     log "- Executing ${install_script_filepath}..."
     # Don't abort on errors; dpkg-trigger will error normally since it is
     # outside its run environment.
-    sudo sh -x "${install_script_filepath}" "${4}" || true
+    sudo sh -x ${install_script_filepath} ${4} || true
     log "  done"
   fi
 }
@@ -42,17 +40,9 @@ function execute_install_script {
 ###############################################################################
 function get_install_script_filepath {
   # Filename includes arch (e.g. amd64).
-  local filepath
-  # Use glob expansion instead of ls|grep for better handling of non-alphanumeric filenames
-  # Use nullglob to prevent literal match when no files found
-  shopt -s nullglob
-  for f in "${1}"var/lib/dpkg/info/"${2}"*."${3}"; do
-    if [[ -f "${f}" ]] && [[ "${f}" =~ ${2}'(:.*)?.'"${3}" ]]; then
-      filepath="${f}"
-      break
-    fi
-  done
-  shopt -u nullglob
+  local filepath="$(\
+    ls -1 ${1}var/lib/dpkg/info/${2}*.${3} 2> /dev/null \
+    | grep -E ${2}'(:.*)?.'${3} | head -1 || true)"
   test "${filepath}" && echo "${filepath}"
 }
 
@@ -76,7 +66,7 @@ function get_installed_packages {
       log_err "Unable to parse package name and version from \"${line}\""
       exit 2
     fi
-  done < <(grep "^Unpacking " "${install_log_filepath}")
+  done < <(grep "^Unpacking " ${install_log_filepath})
   if test -n "${dep_packages}"; then
     echo "${dep_packages:0:-1}"  # Removing trailing space.
   else
@@ -93,13 +83,13 @@ function get_installed_packages {
 ###############################################################################
 function get_package_name_ver {
   local ORIG_IFS="${IFS}"
-  IFS='=' read -r name ver <<< "${1}"
+  IFS=\= read name ver <<< "${1}"
   IFS="${ORIG_IFS}"
   # If version not found in the fully qualified package value.
   if test -z "${ver}"; then
     # This is a fallback and should not be used any more as its slow.
     log_err "Unexpected version resolution for package '${name}'"
-    ver="$(apt-cache show "${name}" | grep '^Version:' | awk '{print $2}')"
+    ver="$(apt-cache show ${name} | grep '^Version:' | awk '{print $2}')"
   fi
   echo "${name}" "${ver}"  
 }
@@ -115,19 +105,16 @@ function get_normalized_package_list {
   # Remove commas, and block scalar folded backslashes,
   # extraneous spaces at the middle, beginning and end
   # then sort.
-  local packages
-  packages=$(echo "${1}" \
+  local packages=$(echo "${1}" \
     | sed 's/[,\]/ /g; s/\s\+/ /g; s/^\s\+//g; s/\s\+$//g' \
     | sort -t' ')
-  local script_dir
-  script_dir="$(dirname -- "$(realpath -- "${0}")")"
+  local script_dir="$(dirname -- "$(realpath -- "${0}")")"
 
-  local architecture
-  architecture=$(dpkg --print-architecture)
-  if [[ "${architecture}" == "arm64" ]]; then
-    "${script_dir}"/apt_query-arm64 normalized-list "${packages}"
+  local architecture=$(dpkg --print-architecture)
+  if [ "${architecture}" == "arm64" ]; then
+    ${script_dir}/apt_query-arm64 normalized-list ${packages}
   else
-    "${script_dir}"/apt_query-x86 normalized-list "${packages}"
+    ${script_dir}/apt_query-x86 normalized-list ${packages}
   fi
 }
 
@@ -140,8 +127,8 @@ function get_normalized_package_list {
 #   The relative filepath to archive.
 ###############################################################################
 function get_tar_relpath {
-  local filepath="${1}"
-  if test "${filepath:0:1}" = "/"; then
+  local filepath=${1}
+  if test ${filepath:0:1} = "/"; then
     echo "${filepath:1}"
   else
     echo "${filepath}"
@@ -194,7 +181,7 @@ function validate_bool {
   if test "${1}" != "true" -a "${1}" != "false"; then
     log "aborted"
     log "${2} value '${1}' must be either true or false (case sensitive)."
-    exit "${3}"
+    exit ${3}
   fi
 }
 
@@ -208,12 +195,12 @@ function validate_bool {
 #   Log lines from write.
 ###############################################################################
 function write_manifest {  
-  if [[ ${#2} -eq 0 ]]; then 
+  if [ ${#2} -eq 0 ]; then 
     log "Skipped ${1} manifest write. No packages to install."
   else
     log "Writing ${1} packages manifest to ${3}..."
     # 0:-1 to remove trailing comma, delimit by newline and sort.
-    echo "${2:0:-1}" | tr ',' '\n' | sort > "${3}"
+    echo "${2:0:-1}" | tr ',' '\n' | sort > ${3}
     log "done"
   fi
 }
