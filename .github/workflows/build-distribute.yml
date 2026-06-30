@@ -6,11 +6,7 @@ on:
     branches:
       - dev-v2
   workflow_call:
-    inputs:
-      create_release:
-        description: 'Create a GitHub release (disabled by default for dry-run/PR builds)'
-        default: false
-        type: boolean
+  workflow_dispatch:
 permissions:
   contents: write
   id-token: write
@@ -78,7 +74,7 @@ jobs:
   create-release:
     needs: build-and-release
     runs-on: ubuntu-latest
-    if: success() && (github.event_name != 'workflow_call' || inputs.create_release == true)
+    if: success() && github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -96,6 +92,9 @@ jobs:
       - name: Reorganize artifacts
         run: |
           ./scripts/distribute.sh reorganize-artifacts
+      - name: Consolidate release artifacts
+        run: |
+          ./scripts/distribute.sh consolidate-release
       - name: Create or update release
         uses: softprops/action-gh-release@2bb465e97f322d3cb2a965294d483e0d26a67aa9 # v3.0.1
         with:
@@ -103,10 +102,7 @@ jobs:
           name: "${{ steps.version.outputs.version }}"
           generate_release_notes: true
           files: |
-            distribute/x64/*
-            distribute/arm64/*
-            distribute/arm/*
-            distribute/x86/*
+            distribute/release/*
           draft: false
           prerelease: true
         env:
