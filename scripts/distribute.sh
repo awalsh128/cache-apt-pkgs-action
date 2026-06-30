@@ -174,12 +174,13 @@ case "${COMMAND}" in
   ###############################################################################
   consolidate-release)
     RELEASE_DIR="distribute/release"
+    ARCH_DIRS=(distribute/x64 distribute/arm64 distribute/arm distribute/x86)
     mkdir -p "${RELEASE_DIR}"
     echo "Consolidating release artifacts into ${RELEASE_DIR}..."
 
     # Find first available arch directory to source common files from.
     FIRST_ARCH_DIR=""
-    for arch_dir in distribute/x64 distribute/arm64 distribute/arm distribute/x86; do
+    for arch_dir in "${ARCH_DIRS[@]}"; do
       if [[ -d "${arch_dir}" ]]; then
         FIRST_ARCH_DIR="${arch_dir}"
         break
@@ -206,7 +207,7 @@ case "${COMMAND}" in
 
     # Copy architecture-specific binaries from every arch directory.
     shopt -s nullglob
-    for arch_dir in distribute/x64 distribute/arm64 distribute/arm distribute/x86; do
+    for arch_dir in "${ARCH_DIRS[@]}"; do
       [[ -d "${arch_dir}" ]] || continue
       for binary in "${arch_dir}"/apt_query-*; do
         cp "${binary}" "${RELEASE_DIR}/"
