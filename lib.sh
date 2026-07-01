@@ -146,20 +146,23 @@ function get_tar_relpath {
 #   None
 ###############################################################################
 function update_apt_lists_if_stale {
-  # Only check for stale package lists when running in nektos/act
-  # GitHub Actions runners have fresh package lists, so skip this overhead
-  if [ "${ACT}" = "true" ]; then
-    if [[ -z "$(find -H /var/lib/apt/lists -maxdepth 0 -mmin -5 2>/dev/null)" ]]; then
-      log "APT package lists are stale, updating..."
-      if command -v apt-fast > /dev/null 2>&1; then
-        sudo apt-fast update > /dev/null 2>&1 || sudo apt update > /dev/null 2>&1 || true
-      else
-        sudo apt update > /dev/null 2>&1 || true
-      fi
-      log "APT package lists updated"
+  # Package lists must be current before resolving/installing packages.
+  # GitHub-hosted runners ship fresh lists, but custom images (e.g. runs-on
+  # AMIs) and nektos/act may have stale or empty lists. With stale lists,
+  # `apt-cache show` misreports real packages (e.g. ghostscript) as purely
+  # virtual, which sends normalization down the "Reverse Provides:" path and
+  # yields a bogus package name. Refresh whenever the lists look stale, on any
+  # runner (not just nektos/act).
+  if [[ -z "$(find -H /var/lib/apt/lists -maxdepth 0 -mmin -5 2>/dev/null)" ]]; then
+    log "APT package lists are stale, updating..."
+    if command -v apt-fast > /dev/null 2>&1; then
+      sudo apt-fast update > /dev/null 2>&1 || sudo apt update > /dev/null 2>&1 || true
     else
-      log "APT package lists are fresh (within 5 minutes), skipping update"
+      sudo apt update > /dev/null 2>&1 || true
     fi
+    log "APT package lists updated"
+  else
+    log "APT package lists are fresh (within 5 minutes), skipping update"
   fi
 }
 
