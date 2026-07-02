@@ -75,6 +75,7 @@ func getNonVirtualPackage(executor exec.Executor, name string) (pkg *AptPackage,
 		if strings.HasPrefix(trimmed, reverseProvides+" ") {
 			entry := strings.TrimSpace(trimmed[len(reverseProvides)+1:])
 			if entry != "" {
+				// Split into at most 3 parts: name, version, and any trailing metadata (e.g. "(= )")
 				splitLine := GetSplitLine(entry, " ", 3)
 				if len(splitLine.Words) >= 2 {
 					return &AptPackage{Name: splitLine.Words[0], Version: splitLine.Words[1]}, nil
@@ -93,6 +94,7 @@ func getNonVirtualPackage(executor exec.Executor, name string) (pkg *AptPackage,
 			continue
 		}
 		// Capture the first version listed for this package (used as fallback below).
+		// Split into at most 2 parts: version and the file-path metadata that follows.
 		if inVersions && firstVersion == "" {
 			splitLine := GetSplitLine(trimmed, " ", 2)
 			if len(splitLine.Words) >= 1 && splitLine.Words[0] != "" {
@@ -100,6 +102,7 @@ func getNonVirtualPackage(executor exec.Executor, name string) (pkg *AptPackage,
 			}
 		}
 		if inReverseProvides {
+			// Split into at most 3 parts: name, version, and any trailing metadata (e.g. "(= )").
 			splitLine := GetSplitLine(trimmed, " ", 3)
 			if len(splitLine.Words) < 2 {
 				continue
