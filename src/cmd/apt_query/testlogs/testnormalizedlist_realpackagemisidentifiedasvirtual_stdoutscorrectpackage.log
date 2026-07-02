@@ -1,0 +1,19 @@
+2025/03/15 22:29:14 Debug log created at /home/awalsh128/cache-apt-pkgs-action/src/cmd/apt_query/apt_query.log
+2025/03/15 22:29:14 EXECUTION-OBJ-START
+{
+ "Cmd": "apt-cache --quiet=0 --no-all-versions show ghostscript",
+ "Stdout": "",
+ "Stderr": "N: Can't select candidate version from package ghostscript as it has no candidate\nN: Can't select versions from package 'ghostscript' as it is purely virtual\nN: No packages found\n",
+ "CombinedOut": "N: Can't select candidate version from package ghostscript as it has no candidate\nN: Can't select versions from package 'ghostscript' as it is purely virtual\nN: No packages found\n",
+ "ExitCode": 0
+}
+EXECUTION-OBJ-END
+2025/03/15 22:29:14 EXECUTION-OBJ-START
+{
+ "Cmd": "apt-cache showpkg ghostscript",
+ "Stdout": "Package: ghostscript\nVersions: \n10.02.1~dfsg1-0ubuntu7.8 (/var/lib/dpkg/info/ghostscript.list)\n Description Language: \n                 File: /var/lib/apt/lists/example\n                  MD5: ab0ac55fd3cdba396944cd65f6d36654\n\nReverse Depends: \n  cups,ghostscript\nDependencies: \n10.02.1~dfsg1-0ubuntu7.8 - libgs10 (5 10.02.1~dfsg1-0ubuntu7.8) libc6 (2 2.34)\nProvides: \n10.02.1~dfsg1-0ubuntu7.8 - postscript-viewer (= ) ghostscript-x (= 10.02.1~dfsg1-0ubuntu7.8)\nReverse Provides: \n",
+ "Stderr": "",
+ "CombinedOut": "Package: ghostscript\nVersions: \n10.02.1~dfsg1-0ubuntu7.8 (/var/lib/dpkg/info/ghostscript.list)\n Description Language: \n                 File: /var/lib/apt/lists/example\n                  MD5: ab0ac55fd3cdba396944cd65f6d36654\n\nReverse Depends: \n  cups,ghostscript\nDependencies: \n10.02.1~dfsg1-0ubuntu7.8 - libgs10 (5 10.02.1~dfsg1-0ubuntu7.8) libc6 (2 2.34)\nProvides: \n10.02.1~dfsg1-0ubuntu7.8 - postscript-viewer (= ) ghostscript-x (= 10.02.1~dfsg1-0ubuntu7.8)\nReverse Provides: \n",
+ "ExitCode": 0
+}
+EXECUTION-OBJ-END
