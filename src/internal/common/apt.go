@@ -32,6 +32,9 @@ func isErrLine(line string) bool {
 }
 
 // Resolves virtual packages names to their concrete one.
+// Falls back to returning the package itself (with version from the Versions section) when the
+// Reverse Provides section is empty, which handles real packages that are mistakenly treated as
+// virtual due to stale apt lists.
 func getNonVirtualPackage(executor exec.Executor, name string) (pkg *AptPackage, err error) {
 	execution := executor.Exec("apt-cache", "showpkg", name)
 	err = execution.Error()
@@ -40,28 +43,81 @@ func getNonVirtualPackage(executor exec.Executor, name string) (pkg *AptPackage,
 		return pkg, err
 	}
 
+	const reverseProvides = "Reverse Provides:"
+	const versions = "Versions:"
+
+	inVersions := false
 	inReverseProvides := false
+	var firstVersion string
+
 	for _, line := range strings.Split(execution.CombinedOut, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if trimmed == "" {
 			continue
 		}
-		if trimmed == "Reverse Provides:" {
-			inReverseProvides = true
+		if strings.HasPrefix(trimmed, "W: ") || isErrLine(trimmed) {
 			continue
 		}
-		if !inReverseProvides || strings.HasPrefix(trimmed, "W: ") || isErrLine(trimmed) {
+		if trimmed == versions {
+			inVersions = true
+			inReverseProvides = false
+			continue
+		}
+		if trimmed == reverseProvides {
+			inReverseProvides = true
+			inVersions = false
+			continue
+		}
+		// Handle "Reverse Provides: <name> <version>" format where the header and first entry
+		// appear on the same line.  If the inline content is parseable (≥2 words), return it
+		// immediately.  If it is malformed or absent (< 2 words), treat the line as a plain
+		// section header so that subsequent lines are still scanned for entries.
+		if strings.HasPrefix(trimmed, reverseProvides+" ") {
+			entry := strings.TrimSpace(trimmed[len(reverseProvides)+1:])
+			if entry != "" {
+				// Split into at most 3 parts: name, version, and any trailing metadata (e.g. "(= )")
+				splitLine := GetSplitLine(entry, " ", 3)
+				if len(splitLine.Words) >= 2 {
+					return &AptPackage{Name: splitLine.Words[0], Version: splitLine.Words[1]}, nil
+				}
+			}
+			// No parseable entry on this line; fall through to entry-scanning mode so
+			// subsequent lines in this section are still examined.
+			inReverseProvides = true
+			inVersions = false
 			continue
 		}
 		if strings.HasSuffix(trimmed, ":") {
-			break
-		}
-		splitLine := GetSplitLine(trimmed, " ", 3)
-		if len(splitLine.Words) < 2 {
+			// Some other section header — reset tracking flags.
+			inVersions = false
+			inReverseProvides = false
 			continue
 		}
-		return &AptPackage{Name: splitLine.Words[0], Version: splitLine.Words[1]}, nil
+		// Capture the first version listed for this package (used as fallback below).
+		// Split into at most 2 parts: version and the file-path metadata that follows.
+		if inVersions && firstVersion == "" {
+			splitLine := GetSplitLine(trimmed, " ", 2)
+			if len(splitLine.Words) >= 1 && splitLine.Words[0] != "" {
+				firstVersion = splitLine.Words[0]
+			}
+		}
+		if inReverseProvides {
+			// Split into at most 3 parts: name, version, and any trailing metadata (e.g. "(= )").
+			splitLine := GetSplitLine(trimmed, " ", 3)
+			if len(splitLine.Words) < 2 {
+				continue
+			}
+			return &AptPackage{Name: splitLine.Words[0], Version: splitLine.Words[1]}, nil
+		}
 	}
+
+	// If no Reverse Provides entries were found but the package itself has a known version,
+	// it is a real (non-virtual) package that was mistakenly treated as virtual (e.g. because
+	// apt-cache show was run against stale lists).  Return it directly.
+	if firstVersion != "" {
+		return &AptPackage{Name: name, Version: firstVersion}, nil
+	}
+
 	return pkg, fmt.Errorf("unable to parse reverse provides package name and version from apt-cache showpkg output below:\n%s", execution.CombinedOut)
 }
 
