@@ -1,7 +1,16 @@
 import * as core from "@actions/core";
-import { parseBoolean, runAction, type ActionInputs } from "./action.js";
-import winston from "winston";
+import { runAction, type ActionInputs } from "./action.js";
+import { DefaultCommandRunner } from "ts-apt";
+import { Cache, CACHE_DEFAULT_DIRNAME } from "./cache.ts";
+import { Instruments } from "./instrumentation.js";
 
+/**
+ * Parses empty package behavior input from workflow configuration.
+ *
+ * @param value Raw behavior input.
+ * @returns Parsed behavior enum value.
+ * @throws Error when value is outside the supported set.
+ */
 function parseEmptyPackagesBehavior(
   value: string,
 ): "error" | "warn" | "ignore" {
@@ -14,36 +23,45 @@ function parseEmptyPackagesBehavior(
   );
 }
 
+/**
+ * Reads and validates typed action inputs from GitHub Actions runtime.
+ *
+ * @returns Parsed and validated action inputs.
+ */
 function getInputs(): ActionInputs {
-  const executeInstallScriptsRaw = core.getInput("execute_install_scripts");
-  const debugRaw = core.getInput("debug");
   const emptyPackagesBehaviorRaw =
     core.getInput("empty_packages_behavior") || "error";
 
   return {
     packages: core.getInput("packages", { required: true }),
     version: core.getInput("version"),
-    executeInstallScripts: parseBoolean(
-      executeInstallScriptsRaw,
-      "execute_install_scripts",
-    ),
+    executeInstallScripts: core.getBooleanInput("execute_install_scripts"),
     emptyPackagesBehavior: parseEmptyPackagesBehavior(emptyPackagesBehaviorRaw),
-    debug: parseBoolean(debugRaw, "debug"),
+    debug: core.getBooleanInput("debug"),
   };
 }
 
+/**
+ * Main action entrypoint. Sets outputs on success and fails the action on error.
+ *
+ * @returns Nothing.
+ */
 async function main(): Promise<void> {
+  const cacheDir = CACHE_DEFAULT_DIRNAME;
+  const inputs = getInputs();
+  const instruments = new Instruments(cacheDir, inputs.debug || core.isDebug());
   try {
-    const inputs = getInputs();
-    const logger = winston.createLogger({
-      level: inputs.debug ? "debug" : "info",
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.printf(({ level, message }) => `${level}: ${message}`),
-      ),
-      transports: [new winston.transports.Console()],
-    });
-    const outputs = await runAction(inputs, logger);
+    const commandRunner = new DefaultCommandRunner(
+      instruments.execLogger,
+      instruments.execLogger,
+    );
+
+    const outputs = await runAction(
+      inputs,
+      commandRunner,
+      new Cache(commandRunner, instruments.appLogger, cacheDir),
+      instruments.appLogger,
+    );
 
     core.setOutput("cache-hit", String(outputs.cacheHit));
     core.setOutput("package-version-list", outputs.packageVersionList);
@@ -51,6 +69,8 @@ async function main(): Promise<void> {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     core.setFailed(message);
+  } finally {
+    instruments.artifacts.upload();
   }
 }
 

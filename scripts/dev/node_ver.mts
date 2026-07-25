@@ -1,37 +1,78 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --experimental-strip-types
 
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { defineCommand, defineOptions } from "@robingenz/zli";
 import process from "node:process";
+import { z } from "zod";
 import {
+  confirmPrompt,
+  createCliConfig,
   GITHUB_USER_AGENT,
   ROOT_DIR,
   commandExists,
-  confirmPrompt,
   fail,
   logInfo,
   logSuccess,
   logWarn,
   readNodeMajorVersion,
+  runCli,
+  runMain,
   run,
   runCaptureOutput,
   tryRun,
-  usage,
-} from "./lib.mjs";
+} from "../devopslib.mts";
+
+type ReferenceSpec = {
+  path: string;
+  replacements: Array<[RegExp, string]>;
+};
+
+type NodeRegistryPackage = {
+  versions?: Record<string, unknown>;
+};
+
+type AptRunner = (args: string[]) => void;
 
 const rootDir = ROOT_DIR;
-const usageMessage = usage(process.argv[1], "--verify | --update");
 
-function parseMode(argv) {
-  const mode = argv[2] ?? "";
-  if (mode !== "--verify" && mode !== "--update") {
-    fail(usageMessage);
-  }
+function listYamlFiles(rootPath: string): string[] {
+  const yamlFiles: string[] = [];
+  const excludedDirs = new Set([".git", "node_modules", "dist", "coverage"]);
 
-  return mode;
+  const walk = (directory: string) => {
+    const entries = readdirSync(directory, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = `${directory}/${entry.name}`;
+      if (entry.isDirectory()) {
+        if (!excludedDirs.has(entry.name)) {
+          walk(fullPath);
+        }
+        continue;
+      }
+
+      const lower = entry.name.toLowerCase();
+      if (lower.endsWith(".yml") || lower.endsWith(".yaml")) {
+        yamlFiles.push(fullPath);
+      }
+    }
+  };
+
+  walk(rootPath);
+  return yamlFiles.sort((left, right) => left.localeCompare(right));
 }
 
-function buildReferenceSpecs(nodeMajor) {
+function buildReferenceSpecs(nodeMajor: string): ReferenceSpec[] {
+  const yamlReferenceSpecs: ReferenceSpec[] = listYamlFiles(rootDir).map(
+    (filePath) => ({
+      path: filePath,
+      replacements: [
+        [/node-version:\s*\[\d+(?:\.x)?\]/g, `node-version: [${nodeMajor}]`],
+        [/node-version:\s*\d+(?:\.x)?/g, `node-version: ${nodeMajor}`],
+      ],
+    }),
+  );
+
   return [
     {
       path: `${rootDir}/package.json`,
@@ -40,7 +81,7 @@ function buildReferenceSpecs(nodeMajor) {
       ],
     },
     {
-      path: `${rootDir}/dev_scripts/lib.mjs`,
+      path: `${rootDir}/scripts/devopslib.mts`,
       replacements: [
         [
           /export const CURRENT_NODE_VERSION = "\d+";/g,
@@ -48,26 +89,7 @@ function buildReferenceSpecs(nodeMajor) {
         ],
       ],
     },
-    {
-      path: `${rootDir}/.github/actions/setup-env/action.yml`,
-      replacements: [[/node-version:\s*\d+(?:\.x)?/g, `node-version: ${nodeMajor}`]],
-    },
-    {
-      path: `${rootDir}/.github/workflows/ci.yml`,
-      replacements: [
-        [/node-version:\s*\[\d+(?:\.x)?\]/g, `node-version: [${nodeMajor}]`],
-      ],
-    },
-    {
-      path: `${rootDir}/.github/workflows/pr.yml`,
-      replacements: [[/node-version:\s*\d+(?:\.x)?/g, `node-version: ${nodeMajor}`]],
-    },
-    {
-      path: `${rootDir}/.github/workflows/release.yml`,
-      replacements: [
-        [/node-version:\s*\[\d+(?:\.x)?\]/g, `node-version: [${nodeMajor}]`],
-      ],
-    },
+    ...yamlReferenceSpecs,
     {
       path: `${rootDir}/README.md`,
       replacements: [[/- Node\.js \d+\+/g, `- Node.js ${nodeMajor}+`]],
@@ -75,7 +97,10 @@ function buildReferenceSpecs(nodeMajor) {
   ];
 }
 
-function applyReplacements(content, replacements) {
+function applyReplacements(
+  content: string,
+  replacements: ReferenceSpec["replacements"],
+): string {
   let updated = content;
   for (const [pattern, replacement] of replacements) {
     updated = updated.replace(pattern, replacement);
@@ -83,7 +108,7 @@ function applyReplacements(content, replacements) {
   return updated;
 }
 
-function updateNodeVersionReferences(nodeMajor) {
+function updateNodeVersionReferences(nodeMajor: string): void {
   const files = buildReferenceSpecs(nodeMajor);
   let changedCount = 0;
 
@@ -105,9 +130,9 @@ function updateNodeVersionReferences(nodeMajor) {
   }
 }
 
-function verifyNodeVersionReferences(nodeMajor) {
+function verifyNodeVersionReferences(nodeMajor: string): void {
   const files = buildReferenceSpecs(nodeMajor);
-  const drifted = [];
+  const drifted: string[] = [];
 
   for (const entry of files) {
     const original = readFileSync(entry.path, "utf8");
@@ -124,8 +149,8 @@ function verifyNodeVersionReferences(nodeMajor) {
   logSuccess("All Node version references are synchronized with .node_ver.");
 }
 
-async function getAvailableNodeMajors() {
-  let packageJson;
+async function getAvailableNodeMajors(): Promise<string[]> {
+  let packageJson: NodeRegistryPackage | null = null;
   try {
     const response = await fetch("https://registry.npmjs.org/node", {
       headers: {
@@ -140,7 +165,7 @@ async function getAvailableNodeMajors() {
       );
     }
 
-    packageJson = await response.json();
+    packageJson = (await response.json()) as NodeRegistryPackage;
   } catch (error) {
     fail(
       `Unable to read Node.js versions from npm registry: ${error instanceof Error ? error.message : String(error)}`,
@@ -152,12 +177,18 @@ async function getAvailableNodeMajors() {
     fail("Unexpected npm registry response for Node.js versions.");
   }
 
-  return [...new Set(versions.map((version) => String(version).split(".")[0]))]
+  return [
+    ...new Set(
+      versions
+        .map((version) => String(version).split(".")[0] ?? "")
+        .filter((major) => major.length > 0),
+    ),
+  ]
     .filter((major) => /^\d+$/.test(major))
     .sort((left, right) => Number(left) - Number(right));
 }
 
-function runScriptWithOptionalSudo(scriptText) {
+function runScriptWithOptionalSudo(scriptText: string): void {
   if (!commandExists("bash")) {
     fail("bash is required to run the NodeSource setup script.");
   }
@@ -187,12 +218,12 @@ function runScriptWithOptionalSudo(scriptText) {
   }
 }
 
-async function setupNodeSourceRepo(nodeMajor) {
+async function setupNodeSourceRepo(nodeMajor: string): Promise<void> {
   const setupUrl = `https://deb.nodesource.com/setup_${nodeMajor}.x`;
 
   logInfo(`Configuring NodeSource for Node.js ${nodeMajor}.x...`);
 
-  let scriptText;
+  let scriptText = "";
   try {
     const response = await fetch(setupUrl, {
       headers: {
@@ -221,14 +252,18 @@ async function setupNodeSourceRepo(nodeMajor) {
   runScriptWithOptionalSudo(scriptText);
 }
 
-function installNodejs(nodeMajor) {
+function installNodejs(nodeMajor: string): void {
   if (!commandExists("apt-get")) {
     fail("APT is required to install Node.js packages.");
   }
 
-  const aptRunner = commandExists("sudo")
-    ? (args) => run("sudo", ["apt-get", ...args], { cwd: rootDir })
-    : (args) => run("apt-get", args, { cwd: rootDir });
+  const aptRunner: AptRunner = commandExists("sudo")
+    ? (args) => {
+        run("sudo", ["apt-get", ...args], { cwd: rootDir });
+      }
+    : (args) => {
+        run("apt-get", args, { cwd: rootDir });
+      };
 
   logInfo("Updating apt package index...");
   aptRunner(["update"]);
@@ -248,13 +283,13 @@ function installNodejs(nodeMajor) {
   );
 }
 
-function verifyInstalledNodeMajor(nodeMajor) {
+function verifyInstalledNodeMajor(nodeMajor: string): void {
   const nodeResult = tryRun("node", ["-v"], { cwd: rootDir, stdio: "pipe" });
   if (!nodeResult.ok) {
     fail("Node.js is not installed or not available on PATH.");
   }
 
-  const fullNodeVersion = (nodeResult.stdout ?? "").trim();
+  const fullNodeVersion = String(nodeResult.stdout ?? "").trim();
   if (!fullNodeVersion.startsWith(`v${nodeMajor}.`)) {
     fail(
       `Installed Node.js version (${fullNodeVersion}) does not match expected major v${nodeMajor}.`,
@@ -264,42 +299,77 @@ function verifyInstalledNodeMajor(nodeMajor) {
   logSuccess(`Installed Node.js version matches major ${nodeMajor}.`);
 }
 
-async function main() {
-  const mode = parseMode(process.argv);
-  const nodeMajor = readNodeMajorVersion(rootDir);
+const nodeVersionOptions = defineOptions(
+  z
+    .object({
+      verify: z
+        .boolean()
+        .default(false)
+        .describe("Verify version references and installed Node.js"),
+      update: z
+        .boolean()
+        .default(false)
+        .describe("Update version references and install Node.js"),
+    })
+    .refine((options) => options.verify !== options.update, {
+      message: "Specify exactly one of --verify or --update.",
+    }),
+  { v: "verify", u: "update" },
+);
 
-  if (mode === "--verify") {
-    verifyNodeVersionReferences(nodeMajor);
-    verifyInstalledNodeMajor(nodeMajor);
-    return;
-  }
+const nodeVersionCommand = defineCommand({
+  description: "Verify or update Node.js version references",
+  options: nodeVersionOptions,
+  action: async (options) => {
+    const nodeMajor = readNodeMajorVersion(rootDir);
+    if (nodeMajor.length === 0) {
+      fail(".node_ver must contain a valid Node.js major version.");
+    }
 
-  if (!commandExists("apt") && !commandExists("apt-get")) {
-    fail("APT is required to install Node.js packages.");
-  }
+    if (options.verify) {
+      verifyNodeVersionReferences(nodeMajor);
+      verifyInstalledNodeMajor(nodeMajor);
+      return;
+    }
 
-  const availableMajors = await getAvailableNodeMajors();
-  if (!availableMajors.includes(nodeMajor)) {
-    fail(
-      `Node.js major ${nodeMajor} is not listed as available. Available majors: ${availableMajors.join(", ")}`,
+    if (!commandExists("apt") && !commandExists("apt-get")) {
+      fail("APT is required to install Node.js packages.");
+    }
+
+    const availableMajors = await getAvailableNodeMajors();
+    if (!availableMajors.includes(nodeMajor)) {
+      fail(
+        `Node.js major ${nodeMajor} is not listed as available. Available majors: ${availableMajors.join(", ")}`,
+      );
+    }
+
+    logWarn(
+      `You are about to install/update Node.js for major ${nodeMajor}.x. This may break your development environment and NPM users.`,
     );
-  }
+    await confirmPrompt(
+      `Type "i confirm change to ${nodeMajor}" to proceed:`,
+      new RegExp(`^i confirm change to ${nodeMajor}$`),
+      /^n$/,
+    );
 
-  logWarn(
-    `You are about to install/update Node.js for major ${nodeMajor}.x. This may break your development environment and NPM users.`,
-  );
-  await confirmPrompt(
-    `Type "i confirm change to ${nodeMajor} to proceed:",
-    new RegExp(`^i confirm change to ${nodeMajor}$`),
-    /^n$/,
-  );
+    updateNodeVersionReferences(nodeMajor);
+    await setupNodeSourceRepo(nodeMajor);
+    installNodejs(nodeMajor);
+    verifyNodeVersionReferences(nodeMajor);
+  },
+});
 
-  updateNodeVersionReferences(nodeMajor);
-  await setupNodeSourceRepo(nodeMajor);
-  installNodejs(nodeMajor);
-  verifyNodeVersionReferences(nodeMajor);
+const cliConfig = createCliConfig({
+  importMetaUrl: import.meta.url,
+  description: "Verify or update Node.js version references",
+  commands: {
+    run: nodeVersionCommand,
+  },
+  defaultCommand: nodeVersionCommand,
+});
+
+async function main(): Promise<void> {
+  await runCli(cliConfig);
 }
 
-main().catch((error) => {
-  fail(error instanceof Error ? error.message : String(error));
-});
+await runMain(main);

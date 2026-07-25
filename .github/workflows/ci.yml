@@ -90,6 +90,25 @@ jobs:
         shell: bash
         run: npm run typecheck
 
+  action-deps-pinned:
+    runs-on: ubuntu-latest
+    needs: setup-and-cache
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Check Action Dependencies Pinned
+        shell: bash
+        run: npm run check:latest-action-pin ./action.yml
+
   testing:
     runs-on: ubuntu-latest
     needs: setup-and-cache

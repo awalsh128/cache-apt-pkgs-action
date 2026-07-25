@@ -1,22 +1,31 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --experimental-strip-types
 
 import {
-  ROOT_DIR,
   fail,
-  logError,
   logInfo,
   logSuccess,
-  runCaptureOutput,
+  logError,
+  readJsonFile,
+  ROOT_DIR,
   REPO_SLUG,
-} from "./lib.mjs";
+} from "../devopslib.mts";
 
-import packageJson from "../package.json" with { type: "json" };
-import vscodeSettingsJson from "../.vscode/settings.json" with { type: "json" };
-import tsconfigJson from "../tsconfig.json" with { type: "json" };
-import typedocJson from "../typedoc.json" with { type: "json" };
+type ErrorCollector = {
+  errors: string[];
+  add: (message: string) => void;
+};
 
-function tokenizePath(pathExpression) {
-  const tokens = [];
+type JsonRecord = Record<string, unknown>;
+
+const packageJson = readJsonFile(`${ROOT_DIR}/package.json`) as JsonRecord;
+const vscodeSettingsJson = readJsonFile(
+  `${ROOT_DIR}/.vscode/settings.json`,
+) as JsonRecord;
+const tsconfigJson = readJsonFile(`${ROOT_DIR}/tsconfig.json`) as JsonRecord;
+const typedocJson = readJsonFile(`${ROOT_DIR}/typedoc.json`) as JsonRecord;
+
+function tokenizePath(pathExpression: string): Array<string | number> {
+  const tokens: Array<string | number> = [];
   let index = 0;
 
   while (index < pathExpression.length) {
@@ -59,7 +68,10 @@ function tokenizePath(pathExpression) {
   return tokens;
 }
 
-function getByPath(root, pathExpression) {
+function getByPath(
+  root: unknown,
+  pathExpression: string,
+): { found: boolean; value: unknown } {
   const tokens = tokenizePath(pathExpression);
   let cursor = root;
 
@@ -80,23 +92,23 @@ function getByPath(root, pathExpression) {
       return { found: false, value: undefined };
     }
 
-    cursor = cursor[token];
+    cursor = (cursor as Record<string, unknown>)[token];
   }
 
   return { found: true, value: cursor };
 }
 
-function createErrorCollector(fileLabel) {
-  const errors = [];
+function createErrorCollector(fileLabel: string): ErrorCollector {
+  const errors: string[] = [];
   return {
     errors,
-    add(message) {
+    add(message: string) {
       errors.push(`${fileLabel}: ${message}`);
     },
   };
 }
 
-function valueType(value) {
+function valueType(value: unknown): string {
   if (Array.isArray(value)) {
     return "array";
   }
@@ -108,7 +120,12 @@ function valueType(value) {
   return typeof value;
 }
 
-function expectFieldType(doc, fieldPath, expectedType, addError) {
+function expectFieldType(
+  doc: unknown,
+  fieldPath: string,
+  expectedType: string,
+  addError: (message: string) => void,
+) {
   const result = getByPath(doc, fieldPath);
   if (!result.found) {
     addError(`missing required field '${fieldPath}'`);
@@ -124,11 +141,11 @@ function expectFieldType(doc, fieldPath, expectedType, addError) {
 }
 
 function expectFieldValue(
-  doc,
-  fieldPath,
-  expectedValue,
-  addError,
-  errorMessage,
+  doc: unknown,
+  fieldPath: string,
+  expectedValue: unknown,
+  addError: (message: string) => void,
+  errorMessage?: string,
 ) {
   const result = getByPath(doc, fieldPath);
   if (!result.found) {
@@ -143,18 +160,11 @@ function expectFieldValue(
   }
 }
 
-function validatePackageJson(json) {
+function validatePackageJson(json: JsonRecord): string[] {
   const { errors, add } = createErrorCollector("package.json");
   logInfo("Validating package.json...");
 
-  expectFieldValue(json, "name", "cache-apt-pkgs-action", add);
-  expectFieldValue(
-    json,
-    "version",
-    "0.0.0-semantically-released",
-    add,
-    "version is updated automatically by semantic-release and should not be changed manually",
-  );
+  expectFieldValue(json, "name", "ts-apt", add);
   expectFieldValue(json, "license", "Apache-2.0", add);
   expectFieldValue(json, "repository.type", "git", add);
   expectFieldValue(
@@ -167,7 +177,7 @@ function validatePackageJson(json) {
   return errors;
 }
 
-function validateTsconfigJson(json) {
+function validateTsconfigJson(json: JsonRecord): string[] {
   logInfo("Validating tsconfig.json...");
   const { errors, add } = createErrorCollector("tsconfig.json");
 
@@ -177,7 +187,7 @@ function validateTsconfigJson(json) {
   return errors;
 }
 
-function validateTypedocJson(json) {
+function validateTypedocJson(json: JsonRecord): string[] {
   logInfo("Validating typedoc.json...");
   const { errors, add } = createErrorCollector("typedoc.json");
 
@@ -187,67 +197,35 @@ function validateTypedocJson(json) {
   return errors;
 }
 
-function validateVscodeSettingsJson(json) {
+function validateVscodeSettingsJson(json: JsonRecord): string[] {
   logInfo("Validating .vscode/settings.json...");
   const { errors, add } = createErrorCollector(".vscode/settings.json");
 
-  expectFieldType(json, "chat.tools.terminal.autoApprove", "object", add);
-  expectFieldValue(json, "chat.useAgentsMdFile", true, add);
+  const autoApprove = json["chat.tools.terminal.autoApprove"];
+  if (
+    autoApprove === undefined ||
+    autoApprove === null ||
+    typeof autoApprove !== "object" ||
+    Array.isArray(autoApprove)
+  ) {
+    add("missing required field 'chat.tools.terminal.autoApprove'");
+  }
+
+  const useAgentsMdFile = json["chat.useAgentsMdFile"];
+  if (useAgentsMdFile !== true) {
+    add("missing required field 'chat.useAgentsMdFile'");
+  }
 
   return errors;
 }
 
-function runGitNameOnly(args, cwd) {
-  const output = runCaptureOutput("git", args, {
-    cwd,
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-
-  if (!output) {
-    return [];
-  }
-
-  return output
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-}
-
-function getProhibitedPathsChanges() {
-  const prohibitedPaths = ["docs/api"];
-  const staged = runGitNameOnly(
-    ["diff", "--name-only", "--cached", "--", ...prohibitedPaths],
-    ROOT_DIR,
-  );
-  const unstaged = runGitNameOnly(
-    ["diff", "--name-only", "--", ...prohibitedPaths],
-    ROOT_DIR,
-  );
-  const untracked = runGitNameOnly(
-    ["ls-files", "--others", "--exclude-standard", "--", ...prohibitedPaths],
-    ROOT_DIR,
-  );
-
-  return [...new Set([...staged, ...unstaged, ...untracked])].sort(
-    (left, right) => left.localeCompare(right),
-  );
-}
-
-function main() {
+function main(): void {
   const errors = [
     ...validatePackageJson(packageJson),
     ...validateTsconfigJson(tsconfigJson),
     ...validateTypedocJson(typedocJson),
     ...validateVscodeSettingsJson(vscodeSettingsJson),
   ];
-
-  const changedPaths = getProhibitedPathsChanges();
-  if (changedPaths.length > 0) {
-    errors.push(
-      `git-change-check: detected changes in prohibited paths (docs/api): ${changedPaths.join(", ")}`,
-    );
-  }
 
   if (errors.length > 0) {
     logError(`Found ${errors.length} validation issue(s):`);

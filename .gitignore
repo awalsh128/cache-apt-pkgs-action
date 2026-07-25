@@ -1,5 +1,10 @@
-node_modules/
-dist/
-coverage/
-.vscode/
 .DS_Store
+.vscode/
+coverage/
+dist/
+docs/api/
+docs/api-md/
+node_modules/
+!scripts/dist/
+!scripts/dist/**
+.github/repo-*.json

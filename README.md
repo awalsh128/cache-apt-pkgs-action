@@ -1,23 +1,23 @@
-# cache-apt-pkgs-action
+<img src="logo.png" alt="Description" height="80" align="center" style="padding-right: 1em;"> <span style="font-size: 2em; font-weight: bold;">Cache APT Packages Action v2</span>
 
 [![License: Apache2](https://shields.io/badge/license-apache2-blue.svg)](https://github.com/awalsh128/fluentcpp/blob/master/LICENSE)
-[![Master Test status](https://github.com/awalsh128/cache-apt-pkgs-action-ci/actions/workflows/master_test.yml/badge.svg)](https://github.com/awalsh128/cache-apt-pkgs-action-ci/actions/workflows/master_test.yml)
-[![Dev Test status](https://github.com/awalsh128/cache-apt-pkgs-action-ci/actions/workflows/dev_test.yml/badge.svg)](https://github.com/awalsh128/cache-apt-pkgs-action-ci/actions/workflows/dev_test.yml)
+![Main CI](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20Main&branch=dev-v2.0)
+![Staging CI](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20Staging&branch=dev-v2.0)
+[![codecov](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/branch/main/graph/badge.svg)](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action)
 
 This action allows caching of Advanced Package Tool (APT) package dependencies to improve workflow execution time instead of installing the packages on every run.
 
-> [!NOTE]
-> The open source projects that I maintain are a labor of love. If you find this useful and want to support open source, **please consider donating and [Buy Me a Coffe](http://buymeacoffee.com/awalsh128)**.
+For more information on changes in `v2` see the [Version 2 FAQ](V2_FAQ.MD)
+
+> [!TIP]
+> If you find this project useful, please consider supporting it [as a sponsor and show some ❤️ for open source maintainers](https://github.com/sponsors/awalsh128).
 
 > [!NOTE]
-> Version 2 of the action is now available! See [Version 2 FAQ](V2_FAQ.MD) for more information.
-
-> [!IMPORTANT]
 > Looking for co-maintainers to help review changes, and investigate issues. I haven't had as much time to stay on top of this action as I would like to and want to make sure it is still responsive and reliable for the community. If you are interested, please reach out.
 
 ## Documentation
 
-This action is a composition of [actions/cache](https://github.com/actions/cache/) and the `apt` utility. Some actions require additional APT based packages to be installed in order for other steps to be executed. Packages can be installed when ran but can consume much of the execution workflow time.
+This action is a composition of [actions/cache](https://github.com/actions/cache/) and the [ts-apt](http://github.com/awalsh128/ts-apt) library. Some actions require additional APT based packages to be installed in order for other steps to be executed. Packages can be installed when ran but can consume much of the execution workflow time.
 
 ## Usage
 
@@ -32,9 +32,8 @@ There are three kinds of version labels you can use.
 - `@latest` - This will give you the latest release.
 - `@v#` - Major only will give you the latest release for that major version only (e.g. `v1`).
 - Branch
-  - `@master` - Most recent manual and automated tested code. Possibly unstable since it is pre-release.
-  - `@staging` - Most recent automated tested code and can sometimes contain experimental features. Is pulled from dev stable code.
-  - `@dev` - Very unstable and contains experimental features. Automated testing may not show breaks since CI is also updated based on code in dev.
+  - `@main-v2` - Most recent manual and automated tested code. Possibly unstable since it is pre-release.
+  - `@staging-v2` - Most recent automated tested code and can sometimes contain experimental features. Is pulled from dev stable code.
 
 ### Inputs
 

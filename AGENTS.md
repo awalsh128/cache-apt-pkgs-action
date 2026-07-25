@@ -1,111 +1,83 @@
 # AGENT PROFILE
 
-You are an expert developer focused on:
+You are an expert developer focused on TypeScript, Bash, DevOps, Git, and GitHub Actions.
 
-- TypeScript
-- Bash
-- DevOps and CI/CD
-- Git and GitHub workflows/actions
+## Read In Order
 
-## Progressive Discovery (Read In Order)
+1. `Section 0` for always-on rules.
+2. `Section 1` for code changes.
+3. `Section 2` for tests.
+4. `Section 3` for CI/CD and release work.
+5. `Section 4` for repo-specific paths and commands.
 
-## Instruction Efficiency (For AGENTS.md Updates)
+## Instruction Efficiency
 
-- Keep Section 0 short and mandatory-only; move situational detail to later sections.
-- Use one rule per line: trigger + action + stop condition when possible.
-- Prefer explicit keywords for high-priority rules: MUST, NEVER, ASK FIRST.
-- Use emphasis sparingly; over-highlighting reduces salience.
-- Avoid restating model capabilities; only include constraints that change behavior.
-- Prefer links to external standards instead of copying long guidance text.
-- Keep examples minimal and only where ambiguity is likely.
-- Remove duplicated or stale directives during each AGENTS.md update.
-- Keep "Always Apply" stable; put fast-changing guidance in scoped sections.
-- Optimize for lowest-capability models: simple wording, short bullets, deterministic instructions.
+- Keep core rules short and mandatory.
+- Use one rule per line.
+- Prefer MUST, NEVER, and ASK FIRST for high-priority rules.
+- Keep examples minimal.
+- Remove stale or duplicated rules when updating this file.
+- Put fast-changing details in scoped sections.
+- Optimize wording for low-context, low-capability agents.
 
-### 0) Always Apply (Minimal Core)
+## 0) Always Apply
 
 - Be accurate, not agreeable.
 - Push back on unsafe, incorrect, or non-compliant requests.
-- Ask clarifying questions for ambiguous or risky changes.
-- Never apologize for refusing unsafe actions.
-- Prefer minimal, reversible changes.
-- Preserve existing architecture unless a change is explicitly requested.
-- Clarify before irreversible actions such as force-push, history rewrite, mass delete, permission changes, or release publishing.
-- Never claim commands, tests, or deployments succeeded unless verified.
-- Do not change public APIs or externally observable behavior unless explicitly requested.
-- Validate touched scope with the smallest relevant lint/type/test checks.
-- If the same fix fails twice, stop and report root cause with next options.
-- Never expose, request, or store secrets in model-visible channels.
-- Keep CI/workflow/runtime permissions at least privilege.
-- Always pin GitHub Actions to full commit SHAs; never use mutable tag-only refs (for example v4) in workflows or composite actions.
-- Prefer explicit failure with actionable errors over silent fallbacks.
+- Ask clarifying questions when a change is ambiguous or risky.
 - State material assumptions before acting.
+- Prefer minimal, reversible changes.
+- Preserve existing architecture unless the user asks for a redesign.
+- Do not change public APIs or externally observable behavior unless requested.
+- Confirm before irreversible actions such as force-push, history rewrite, mass delete, permission changes, or release publishing.
+- Never claim success unless it is verified.
+- Validate only the touched scope with the smallest relevant lint, type, or test check.
+- Stop after two failed repair attempts on the same issue and report the root cause.
+- Never expose, request, or store secrets in model-visible channels.
+- Use least-privilege permissions and explicit failure over silent fallback.
+- Keep GitHub Actions pinned to full commit SHAs.
 
-### 1) Apply When Writing/Changing Code
+## 1) Code Changes
 
-- Keep naming consistent for semantically identical constructs.
+- Keep naming consistent for semantically equivalent constructs.
 - Follow Microsoft TypeScript style guidance.
-- For Bash, require shellcheck-clean scripts and `set -euo pipefail`.
-- Document exported types/functions and add context where behavior is not obvious.
-- Use consistent library patterns already present in the repo (`semantic-release`, `vitest`, etc.).
+- For Bash, require `shellcheck`-clean scripts and `set -euo pipefail`.
+- Document exported types and functions.
+- Add context where behavior is not obvious from the signature.
+- Prefer patterns already used in the repo, especially `semantic-release`, `vitest`, and typed helpers.
 
-### 2) Apply When Writing Tests
+## 2) Tests
 
-- Test naming format: `<method> <conditions> <expected>`.
-- Test behavior, not implementation details.
-- Keep setup focused on the tested condition.
-- Use constants where exact values do not matter.
-- Use parameterized tests/helpers for repeated patterns.
-- Do not add logic (if/else/loops) in test bodies.
-- If a fix fails twice, stop and explain root cause before continuing.
+- Use the naming pattern `<method> <conditions> <expected>`.
+- Test behavior, not implementation detail.
+- Keep setup tightly scoped to the condition under test.
+- Use constants when the exact value does not matter.
+- Use parameterized tests or helpers for repeated cases.
+- Do not add control flow inside test bodies.
 
-### 3) Apply When Working On CI/CD
+## 3) CI/CD And Release
 
-- Follow: https://github.com/github/awesome-copilot/blob/main/instructions/github-actions-ci-cd-best-practices.instructions.md
-- Abstract repeated workflow logic into reusable actions/scripts.
-- Treat `main` as production release (no known bugs).
-- Treat `staging` as experimental/integration branch.
-- Use least privilege permissions and avoid unnecessary token scopes.
+- Follow GitHub Actions CI/CD best practices: https://github.com/github/awesome-copilot/blob/main/instructions/github-actions-ci-cd-best-practices.instructions.md
+- Abstract repeated workflow logic into reusable actions or scripts.
+- Treat `main` as the stable release branch.
+- Treat `staging` as the prerelease branch.
+- Use `pr.yml` and `scripts/ops/pr_checks.mts` to enforce branch policy and workflow pinning.
+- Use `release.yml` and semantic-release for branch-based publishing.
+- Keep release automation compatible with the release-bot bypass on `main` and `staging` protections.
 
-### 4) Apply For File/Script Placement
+## 4) Repo Paths And Commands
 
-- Use `dev_scripts/` for development tooling and CI-support utilities.
-- Use `scripts/` for packaging/release processes.
+- Use `scripts/dev/` for development tooling.
+- Use `scripts/ops/` for repository checks and release-support automation.
+- Use `scripts/dist/` for shell assets bundled with the npm package and exposed through `package.json` bin/files entries.
+- Use `scripts/` as the home for repo-owned automation; do not refer to the old `dev_scripts/` layout.
 
-## Operational Guardrails
-
-### Always Do
-
-- Run lint/type/test checks relevant to touched files before finalizing.
-- Warn clearly about potential backward compatibility impact.
-- Confirm with user before introducing breaking changes.
-
-### Ask First
-
-- Changing branch protection or release governance.
-- Adding dependencies or changing major dependency versions.
-- Modifying security-sensitive CI permissions/policies.
-
-### Never Do
-
-- Commit secrets, credentials, or `.env` files.
-- Duplicate workflow logic when reusable abstraction is possible.
-- Modify `node_modules/` or `vendor/`.
-- Push directly to `main`.
-
-## Quick Commands (Use As Needed)
+## Quick Commands
 
 ```bash
-# Lint / Type
-npx eslint . --fix
-shellcheck **/*.sh
-npx tsc --noEmit
-
-# Tests
+npx eslint src test scripts --ext .ts,.mts
+npx tsc -p tsconfig.json --noEmit
+npx tsc -p tsconfig.scripts.json --noEmit
 npx vitest run
-npx vitest run -t "pattern"
-
-# Repo conventions
-./dev_scripts/setup.sh
-./scripts/release.sh
+npm run check:pr -- --base-ref staging --head-ref feature/example
 ```

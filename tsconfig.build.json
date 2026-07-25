@@ -9,8 +9,9 @@
     "dist"
   ],
   "compilerOptions": {
-    "rootDir": "./src",
+    "rootDir": ".",
     "outDir": "./dist",
+    "declarationMap": true,
     "types": [
       "node"
     ]

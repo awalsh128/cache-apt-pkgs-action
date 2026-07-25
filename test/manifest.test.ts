@@ -2,21 +2,47 @@ import os from "node:os";
 import path from "node:path";
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
-import { readManifestAsCsv, writeManifest } from "../src/manifest.js";
+import { Manifest, ManifestEntry } from "../src/manifest.js";
 
 describe("manifest", () => {
-  it("writes sorted entries and reads csv output", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "manifest-test-"));
-    const filePath = path.join(tempDir, "manifest.log");
+  it("serializes and deserializes manifest entries", () => {
+    const manifest = new Manifest(
+      [
+        new ManifestEntry("z", "2", undefined, ["/b", "/a"]),
+        new ManifestEntry("a", "1", undefined, []),
+      ],
+      "input",
+      "cache-key",
+      "4",
+      "x86_64",
+    );
 
-    writeManifest(filePath, ["z=2", "a=1", "m=9"]);
-
-    expect(fs.readFileSync(filePath, "utf8")).toBe("a=1\nm=9\nz=2");
-    expect(readManifestAsCsv(filePath)).toBe("a=1,m=9,z=2");
+    const parsed = Manifest.deserialize(manifest.serialize());
+    expect(parsed.entries[0]?.name).toBe("z");
+    expect(parsed.cacheKey).toBe("cache-key");
   });
 
-  it("returns empty csv for missing files", () => {
+  it("writes and reads manifest files", () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "manifest-test-"));
+    const filePath = path.join(tempDir, "manifest.json");
+    const manifest = new Manifest(
+      [new ManifestEntry("curl", "8.1", undefined, ["usr/bin/curl"])],
+      "input",
+      "cache-key",
+      "4",
+      "x86_64",
+    );
+
+    manifest.writeToFile(filePath);
+    const parsed = Manifest.readFromFile(filePath);
+    expect(parsed.entries).toHaveLength(1);
+    expect(parsed.entries[0]?.name).toBe("curl");
+  });
+
+  it("throws for missing files", () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "manifest-missing-"));
-    expect(readManifestAsCsv(path.join(tempDir, "none.log"))).toBe("");
+    expect(() =>
+      Manifest.readFromFile(path.join(tempDir, "none.json")),
+    ).toThrow(/Manifest file not found/);
   });
 });

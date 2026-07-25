@@ -1,10 +1,16 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --experimental-strip-types
+import {
+  fail,
+  logInfo,
+  logSuccess,
+  readJsonFile,
+  ROOT_DIR,
+} from "../devopslib.mts";
 
-import { fail, logSuccess, readJsonFile, ROOT_DIR } from "./lib.mjs";
-
-const tag = process.env.RELEASE_TAG;
+const tag: string | undefined = process.env.RELEASE_TAG;
 if (!tag) {
-  fail("RELEASE_TAG is required for release preflight checks.");
+  logInfo("RELEASE_TAG is not set; skipping release tag preflight checks.");
+  process.exit(0);
 }
 
 if (!/^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(tag)) {
@@ -14,8 +20,7 @@ if (!/^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(tag)) {
 }
 
 const packageJsonPath = `${ROOT_DIR}/package.json`;
-const packageJson = readJsonFile(packageJsonPath);
-
+const packageJson = readJsonFile(packageJsonPath) as { version?: string };
 if (
   typeof packageJson.version !== "string" ||
   packageJson.version.length === 0

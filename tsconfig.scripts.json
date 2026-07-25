@@ -1,21 +1,21 @@
 {
   "extends": "./tsconfig.base.json",
   "include": [
-    "src/**/*.ts",
-    "test/**/*.ts",
-    "scripts/**/*.mts",
-    "scripts/dist/**/*.ts"
+    "scripts/**/*.mts"
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "scripts/dist"
   ],
   "compilerOptions": {
+    "noEmit": true,
     "types": [
-      "node",
-      "vitest/globals"
+      "node"
     ],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "verbatimModuleSyntax": true
   }
 }
