@@ -5,10 +5,14 @@ import * as crypto from "node:crypto";
 import { promises as fs } from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { ActionPackageNames, findInstallScript } from "./packages.ts";
-import { Manifest, ManifestEntry } from "./manifest.ts";
-import { CommandRunner, PackageInfo, PackageName } from "ts-apt/types.js";
-import { deserializePackageName } from "ts-apt/package.ts";
+import { ActionPackageNames, findInstallScript } from "./packages.js";
+import { Manifest, ManifestEntry } from "./manifest.js";
+import {
+  deserializePackageName,
+  CommandRunner,
+  PackageInfo,
+  PackageName,
+} from "ts-apt";
 
 export const CACHE_DEFAULT_DIRNAME = "cache-apt-pkgs";
 export const CACHE_KEY_FILENAME = "cache_key.md5";
@@ -41,7 +45,10 @@ export class CacheKey {
     this.forceUpdateIncrement = forceUpdateIncrement;
     this.arch = arch;
     this.packageNames = packageNames;
-    this.hash = crypto.createHash("md5").update(this.toJSON()).digest("hex");
+    this.hash = crypto
+      .createHash("md5")
+      .update(this.toJSON(false))
+      .digest("hex");
   }
 
   /**
@@ -64,14 +71,28 @@ export class CacheKey {
   /**
    * Serializes cache key fields to a stable, human-readable format.
    *
+   * NOTE: Object is always stable JSON stringification for consistent hashing.
+   *
+   * @param readable Whether to pretty-print the JSON output. Defaults to false.
    * @returns Serialized cache key components.
    */
-  toJSON(): string {
-    return JSON.stringify(this, null, 2);
+  toJSON(readable: boolean = false): string {
+    // Helper to sort keys recursively
+    const sortObj = (o: any): any => {
+      if (o === null || typeof o !== "object") return o;
+      if (Array.isArray(o)) return o.map(sortObj);
+      return Object.keys(o)
+        .sort()
+        .reduce((acc, key) => {
+          acc[key] = sortObj(o[key]);
+          return acc;
+        }, {} as any);
+    };
+    return JSON.stringify(sortObj(this), null, readable ? 2 : 0);
   }
 
   toString(): string {
-    return `${this.hash} (key input: ${JSON.stringify(this)})`;
+    return `${this.hash} (key input: ${this.toJSON(true)})`;
   }
 }
 
@@ -97,7 +118,7 @@ export class Cache {
 
   private async runInstallScripts(archiveFilename: string): Promise<void> {
     const serializePackageName = archiveFilename.replace(/\.tar$/, "");
-    const packageName = deserializePackageName(serializePackageName);
+    const packageName = deserializePackageName(serializePackageName)!;
 
     const runScript = async (
       packageName: PackageName,
@@ -140,31 +161,29 @@ export class Cache {
       return undefined;
     }
 
-    const logFileError = (prefixMessage: string) => {
+    const logFileError = async (prefixMessage: string) => {
+      const contents = await fs
+        .readdir(this.path)
+        .then((entries) => entries.join("\n"))
+        .catch(
+          (reason: any) => `Unable to read cache directory contents: ${reason}`,
+        );
       this.logger.error(
         `${prefixMessage}, skipping cache restore.\n` +
           `This may indicate a cache corruption or an unexpected cache hit for a different package set.\n` +
-          fs
-            .readdir(this.path)
-            .then(
-              (entries) => `Cache directory contents:\n${entries.join("\n")}`,
-            )
-            .catch(
-              (reason: any) =>
-                `Unable to read cache directory contents: ${reason}`,
-            ),
+          `Cache directory contents:\n${contents}`,
       );
     };
 
     this.logger.info(`Cache hit for key ${key.hash}, restoring...`);
     const manifestPath = path.join(this.path, MANIFEST_MAIN_FILENAME);
     if (
-      !fs
+      !(await fs
         .access(manifestPath, fs.constants.R_OK)
         .then(() => true)
-        .catch(() => false)
+        .catch(() => false))
     ) {
-      logFileError(`Manifest file not found at ${manifestPath}`);
+      await logFileError(`Manifest file not found at ${manifestPath}`);
       return undefined;
     }
     const archives = await fs
@@ -175,7 +194,9 @@ export class Cache {
       .then((entries: string[]) => entries.sort());
 
     if (archives.length === 0) {
-      logFileError(`No archive files found in cache directory ${this.path}`);
+      await logFileError(
+        `No archive files found in cache directory ${this.path}`,
+      );
       return undefined;
     }
 
@@ -191,6 +212,8 @@ export class Cache {
         await this.runInstallScripts(archiveFilename);
       }
     }
+
+    return await Manifest.readFromFile(manifestPath);
   }
 
   private async createArchive(manifestEntry: ManifestEntry): Promise<void> {
@@ -232,10 +255,10 @@ export class Cache {
     const allEntries = manifest.entries;
     const packages = manifest.cacheKey.packageNames;
     const entriesByName = new Map(
-      allEntries.map((entry) => [entry.packageName, entry]),
+      allEntries.map((entry) => [entry.packageName.serialize(), entry]),
     );
     const mainEntries = packages.toArray().map((pkg) => {
-      const installed = entriesByName.get(pkg);
+      const installed = entriesByName.get(pkg.serialize());
       return new ManifestEntry(pkg, installed?.filepaths ?? []);
     });
 
@@ -295,7 +318,7 @@ export class Cache {
 
     try {
       const cacheId = await ghcache.saveCache(
-        manifest.entries.flatMap((entry) => entry.filepaths),
+        [this.path],
         manifest.cacheKey.hash,
       );
       if (cacheId === undefined) {

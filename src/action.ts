@@ -1,5 +1,9 @@
-import { createPackageManager, type CommandRunner } from "ts-apt";
-import { Cache, CacheKey } from "./cache.ts";
+import {
+  createPackageManager,
+  type CommandRunner,
+  type PackageName,
+} from "ts-apt";
+import { Cache, CacheKey } from "./cache.js";
 import { Manifest } from "./manifest.js";
 import { ActionPackageNames } from "./packages.js";
 import winston from "winston";
@@ -38,34 +42,6 @@ export class ActionRunner {
     this.cache = cache;
     this.commandRunner = commandRunner;
     this.logger = logger;
-  }
-
-  /**
-   * Applies configured behavior when package input resolves to an empty set.
-   *
-   * @param behavior Empty-package handling strategy.
-   * @param packages Normalized package list.
-   * @returns Nothing.
-   * @throws Error when behavior is error and packages is empty.
-   */
-  validateEmptyPackages(
-    behavior: EmptyPackageBehavior,
-    packages: ActionPackageNames,
-  ): void {
-    if (packages.length > 0) {
-      return;
-    }
-
-    if (behavior === "ignore") {
-      return;
-    }
-
-    if (behavior === "warn") {
-      process.stdout.write("::warning::Packages argument is empty.\n");
-      return;
-    }
-
-    throw new Error("Packages argument is empty.");
   }
 
   /**
@@ -108,6 +84,7 @@ export class ActionRunner {
         this.logger,
       );
       const packageInfos = await installManager.install(packageNames.toArray());
+      manifest = Manifest.from(new Date(), cacheKey, packageInfos);
       await this.cache.archiveAndSave(cacheKey, packageInfos);
     }
 

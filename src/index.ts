@@ -1,7 +1,7 @@
 import * as core from "@actions/core";
 import { runAction, type ActionInputs } from "./action.js";
 import { DefaultCommandRunner } from "ts-apt";
-import { Cache, CACHE_DEFAULT_DIRNAME } from "./cache.ts";
+import { Cache, CACHE_DEFAULT_DIRNAME } from "./cache.js";
 import { Instruments } from "./instrumentation.js";
 
 /**
@@ -59,7 +59,7 @@ async function main(): Promise<void> {
     const outputs = await runAction(
       inputs,
       commandRunner,
-      new Cache(commandRunner, instruments.appLogger, cacheDir),
+      new Cache(commandRunner, instruments.appLogger, instruments.cacheDir),
       instruments.appLogger,
     );
 

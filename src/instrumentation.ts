@@ -8,7 +8,7 @@ import {
   CACHE_KEY_FILENAME,
   MANIFEST_ALL_FILENAME,
   MANIFEST_MAIN_FILENAME,
-} from "./cache.ts";
+} from "./cache.js";
 
 const APP_LOG_FILENAME = "capa_app.log";
 const EXEC_LOG_FILENAME = "capa_exec.log";
@@ -23,15 +23,23 @@ function createStream(
   });
 }
 
+/**
+ * Manages artifact creation and upload.
+ */
 export class Artifacts {
   constructor(
+    /** Directory that all the artifacts are stored. */
     readonly dir: string,
+    /** Filenames of monitored artifacts. */
     readonly artifactFilenames: string[],
+    /** Whether debug is enabled which affects artifacts otherwise not. */
     readonly debug: boolean = false,
+    /** Unique runner ID of the GitHub Action workflow run. */
     readonly runId: string = process.env.GITHUB_RUN_ID ??
       `ghrunid-notfound-${crypto.randomUUID()}`,
   ) {}
 
+  /** Upload artifacts to GitHub Actions via [@actions/artifact]. */
   upload(): string {
     const client = new DefaultArtifactClient();
     client.uploadArtifact(
@@ -48,6 +56,7 @@ export class Artifacts {
   }
 }
 
+/** Create the logger used for command line execution */
 function createExecLogger(debug: boolean, filepath: string): winston.Logger {
   const logger = winston.createLogger({
     level: debug ? "debug" : "info",
@@ -60,6 +69,7 @@ function createExecLogger(debug: boolean, filepath: string): winston.Logger {
   return logger;
 }
 
+/** Create the logger used for GitHub Actions integration. */
 function createGitHubLogger(debug: boolean, filepath: string): winston.Logger {
   const logger = winston.createLogger({
     level: debug ? "debug" : "info",
@@ -87,11 +97,17 @@ function createGitHubLogger(debug: boolean, filepath: string): winston.Logger {
   return logger;
 }
 
+/** Container for all instrumentation: telemetry, logging, and artifacts generated */
 export class Instruments {
+  /** Cache directory where all artifacts are stored, including cached packages. */
   readonly cacheDir: string;
+  /** Whether debug is enabled which affects artifacts otherwise not. */
   readonly debug: boolean;
+  /** Manages artifact creation and upload.  */
   readonly artifacts: Artifacts;
+  /** Logger used for GitHub Actions integration. */
   readonly appLogger: winston.Logger;
+  /** Logger used for command line execution. */
   readonly execLogger: winston.Logger;
 
   constructor(cacheDir: string, debug: boolean, artifacts?: Artifacts) {

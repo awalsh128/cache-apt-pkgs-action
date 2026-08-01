@@ -1,119 +1,84 @@
-import os from "node:os";
-import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import winston from "winston";
+import { Manifest } from "../src/manifest.js";
+import { CacheKey } from "../src/cache.js";
+import { ActionPackageNames } from "../src/packages.js";
+import { createPackageManager } from "ts-apt";
 
 import { ActionRunner } from "../src/action.js";
+
+vi.mock("ts-apt", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("ts-apt")>();
+  return {
+    ...actual,
+    createPackageManager: vi.fn(),
+  };
+});
 
 describe("ActionRunner", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.mocked(createPackageManager).mockReset();
   });
 
   function createRunner() {
+    const cache = {
+      loadAndRestore: vi.fn(),
+      archiveAndSave: vi.fn(),
+    };
+
     const commandRunner = {
       run: vi.fn(),
     };
 
     const logger = winston.createLogger({ silent: true });
-    const tarModule = {
-      create: vi.fn(),
-      extract: vi.fn(),
-    };
-
     return {
-      runner: new ActionRunner(
-        commandRunner as never,
-        tarModule as never,
-        logger,
-      ),
+      runner: new ActionRunner(cache as never, commandRunner as never, logger),
+      cache,
       commandRunner,
     };
   }
 
-  it("resolves package versions from package manager metadata", async () => {
-    const { runner } = createRunner();
-    const packageManager = {
-      getPackageInfo: vi.fn().mockResolvedValue([{ version: "1.2.3" }]),
-    };
+  it("returns cache-hit outputs when manifest is restored", async () => {
+    const { runner, cache } = createRunner();
+    const packageNames = ActionPackageNames.fromInput("curl git");
+    const cacheKey = new CacheKey("v1", "0", process.arch, packageNames);
+    const restored = new Manifest(new Date(), [], cacheKey);
+    cache.loadAndRestore.mockResolvedValue(restored);
 
-    await expect(
-      runner.resolvePackageVersion(packageManager as never, "git"),
-    ).resolves.toBe("1.2.3");
+    const result = await runner.runAction({
+      packages: "curl git",
+      version: "v1",
+      executeInstallScripts: false,
+      emptyPackagesBehavior: "error",
+      debug: false,
+    });
+
+    expect(result.cacheHit).toBe(true);
+    expect(cache.archiveAndSave).not.toHaveBeenCalled();
   });
 
-  it("fails when package metadata does not contain a version", async () => {
-    const { runner } = createRunner();
-    const packageManager = {
-      getPackageInfo: vi.fn().mockResolvedValue([{}]),
-    };
+  it("archives installed packages on cache miss", async () => {
+    const { runner, cache } = createRunner();
+    cache.loadAndRestore.mockResolvedValue(undefined);
+    vi.mocked(createPackageManager).mockResolvedValue({
+      install: vi.fn().mockResolvedValue([
+        {
+          name: {
+            serialize: () => "curl=1.0.0",
+          },
+        },
+      ]),
+    } as never);
 
-    await expect(
-      runner.resolvePackageVersion(packageManager as never, "git"),
-    ).rejects.toThrow(/Unable to resolve package version/);
-  });
+    await runner.runAction({
+      packages: "curl",
+      version: "v1",
+      executeInstallScripts: false,
+      emptyPackagesBehavior: "error",
+      debug: false,
+    });
 
-  it("normalizes packages and fills in missing versions", async () => {
-    const { runner } = createRunner();
-    vi.spyOn(runner, "resolvePackageVersion")
-      .mockResolvedValueOnce("8.0")
-      .mockResolvedValueOnce("2.39");
-
-    await expect(
-      runner.normalizePackagesWithVersions({} as never, "git curl=8.1"),
-    ).resolves.toEqual(["curl=8.1", "git=8.0"]);
-  });
-
-  it("warns instead of throwing for empty packages when behavior is warn", () => {
-    const { runner } = createRunner();
-    const writeSpy = vi
-      .spyOn(process.stdout, "write")
-      .mockImplementation(() => true);
-
-    expect(() => runner.validateEmptyPackages("warn", [])).not.toThrow();
-    expect(writeSpy).toHaveBeenCalledWith(
-      "::warning::Packages argument is empty.\n",
-    );
-  });
-
-  it("throws for empty packages when behavior is error", () => {
-    const { runner } = createRunner();
-
-    expect(() => runner.validateEmptyPackages("error", [])).toThrow(
-      /Packages argument is empty/,
-    );
-  });
-
-  it("returns the cache root under the current home directory", () => {
-    const { runner } = createRunner();
-
-    expect(runner.getCacheRoot()).toBe(
-      path.join(os.homedir(), "cache-apt-pkgs"),
-    );
-  });
-
-  it("hashes runner cache keys using the current architecture", async () => {
-    const { runner, commandRunner } = createRunner();
-    commandRunner.run.mockResolvedValue({ stdout: "arm64\n" });
-
-    await expect(runner.getCacheKey(["curl=1", "git=2"], "v1")).resolves.toBe(
-      "cache-apt-pkgs_36cfe31d08e34e7bd87b39c0e0145ece",
-    );
-  });
-
-  it("removes versions from package specifiers", () => {
-    const { runner } = createRunner();
-
-    expect(runner.packageSpecifierToName("curl=8.1")).toBe("curl");
-    expect(runner.packageSpecifierToName("git")).toBe("git");
-  });
-
-  it("strips leading slashes from tar paths", () => {
-    const { runner } = createRunner();
-
-    expect(runner.tarRelativePath("/var/cache/apt/pkg.tar")).toBe(
-      "var/cache/apt/pkg.tar",
-    );
-    expect(runner.tarRelativePath("relative/file")).toBe("relative/file");
+    expect(cache.archiveAndSave).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,7 +1,11 @@
 import * as fs from "fs";
-import type { PackageName, PackageManager } from "ts-apt/types.ts";
 import path from "path";
-import { createPackageName, deserializePackageName } from "ts-apt/package.ts";
+import {
+  createPackageName,
+  deserializePackageName,
+  type PackageName,
+  type PackageManager,
+} from "ts-apt";
 import winston from "winston";
 
 /**
@@ -14,6 +18,7 @@ import winston from "winston";
 export async function buildFileList(
   packageName: PackageName,
   packageManager: PackageManager,
+  root: string = "/",
 ): Promise<string[]> {
   // Converts absolute paths to tar-relative paths.
   const tarRelativePath = (filePath: string) =>
@@ -30,8 +35,8 @@ export async function buildFileList(
     })
     .map((filePath) => tarRelativePath(filePath));
 
-  const preinst = await findInstallScript(packageName, "preinst", "/");
-  const postinst = await findInstallScript(packageName, "postinst", "/");
+  const preinst = await findInstallScript(packageName, "preinst", root);
+  const postinst = await findInstallScript(packageName, "postinst", root);
 
   if (preinst) {
     files.push(tarRelativePath(preinst));
@@ -40,7 +45,7 @@ export async function buildFileList(
     files.push(tarRelativePath(postinst));
   }
 
-  return files.sort((a, b) => a.localeCompare(b));
+  return [...new Set(files)].sort((a, b) => a.localeCompare(b));
 }
 
 /**
@@ -61,9 +66,7 @@ export async function findInstallScript(
     return undefined;
   }
 
-  const pattern = new RegExp(
-    `^${packageName.serialize()}(:.*)?\\.${extension}$`,
-  );
+  const pattern = new RegExp(`^${packageName.name}(:.*)?\\.${extension}$`);
   const matches = fs
     .readdirSync(scriptsDir)
     .filter((entry) => pattern.test(entry))
@@ -76,49 +79,87 @@ export async function findInstallScript(
   return path.join(scriptsDir, candidate);
 }
 
-/**
- * Resolves a concrete version for an unpinned package name.
- *
- * @param packageManager ts-apt package manager instance used for metadata lookup.
- * @param packageName Package name with or without a version pin.
- * @returns Resolved package version.
- * @throws Error when no version can be resolved.
- */
-export async function resolvePackageVersion(
-  packageManager: PackageManager,
-  packageName: PackageName,
-): Promise<string> {
-  const packageInfo = await packageManager.getPackageInfo([packageName]);
-  const version = packageInfo[0]?.version;
-  if (!version) {
-    throw new Error(
-      `Unable to resolve package version for '${packageName.serialize()}'.`,
-    );
-  }
-
-  return version;
-}
-
 export class ActionPackageNames {
   private readonly items: PackageName[];
 
   private constructor(items: PackageName[]) {
-    this.items = items.sort();
+    this.items = items.sort((a, b) => a.compareTo(b));
   }
 
   static fromInput(serializedPackageNames: string): ActionPackageNames {
-    const names = serializedPackageNames
-      .replace(/[,\\]/g, " ")
+    const tokens = serializedPackageNames
+      .replace(/[,\\\n]/g, " ")
       .replace(/\s+/g, " ")
       .trim()
       .split(" ")
-      .map((part) => deserializePackageName(part.trim()));
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0);
+
+    const names: PackageName[] = [];
+
+    for (let index = 0; index < tokens.length; ) {
+      const current = tokens[index]!;
+      const next = tokens[index + 1];
+
+      const splitNameArch = (namePart: string) => {
+        const [name = "", arch] = namePart.split(":", 2);
+        return { name, arch };
+      };
+
+      try {
+        if (current.includes("=")) {
+          const [namePart, ...versionParts] = current.split("=");
+          const version = versionParts.join("=").trim();
+          if (namePart === undefined || namePart.trim() === "") {
+            index += 1;
+            continue;
+          }
+
+          const split = splitNameArch(namePart.trim());
+          let arch = split.arch;
+
+          if (
+            arch === undefined &&
+            next !== undefined &&
+            !next.includes("=") &&
+            next.trim() !== ""
+          ) {
+            arch = next.trim();
+            index += 1;
+          }
+
+          names.push(
+            createPackageName(
+              split.name,
+              version === "" ? undefined : version,
+              arch,
+            ),
+          );
+          index += 1;
+          continue;
+        }
+
+        const split = splitNameArch(current);
+        names.push(createPackageName(split.name, undefined, split.arch));
+      } catch {
+        // Ignore invalid package tokens.
+      }
+
+      index += 1;
+    }
+
     return new ActionPackageNames(names);
   }
 
   static fromJSON(json: any): ActionPackageNames {
-    const items = (json as any[]).map((item: any) =>
-      createPackageName(item.name, item.version, item.rc),
+    const sourceItems = Array.isArray(json)
+      ? json
+      : Array.isArray(json?.items)
+        ? json.items
+        : [];
+
+    const items = sourceItems.map((item: any) =>
+      createPackageName(item.name, item.version, item.arch),
     );
     return new ActionPackageNames(items);
   }
@@ -127,7 +168,7 @@ export class ActionPackageNames {
     return this.items.length;
   }
 
-  toArray(): ReadonlyArray<PackageName> {
+  toArray(): readonly PackageName[] {
     return this.items;
   }
 }
@@ -141,8 +182,8 @@ export class ActionPackageNames {
 export async function updateAptLists(
   packageManager: PackageManager,
   logger: winston.Logger,
+  aptListsPath: string = "/var/lib/apt/lists",
 ): Promise<void> {
-  const aptListsPath = "/var/lib/apt/lists";
   const maxDepth = 5;
 
   const search = async (

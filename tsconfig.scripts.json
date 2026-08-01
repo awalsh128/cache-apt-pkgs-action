@@ -13,8 +13,6 @@
     "types": [
       "node"
     ],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true
   }

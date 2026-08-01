@@ -32,8 +32,12 @@ There are three kinds of version labels you can use.
 - `@latest` - This will give you the latest release.
 - `@v#` - Major only will give you the latest release for that major version only (e.g. `v1`).
 - Branch
-  - `@main-v2` - Most recent manual and automated tested code. Possibly unstable since it is pre-release.
-  - `@staging-v2` - Most recent automated tested code and can sometimes contain experimental features. Is pulled from dev stable code.
+  - version 1.x
+    - `@master` - Most recent manual and automated tested code. Possibly unstable since it is pre-release (publishes as `1.x.x`).
+    - `@staging` - Most recent automated tested code and can sometimes contain experimental features (no publish).
+  - version 2.x
+    - `@main-2` - Live and stable version, pre-production before action release (publishes as `2.x.x`).
+    - `@staging-2` - Possibly unstable and can sometimes contain experimental features (publishes as `2.x.x-rc#`).
 
 ### Inputs
 
