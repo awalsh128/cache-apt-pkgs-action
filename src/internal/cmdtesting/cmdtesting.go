@@ -55,7 +55,7 @@ func (t *CmdTesting) Run(command string, pkgNames ...string) RunResult {
 	if t.createReplayLogs {
 		err := common.AppendFile(binaryName+".log", t.replayFilename)
 		if err != nil {
-			t.T.Fatalf("Error encountered appending log file.\n%s", err.Error())
+			t.Fatalf("Error encountered appending log file.\n%s", err.Error())
 		}
 	}
 
