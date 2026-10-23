@@ -29,7 +29,8 @@ Create a workflow `.yml` file in your repositories `.github/workflows` directory
 
 There are three kinds of version labels you can use.
 
-- `@latest` - This will give you the latest release.
+- `@latest` - This will give you the latest release of **v1, not v2**.
+- `@latest-v2` - This will give you the latest release of **v2**.
 - `@v#` - Major only will give you the latest release for that major version only (e.g. `v1`).
 - Branch
   - version 1.x

@@ -1,0 +1,5 @@
+--workflows .github/workflows/ci.yml
+--eventpath .github/act/events/push.json
+--container-architecture linux/amd64
+--pull=false
+-P ubuntu-latest=cache-apt-pkgs-action-ci:local
