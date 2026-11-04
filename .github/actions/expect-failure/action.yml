@@ -1,0 +1,22 @@
+name: Expect failure
+description: >
+  Fail the job unless the given step outcome is 'failure'. Use after a step
+  run with continue-on-error to assert that it failed.
+
+inputs:
+  outcome:
+    description: Outcome of the step expected to fail (steps.<id>.outcome).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Verify step failed
+      shell: bash
+      env:
+        OUTCOME: ${{ inputs.outcome }}
+      run: |
+        if [[ "${OUTCOME}" != "failure" ]]; then
+          echo "Expected the action to fail but its outcome was '${OUTCOME}'."
+          exit 1
+        fi

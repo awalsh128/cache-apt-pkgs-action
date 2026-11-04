@@ -1,0 +1,26 @@
+name: Setup distribute directory
+description: >
+  Download the build artifacts from the build_binaries job and arrange them
+  into distribute/<ARCH>/ directories. Requires the repository to be checked
+  out first.
+
+runs:
+  using: composite
+  steps:
+    - name: Download build artifacts
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        pattern: cache-apt-pkgs-*
+        path: distribute-artifacts
+    - name: Setup distribute directory
+      shell: bash
+      run: |
+        mkdir -p distribute/X64 distribute/X86 distribute/ARM64 distribute/ARM
+        for artifact_dir in distribute-artifacts/cache-apt-pkgs-*; do
+          if [ -d "$artifact_dir" ]; then
+            arch=$(basename "$artifact_dir" | sed 's/cache-apt-pkgs-\([^-]*\)-.*/\1/')
+            echo "Copying artifacts for architecture: $arch"
+            cp -r "$artifact_dir"/* "distribute/$arch/" 2>/dev/null || true
+          fi
+        done
+        ls -la distribute/*/ || true
