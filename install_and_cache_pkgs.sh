@@ -25,6 +25,9 @@ if ! apt-fast --version > /dev/null 2>&1; then
   log "Installing apt-fast for optimized installs..."
   # Install apt-fast for optimized installs.
   /bin/bash -c "$(curl -sL https://raw.githubusercontent.com/ilikenwf/apt-fast/master/quick-install.sh)"
+  if ! apt-fast --version > /dev/null 2>&1; then
+    abort 8 "Unable to install apt-fast; see the error above."
+  fi
   log "done"
 
   log_empty_line
@@ -35,7 +38,9 @@ if [ -n "${add_repository}" ]; then
   log "Adding custom repositories..."
   for repository in ${add_repository}; do
     log "- Adding repository: ${repository}"
-    sudo apt-add-repository -y "${repository}"
+    if ! sudo apt-add-repository -y "${repository}"; then
+      abort 9 "Unable to add repository '${repository}'; see the error above."
+    fi
   done
   log "done"
   log_empty_line
@@ -46,7 +51,9 @@ update_apt_lists_if_stale
 
 log_empty_line
 
-packages="$(get_normalized_package_list "${input_packages}")"
+if ! packages="$(get_normalized_package_list "${input_packages}")"; then
+  abort 7 "Unable to resolve the package list; see the error above."
+fi
 package_count=$(wc -w <<< "${packages}")
 log "Clean installing and caching ${package_count} package(s)."
 
@@ -71,13 +78,35 @@ install_log_filepath="${cache_dir}/install.log"
 
 log "Clean installing ${package_count} packages..."
 # Zero interaction while installing or upgrading the system via apt.
-sudo DEBIAN_FRONTEND=noninteractive apt-fast --yes install ${packages} > "${install_log_filepath}"
+if ! sudo DEBIAN_FRONTEND=noninteractive apt-fast --yes install ${packages} > "${install_log_filepath}"; then
+  abort 10 "Package installation failed; nothing will be cached. See the error above and ${install_log_filepath}."
+fi
 log "done"
 log "Installation log written to ${install_log_filepath}"
 
 log_empty_line
 
-installed_packages=$(get_installed_packages "${install_log_filepath}")
+# Never cache an incomplete install, even if the package manager reported success.
+log "Verifying requested packages are installed..."
+for package in ${packages}; do
+  read package_name package_ver < <(get_package_name_ver "${package}")
+  package_installed=false
+  while read -r want flag state installed_ver; do
+    if test "${flag} ${state}" = "ok installed" -a "${installed_ver}" = "${package_ver}"; then
+      package_installed=true
+    fi
+  done <<< "$(dpkg-query -W -f='${Status} ${Version}\n' "${package_name}" 2> /dev/null)"
+  if test "${package_installed}" != "true"; then
+    abort 11 "Package ${package_name} (${package_ver}) is not installed; nothing will be cached. See ${install_log_filepath}."
+  fi
+done
+log "done"
+
+log_empty_line
+
+if ! installed_packages=$(get_installed_packages "${install_log_filepath}"); then
+  abort 12 "Unable to read the installed packages from ${install_log_filepath}."
+fi
 log "Installed package list:"
 for installed_package in ${installed_packages}; do
   # Reformat for human friendly reading.  

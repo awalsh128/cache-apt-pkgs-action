@@ -1,3 +1,4 @@
 src/cmd/apt_query/apt_query*
 apt_query*
+!apt_query.srchash
 *.log

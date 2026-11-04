@@ -35,13 +35,13 @@ func Init(filename string, debug bool) *Logger {
 }
 
 func DebugLazy(getLine func() string) {
-	if logger.Debug {
+	if logger != nil && logger.Debug {
 		logger.wrapped.Println(getLine())
 	}
 }
 
 func Debug(format string, a ...any) {
-	if logger.Debug {
+	if logger != nil && logger.Debug {
 		logger.wrapped.Printf(format, a...)
 	}
 }

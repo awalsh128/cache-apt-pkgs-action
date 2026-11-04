@@ -8,6 +8,45 @@ set -e
 COMMAND="${1}"
 shift
 
+# File recording the hash of the Go sources the committed apt_query binaries were built from.
+SOURCE_HASH_FILE="apt_query.srchash"
+
+###############################################################################
+# Hash the Go sources that the apt_query binaries are built from. Tests and
+# replay logs are excluded since they don't affect the binaries.
+# Outputs:
+#   SHA-256 hash of the sources.
+###############################################################################
+function get_source_hash {
+  # Subshell so pipefail doesn't leak into the rest of the script.
+  (
+    set -o pipefail
+    git ls-files -z --cached --others --exclude-standard -- \
+        src go.mod go.sum ':!:*_test.go' ':!:**/testlogs/**' \
+      | sort -z | xargs -0 --no-run-if-empty sha256sum | sha256sum | cut -d' ' -f1
+  )
+}
+
+###############################################################################
+# Build the apt_query binary.
+# Arguments:
+#   1: GOOS (e.g., linux).
+#   2: GOARCH (e.g., amd64, arm64, arm, 386).
+#   3: GOARM variant (e.g., "6" for armv6; empty string if not applicable).
+#   4: Output file path.
+###############################################################################
+function build_apt_query {
+  local goos="${1}"
+  local goarch="${2}"
+  local goarm="${3}"
+  local output="${4}"
+  echo "Building ${output} for ${goos}/${goarch} (variant: ${goarm:-none})..."
+  GOOS="${goos}" GOARCH="${goarch}" GOARM="${goarm}" CGO_ENABLED=0 \
+    go build -trimpath -o "${output}" ./src/cmd/apt_query
+  chmod +x "${output}"
+  echo "Binary built: ${output} ($(du -h "${output}" | cut -f1))"
+}
+
 case "${COMMAND}" in
 
   ###############################################################################
@@ -74,11 +113,7 @@ case "${COMMAND}" in
     BINARY_NAME="apt_query-${ARCH_LOWER}"
     OUTPUT="${DIST_DIR}/${BINARY_NAME}"
 
-    echo "Building ${BINARY_NAME} for ${GOOS}/${GOARCH} (variant: ${GOARCH_VARIANT:-none})..."
-    GOOS="${GOOS}" GOARCH="${GOARCH}" GOARM="${GOARCH_VARIANT}" CGO_ENABLED=0 \
-      go build -o "${OUTPUT}" ./src/cmd/apt_query
-    chmod +x "${OUTPUT}"
-    echo "Binary built: ${OUTPUT} ($(du -h "${OUTPUT}" | cut -f1))"
+    build_apt_query "${GOOS}" "${GOARCH}" "${GOARCH_VARIANT}" "${OUTPUT}"
 
     # Copy the apt-fast install script if available.
     if [[ -f "apt-fast-repo/apt-fast" ]]; then
@@ -226,6 +261,34 @@ case "${COMMAND}" in
     ls -la "${RELEASE_DIR}/"
     ;;
 
+  ###############################################################################
+  # Build the apt_query binaries committed at the repository root, which the
+  # action runs directly, and record the hash of the sources they were built
+  # from. Run this and commit the results whenever the Go sources change.
+  ###############################################################################
+  build-committed-binaries)
+    for arch in x86:amd64 arm64:arm64; do
+      build_apt_query linux "${arch#*:}" "" "apt_query-${arch%%:*}"
+    done
+    get_source_hash > "${SOURCE_HASH_FILE}"
+    echo "Source hash written to ${SOURCE_HASH_FILE}"
+    ;;
+
+  ###############################################################################
+  # Verify the committed apt_query binaries were built from the current Go
+  # sources (regression issues #166, #218).
+  ###############################################################################
+  check-committed-binaries)
+    EXPECTED="$(cat "${SOURCE_HASH_FILE}" 2>/dev/null || true)"
+    ACTUAL="$(get_source_hash)"
+    if [[ "${EXPECTED}" != "${ACTUAL}" ]]; then
+      echo "Error: Committed apt_query binaries are out of date with the Go sources." >&2
+      echo "Run './scripts/distribute.sh build-committed-binaries' and commit the results." >&2
+      exit 1
+    fi
+    echo "Committed apt_query binaries match the Go sources."
+    ;;
+
   *)
     echo "Error: Unknown command: ${COMMAND}" >&2
     echo "Usage: distribute.sh <command> [args...]" >&2
@@ -238,6 +301,8 @@ case "${COMMAND}" in
     echo "  verify-build <arch>" >&2
     echo "  reorganize-artifacts" >&2
     echo "  consolidate-release" >&2
+    echo "  build-committed-binaries" >&2
+    echo "  check-committed-binaries" >&2
     exit 1
     ;;
 

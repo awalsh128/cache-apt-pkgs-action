@@ -31,10 +31,11 @@ add_repository="${6}"
 # List of the packages to use.
 packages="${@:7}"
 
+# Explicitly propagate failures since lib.sh disables errexit.
 if test "${cache_hit}" = "true"; then
-  ${script_dir}/restore_pkgs.sh "${cache_dir}" "${cache_restore_root}" "${execute_install_scripts}" "${debug}"
+  ${script_dir}/restore_pkgs.sh "${cache_dir}" "${cache_restore_root}" "${execute_install_scripts}" "${debug}" || exit $?
 else
-  ${script_dir}/install_and_cache_pkgs.sh "${cache_dir}" "${debug}" "${add_repository}" ${packages}
+  ${script_dir}/install_and_cache_pkgs.sh "${cache_dir}" "${debug}" "${add_repository}" ${packages} || exit $?
 fi
 
 log_empty_line

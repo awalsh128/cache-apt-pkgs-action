@@ -2,8 +2,12 @@
 
 # Don't fail on error. We use the exit status as a conditional.
 #
-# This is the default behavior but can be overridden by the caller in the 
-# SHELLOPTS env var.
+# This is the default behavior but can be overridden by the caller in the
+# SHELLOPTS env var (regression issue #98).
+#
+# Since this disables errexit for every script that sources this library,
+# callers must check the exit status of any command whose failure has to
+# abort the action (e.g. package resolution and installation).
 set +e
 
 ###############################################################################
@@ -108,6 +112,10 @@ function get_normalized_package_list {
   local packages=$(echo "${1}" \
     | sed 's/[,\]/ /g; s/\s\+/ /g; s/^\s\+//g; s/\s\+$//g' \
     | sort -t' ')
+  # Nothing to resolve; callers handle the empty list (see empty_packages_behavior).
+  if test -z "${packages}"; then
+    return 0
+  fi
   local script_dir="$(dirname -- "$(realpath -- "${0}")")"
 
   local architecture=$(dpkg --print-architecture)
@@ -169,6 +177,23 @@ function log_err { >&2 echo "${@}"; }
 function log_empty_line { echo ""; }
 
 ###############################################################################
+# Aborts the in-progress step and exits the script.
+# Arguments:
+#   Exit code.
+#   One or more error message lines, written to stderr.
+###############################################################################
+function abort {
+  local exit_code="${1}"
+  shift
+  log "aborted"
+  local line
+  for line in "${@}"; do
+    log_err "${line}"
+  done
+  exit "${exit_code}"
+}
+
+###############################################################################
 # Validates an argument to be of a boolean value.
 # Arguments:
 #   Argument to validate.
@@ -179,9 +204,7 @@ function log_empty_line { echo ""; }
 ###############################################################################
 function validate_bool {
   if test "${1}" != "true" -a "${1}" != "false"; then
-    log "aborted"
-    log "${2} value '${1}' must be either true or false (case sensitive)."
-    exit ${3}
+    abort "${3}" "${2} value '${1}' must be either true or false (case sensitive)."
   fi
 }
 

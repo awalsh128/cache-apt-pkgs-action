@@ -36,7 +36,9 @@ log "Normalizing package list..."
 # Ensure APT package lists are updated if stale (for nektos/act compatibility)
 update_apt_lists_if_stale
 
-packages="$(get_normalized_package_list "${input_packages}")"
+if ! packages="$(get_normalized_package_list "${input_packages}")"; then
+  abort 7 "Unable to resolve the package list; see the error above."
+fi
 log "done"
 
 # Create cache directory so artifacts can be saved.
@@ -44,9 +46,7 @@ mkdir -p ${cache_dir}
 
 log "Validating action arguments (version='${version}', packages='${packages}')...";
 if grep -q " " <<< "${version}"; then
-  log "aborted" 
-  log "Version value '${version}' cannot contain spaces." >&2
-  exit 2
+  abort 2 "Version value '${version}' cannot contain spaces."
 fi
 
 # Is length of string zero?
@@ -60,9 +60,7 @@ if test -z "${packages}"; then
       exit 0
       ;;
     *)
-      log "aborted"
-      log "Packages argument is empty." >&2
-      exit 3
+      abort 3 "Packages argument is empty."
       ;;
   esac
 fi
@@ -75,10 +73,9 @@ if [ -n "${add_repository}" ]; then
   for repository in ${add_repository}; do
     # Check if repository format looks valid (basic check)
     if [[ "${repository}" =~ [^a-zA-Z0-9:\/.-] ]]; then
-      log "aborted"
-      log "Repository '${repository}' contains invalid characters." >&2
-      log "Supported formats: 'ppa:user/repo', 'deb http://...', 'http://...', 'multiverse', etc." >&2
-      exit 6
+      abort 6 \
+        "Repository '${repository}' contains invalid characters." \
+        "Supported formats: 'ppa:user/repo', 'deb http://...', 'http://...', 'multiverse', etc."
     fi
   done
   log "done"

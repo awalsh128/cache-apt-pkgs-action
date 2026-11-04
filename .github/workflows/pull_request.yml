@@ -23,6 +23,9 @@ jobs:
           go build -v ./...
           go test -v ./...
 
+      - name: Check committed binaries are up to date
+        run: ./scripts/distribute.sh check-committed-binaries
+
       - name: Lint
         uses: golangci/golangci-lint-action@d583c34f0599d37dbac4a198b9c83201be380893 # v9.3.0
         with:
