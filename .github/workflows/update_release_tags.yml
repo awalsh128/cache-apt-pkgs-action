@@ -1,0 +1,29 @@
+name: Update Release Tags
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag to update to."
+        type: string
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  update_release_tags:
+    runs-on: ubuntu-latest
+    name: Run update_release_tags.sh script.
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Update tags
+        env:
+          CI: "true"
+          VERSION: ${{ github.event.inputs.version }}
+        run: ./scripts/release/update_release_tags.sh "${VERSION}"

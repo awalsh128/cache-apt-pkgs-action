@@ -1,0 +1,10 @@
+version: "2"
+
+linters:
+  exclusions:
+    # Keep the default exclusions that golangci-lint v1 applied implicitly.
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
