@@ -65,7 +65,7 @@ func getNonVirtualPackage(executor exec.Executor, name string) (pkg *AptPackage,
 	logging.Debug("No reverse provides found for '%s' in apt-cache showpkg output:\n%s", name, execution.CombinedOut)
 	return pkg, fmt.Errorf(
 		"package '%s' has no installation candidate: it is virtual or missing from the APT package lists, and no package provides it. "+
-			"Use a concrete package name instead, or if the APT package lists may be stale, run 'sudo apt-get update' before this action.", name)
+			"Use a concrete package name instead, or if the APT package lists may be stale, run 'sudo apt-get update' before this action", name)
 }
 
 func getPackage(executor exec.Executor, paragraph string) (pkg *AptPackage, err error) {
