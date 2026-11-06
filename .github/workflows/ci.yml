@@ -41,6 +41,18 @@ jobs:
         with:
           operation: build
 
+      # The integration jobs below run this bundle as the action (uses: ./).
+      - name: Upload Action Bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            action.yml
+            dist/action/
+            dist/scripts/
+          if-no-files-found: error
+          retention-days: 1
+
   codeql:
     # Fork PRs do not have permission to upload security events.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -107,6 +119,9 @@ jobs:
 
       - name: Check Action Dependencies Pinned
         shell: bash
+        env:
+          # Authenticated API requests avoid the shared runner IP rate limit.
+          GITHUB_TOKEN: ${{ github.token }}
         run: npm run check:latest-action-pins
 
   testing:
@@ -233,7 +248,7 @@ jobs:
 
   standard_workflow_install_with_new_version:
     runs-on: ubuntu-latest
-    needs: [testing]
+    needs: [standard_workflow_install]
     name: Standard workflow packages with new version.
     steps:
       - name: Download Action Bundle
@@ -257,7 +272,7 @@ jobs:
 
   standard_workflow_restore:
     runs-on: ubuntu-latest
-    needs: [testing]
+    needs: [standard_workflow_install]
     name: Standard workflow restore cached packages.
     steps:
       - name: Download Action Bundle
@@ -281,7 +296,7 @@ jobs:
 
   standard_workflow_restore_with_packages_out_of_order:
     runs-on: ubuntu-latest
-    needs: [testing]
+    needs: [standard_workflow_install]
     name: Standard workflow restore with packages out of order.
     steps:
       - name: Download Action Bundle
@@ -305,7 +320,7 @@ jobs:
 
   standard_workflow_add_package:
     runs-on: ubuntu-latest
-    needs: [testing]
+    needs: [standard_workflow_install]
     name: Standard workflow add another package.
     steps:
       - name: Download Action Bundle
@@ -329,7 +344,7 @@ jobs:
 
   standard_workflow_restore_add_package:
     runs-on: ubuntu-latest
-    needs: [testing]
+    needs: [standard_workflow_add_package]
     name: Standard workflow restore added package.
     steps:
       - name: Download Action Bundle

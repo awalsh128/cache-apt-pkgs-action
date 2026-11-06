@@ -1,8 +1,34 @@
 import * as core from "@actions/core";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { runAction, type ActionInputs } from "./action.js";
 import { DefaultCommandRunner } from "ts-apt";
 import { Cache, CACHE_DEFAULT_DIRNAME } from "./cache.js";
 import { Instruments } from "./instrumentation.js";
+
+/**
+ * Marks the bundled ts-apt apt-fast script executable when it's present.
+ *
+ * ts-apt spawns the script directly, and some ways of shipping the bundle
+ * (e.g. workflow artifacts) drop file modes.
+ *
+ * @param bundleDir Directory of the running bundle (i.e. dist/action).
+ */
+function ensureBundledScriptsExecutable(
+  bundleDir: string = path.dirname(fileURLToPath(import.meta.url)),
+): void {
+  const aptFastPath = path.join(
+    bundleDir,
+    "..",
+    "scripts",
+    "dist",
+    "apt-fast.sh",
+  );
+  if (fs.existsSync(aptFastPath)) {
+    fs.chmodSync(aptFastPath, 0o755);
+  }
+}
 
 /**
  * Parses empty package behavior input from workflow configuration.
@@ -51,6 +77,7 @@ async function main(): Promise<void> {
   const inputs = getInputs();
   const instruments = new Instruments(cacheDir, inputs.debug || core.isDebug());
   try {
+    ensureBundledScriptsExecutable();
     const commandRunner = new DefaultCommandRunner(
       instruments.execLogger,
       instruments.execLogger,
@@ -70,7 +97,11 @@ async function main(): Promise<void> {
     const message = error instanceof Error ? error.message : String(error);
     core.setFailed(message);
   } finally {
-    instruments.artifacts.upload();
+    // Logs are diagnostics, so a failed upload shouldn't fail the action.
+    await instruments.artifacts.upload().catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      core.warning(`Failed to upload diagnostic artifacts: ${message}`);
+    });
   }
 }
 

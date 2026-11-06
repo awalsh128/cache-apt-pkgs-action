@@ -12,6 +12,18 @@ import { CommandRunner, PackageName } from "ts-apt";
 export const CACHE_DEFAULT_DIRNAME = "cache-apt-pkgs";
 export const CACHE_KEY_FILENAME = "cache_key.md5";
 
+/**
+ * Resolves the absolute cache directory path for a cache directory name.
+ *
+ * @param cacheDir Directory name under the user's home directory.
+ * @returns Absolute path to the cache directory.
+ */
+export function resolveCacheDir(
+  cacheDir: string = CACHE_DEFAULT_DIRNAME,
+): string {
+  return path.join(os.homedir(), cacheDir);
+}
+
 export const MANIFEST_MAIN_FILENAME = "manifest_main.json";
 export const MANIFEST_ALL_FILENAME = "manifest_all.json";
 
@@ -106,7 +118,7 @@ export class Cache {
     logger: winston.Logger,
     cacheDir: string = CACHE_DEFAULT_DIRNAME,
   ) {
-    this.path = path.join(os.homedir(), cacheDir);
+    this.path = resolveCacheDir(cacheDir);
     this.commandRunner = commandRunner;
     this.logger = logger;
   }
