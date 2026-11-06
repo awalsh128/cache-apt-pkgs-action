@@ -119,6 +119,9 @@ jobs:
 
       - name: Check Action Dependencies Pinned
         shell: bash
+        env:
+          # Authenticated API requests avoid the shared runner IP rate limit.
+          GITHUB_TOKEN: ${{ github.token }}
         run: npm run check:latest-action-pins
 
   testing:
