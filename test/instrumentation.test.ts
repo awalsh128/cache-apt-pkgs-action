@@ -42,6 +42,18 @@ describe("instrumentation", () => {
       const artifacts = new Artifacts(dir, ARTIFACT_FILENAMES, debug);
       expect(artifacts.runId).toMatch(/^ghrunid-notfound-/);
     });
+
+    it("name in a workflow step includes attempt, job and step", () => {
+      vi.stubEnv("GITHUB_RUN_ATTEMPT", "2");
+      vi.stubEnv("GITHUB_JOB", "list_versions");
+      vi.stubEnv("GITHUB_ACTION", "execute");
+
+      const artifacts = new Artifacts("/dir", ARTIFACT_FILENAMES, false, "123");
+
+      expect(artifacts.name).toBe(
+        "capa_artifacts-123-2-list_versions-execute",
+      );
+    });
   });
 
   describe("Instruments", () => {

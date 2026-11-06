@@ -41,10 +41,26 @@ export class Artifacts {
   ) {}
 
   /** Upload artifacts to GitHub Actions via [@actions/artifact]. */
+  /**
+   * Artifact name, unique per action step in a workflow run.
+   *
+   * Artifact names must be unique within a run, and every job (or step) using
+   * the action uploads one, so include the attempt, job and step IDs.
+   */
+  get name(): string {
+    const parts = [
+      this.runId,
+      process.env.GITHUB_RUN_ATTEMPT,
+      process.env.GITHUB_JOB,
+      process.env.GITHUB_ACTION,
+    ].filter((part) => part !== undefined && part !== "");
+    return ["capa_artifacts", ...parts].join("-");
+  }
+
   async upload(): Promise<string> {
     const client = new DefaultArtifactClient();
     await client.uploadArtifact(
-      "capa_artifacts-" + this.runId,
+      this.name,
       this.artifactFilenames
         .map((filename) => path.join(this.dir, filename))
         .filter((filepath) => fs.existsSync(filepath)),
