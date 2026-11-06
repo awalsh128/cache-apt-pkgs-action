@@ -15,6 +15,8 @@ vi.mock("ts-apt", async (importOriginal) => {
   };
 });
 
+const NATIVE_ARCH = "amd64";
+
 describe("ActionRunner", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -45,6 +47,9 @@ describe("ActionRunner", () => {
     const cacheKey = new CacheKey("v1", "0", process.arch, packageNames);
     const restored = new Manifest(new Date(), [], cacheKey);
     cache.loadAndRestore.mockResolvedValue(restored);
+    vi.mocked(createPackageManager).mockResolvedValue({
+      getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
+    } as never);
 
     const result = await runner.runAction({
       packages: "curl git",
@@ -68,6 +73,7 @@ describe("ActionRunner", () => {
     vi.mocked(createPackageManager).mockResolvedValue({
       install: vi.fn().mockResolvedValue([{ name: installedPackage }]),
       listInstalledFiles: vi.fn().mockResolvedValue([installedFile]),
+      getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
     } as never);
 
     await runner.runAction({
