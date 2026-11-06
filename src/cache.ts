@@ -1,6 +1,5 @@
 import * as ghcache from "@actions/cache";
 import * as winston from "winston";
-import * as tar from "tar";
 import * as crypto from "node:crypto";
 import { promises as fs } from "node:fs";
 import * as os from "node:os";
@@ -23,6 +22,29 @@ export function resolveCacheDir(
 ): string {
   return path.join(os.homedir(), cacheDir);
 }
+
+/**
+ * Disables the command runner's default timeout for long-running commands.
+ *
+ * Archiving large packages (e.g. linux-headers) and some maintainer scripts
+ * (e.g. ca-certificates-java postinst) can take longer than the default.
+ */
+const NO_TIMEOUT_MS = -1;
+
+/** Maintainer scripts run on restore when install scripts are enabled. */
+type InstallScriptType = "preinst" | "postinst";
+
+/** Order dpkg runs maintainer scripts in during install. */
+const INSTALL_SCRIPT_ORDER: readonly InstallScriptType[] = [
+  "preinst",
+  "postinst",
+];
+
+/** Action argument dpkg passes to each maintainer script on a fresh install. */
+const INSTALL_SCRIPT_ACTIONS: Readonly<Record<InstallScriptType, string>> = {
+  preinst: "install",
+  postinst: "configure",
+};
 
 export const MANIFEST_MAIN_FILENAME = "manifest_main.json";
 export const MANIFEST_ALL_FILENAME = "manifest_all.json";
@@ -123,33 +145,43 @@ export class Cache {
     this.logger = logger;
   }
 
+  /**
+   * Runs a package's maintainer scripts in the order dpkg runs them on install.
+   *
+   * @param packageName Package whose scripts to run.
+   */
   private async runInstallScripts(packageName: PackageName): Promise<void> {
-    const runScript = async (
-      packageName: PackageName,
-      scriptType: "preinst" | "postinst",
-    ) => {
-      const scriptPath = await findInstallScript(packageName, scriptType, "/");
-      if (!scriptPath) {
-        this.logger.info(
-          `No ${scriptType} script found for package ${packageName.serialize()}, skipping`,
-        );
-        return;
-      }
-      const scriptName = path.basename(scriptPath);
-      this.logger.info(
-        `Running ${scriptType} script '${scriptName}' for package ${packageName.serialize()}...`,
-      );
-      await this.commandRunner.run("sudo", [
-        "sh",
-        "-x",
-        scriptPath,
-        scriptType === "preinst" ? "install" : "configure",
-      ]);
-      this.logger.info(`Ran ${scriptType} script for ${packageName.name}`);
-    };
+    for (const scriptType of INSTALL_SCRIPT_ORDER) {
+      await this.runInstallScript(packageName, scriptType);
+    }
+  }
 
-    await runScript(packageName, "preinst");
-    await runScript(packageName, "postinst");
+  /**
+   * Runs one maintainer script, if the package has it, with the action dpkg passes.
+   *
+   * @param packageName Package whose script to run.
+   * @param scriptType Maintainer script to run.
+   */
+  private async runInstallScript(
+    packageName: PackageName,
+    scriptType: InstallScriptType,
+  ): Promise<void> {
+    const scriptPath = await findInstallScript(packageName, scriptType, "/");
+    if (!scriptPath) {
+      this.logger.info(
+        `No ${scriptType} script found for package ${packageName.serialize()}, skipping`,
+      );
+      return;
+    }
+    this.logger.info(
+      `Running ${scriptType} script '${path.basename(scriptPath)}' for package ${packageName.serialize()}...`,
+    );
+    await this.commandRunner.run(
+      "sudo",
+      ["sh", "-x", scriptPath, INSTALL_SCRIPT_ACTIONS[scriptType]],
+      { timeoutMs: NO_TIMEOUT_MS },
+    );
+    this.logger.info(`Ran ${scriptType} script for ${packageName.name}`);
   }
 
   async loadAndRestore(
@@ -227,18 +259,37 @@ export class Cache {
     }
 
     for (const { packageName, archivePath } of archivePaths) {
-      await tar.extract({
-        cwd: "/",
-        file: archivePath,
-        preservePaths: true,
-      });
+      await this.extractArchive(archivePath);
 
       if (executeInstallScripts) {
         await this.runInstallScripts(packageName);
       }
     }
 
-    return await Manifest.readFromFile(manifestPath);
+    // Return every installed package so outputs can report dependencies too.
+    return manifestAll;
+  }
+
+  /**
+   * Extracts a package archive onto the root filesystem.
+   *
+   * Runs system tar under sudo because package files live in root-owned
+   * directories. Fails on any entry error instead of skipping it.
+   *
+   * @param archivePath Absolute path to the package archive.
+   */
+  private async extractArchive(archivePath: string): Promise<void> {
+    await this.commandRunner.run(
+      "sudo",
+      [
+        "tar",
+        "--extract",
+        `--file=${archivePath}`,
+        "--directory=/",
+        "--keep-directory-symlink",
+      ],
+      { timeoutMs: NO_TIMEOUT_MS },
+    );
   }
 
   private async createArchive(manifestEntry: ManifestEntry): Promise<void> {
@@ -267,17 +318,29 @@ export class Cache {
     this.logger.info(
       `Archiving package ${manifestEntry.packageName.serialize()} with ${manifestEntry.filepaths.length} files...`,
     );
-    await tar.create(
-      {
-        cwd: "/",
-        file: archivePath,
-        portable: false,
-        preservePaths: false,
-        follow: false,
-        noDirRecurse: false,
-      },
-      manifestEntry.filepaths,
+    // Packages can install root-only files (e.g. /etc/default/cacerts from
+    // ca-certificates-java), so system tar runs under sudo. The file list is
+    // piped on stdin because large packages exceed the argument size limit,
+    // and is NUL-separated so no path is parsed as a tar option.
+    await this.commandRunner.run(
+      "sudo",
+      [
+        "tar",
+        "--create",
+        `--file=${archivePath}`,
+        "--directory=/",
+        "--null",
+        "--verbatim-files-from",
+        "--files-from=-",
+      ],
+      { input: manifestEntry.filepaths.join("\0"), timeoutMs: NO_TIMEOUT_MS },
     );
+    // Hand the archive back to the runner user so the cache save can manage it.
+    await this.commandRunner.run("sudo", [
+      "chown",
+      `${os.userInfo().uid}:${os.userInfo().gid}`,
+      archivePath,
+    ]);
     this.logger.info(
       `Archive created for package ${manifestEntry.packageName.serialize()} at ${archivePath}`,
     );
@@ -286,13 +349,10 @@ export class Cache {
   private async writeManifests(manifest: Manifest): Promise<void> {
     const allEntries = manifest.entries;
     const packages = manifest.cacheKey.packageNames;
-    const entriesByName = new Map(
-      allEntries.map((entry) => [entry.packageName.serialize(), entry]),
+    // Keep the installed name, which carries the resolved version and arch.
+    const mainEntries = allEntries.filter((entry) =>
+      packages.includes(entry.packageName),
     );
-    const mainEntries = packages.toArray().map((pkg) => {
-      const installed = entriesByName.get(pkg.serialize());
-      return new ManifestEntry(pkg, installed?.filepaths ?? []);
-    });
 
     const write = async (manifest: Manifest, filename: string) => {
       this.logger.info(
