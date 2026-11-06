@@ -245,7 +245,7 @@ jobs:
 
   standard_workflow_install_with_new_version:
     runs-on: ubuntu-latest
-    needs: [testing]
+    needs: [standard_workflow_install]
     name: Standard workflow packages with new version.
     steps:
       - name: Download Action Bundle
@@ -269,7 +269,7 @@ jobs:
 
   standard_workflow_restore:
     runs-on: ubuntu-latest
-    needs: [testing]
+    needs: [standard_workflow_install]
     name: Standard workflow restore cached packages.
     steps:
       - name: Download Action Bundle
@@ -293,7 +293,7 @@ jobs:
 
   standard_workflow_restore_with_packages_out_of_order:
     runs-on: ubuntu-latest
-    needs: [testing]
+    needs: [standard_workflow_install]
     name: Standard workflow restore with packages out of order.
     steps:
       - name: Download Action Bundle
@@ -317,7 +317,7 @@ jobs:
 
   standard_workflow_add_package:
     runs-on: ubuntu-latest
-    needs: [testing]
+    needs: [standard_workflow_install]
     name: Standard workflow add another package.
     steps:
       - name: Download Action Bundle
@@ -341,7 +341,7 @@ jobs:
 
   standard_workflow_restore_add_package:
     runs-on: ubuntu-latest
-    needs: [testing]
+    needs: [standard_workflow_add_package]
     name: Standard workflow restore added package.
     steps:
       - name: Download Action Bundle
