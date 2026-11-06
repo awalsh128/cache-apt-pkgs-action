@@ -35,7 +35,7 @@ runs:
     - name: Build
       if: steps.try-download-artifact.outputs.found_artifact != 'true'
       shell: bash
-      run: npm run build # Generates dist/ folder, including the dist/index.js bundle
+      run: npm run build # Generates dist/ folder, including the dist/action/index.js bundle
 
     - name: Upload Build Artifacts
       if: steps.try-download-artifact.outputs.found_artifact != 'true'

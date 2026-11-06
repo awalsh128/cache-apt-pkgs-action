@@ -48,8 +48,8 @@ jobs:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
             action.yml
-            dist/index.js
-            dist/index.js.map
+            dist/action/
+            dist/scripts/
           if-no-files-found: error
           retention-days: 1
 
