@@ -8,7 +8,6 @@ import * as path from "node:path";
 import { ActionPackageNames, findInstallScript } from "./packages.js";
 import { Manifest, ManifestEntry } from "./manifest.js";
 import {
-  deserializePackageName,
   CommandRunner,
   PackageInfo,
   PackageName,
@@ -116,10 +115,7 @@ export class Cache {
     this.logger = logger;
   }
 
-  private async runInstallScripts(archiveFilename: string): Promise<void> {
-    const serializePackageName = archiveFilename.replace(/\.tar$/, "");
-    const packageName = deserializePackageName(serializePackageName)!;
-
+  private async runInstallScripts(packageName: PackageName): Promise<void> {
     const runScript = async (
       packageName: PackageName,
       scriptType: "preinst" | "postinst",
@@ -186,22 +182,37 @@ export class Cache {
       await logFileError(`Manifest file not found at ${manifestPath}`);
       return undefined;
     }
-    const archives = await fs
-      .readdir(this.path)
-      .then((entries: string[]) =>
-        entries.filter((entry) => entry.endsWith(".tar")),
-      )
-      .then((entries: string[]) => entries.sort());
-
-    if (archives.length === 0) {
+    const manifestAllPath = path.join(this.path, MANIFEST_ALL_FILENAME);
+    const manifestAll = await Manifest.readFromFile(manifestAllPath).catch(
+      () => undefined,
+    );
+    if (!manifestAll || manifestAll.entries.length === 0) {
       await logFileError(
-        `No archive files found in cache directory ${this.path}`,
+        `Manifest of all packages not found or empty at ${manifestAllPath}`,
       );
       return undefined;
     }
 
-    for (const archiveFilename of archives) {
-      const archivePath = path.join(this.path, archiveFilename);
+    // Restore in the order apt installed the packages (i.e. the order of the
+    // manifest entries) and not by archive filename. Install scripts can depend
+    // on files from packages installed before them (see issue #196).
+    const archivePaths = manifestAll.entries.map((entry) => ({
+      packageName: entry.packageName,
+      archivePath: path.join(this.path, entry.packageName.serialize() + ".tar"),
+    }));
+    for (const { archivePath } of archivePaths) {
+      if (
+        !(await fs
+          .access(archivePath, fs.constants.R_OK)
+          .then(() => true)
+          .catch(() => false))
+      ) {
+        await logFileError(`Archive file not found at ${archivePath}`);
+        return undefined;
+      }
+    }
+
+    for (const { packageName, archivePath } of archivePaths) {
       await tar.extract({
         cwd: "/",
         file: archivePath,
@@ -209,7 +220,7 @@ export class Cache {
       });
 
       if (executeInstallScripts) {
-        await this.runInstallScripts(archiveFilename);
+        await this.runInstallScripts(packageName);
       }
     }
 
