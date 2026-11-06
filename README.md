@@ -50,7 +50,11 @@ Please note that the `latest` symbol has been deprecated and will no longer be u
 
 ### Cache scopes
 
-The cache is scoped to the packages given and the branch. The default branch cache is available to other branches.
+The cache key is built from the `packages`, `version` and `add-repository` inputs, plus the runner's CPU architecture. The branch name is not part of the key.
+
+GitHub still limits which caches a workflow run can restore (see [Restrictions for accessing a cache](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)). A run can restore caches created on its own branch, or on the base branch (e.g. the default branch, or the base branch of a pull request). It can't restore caches created on sibling branches, even when the key is the same.
+
+If you see a separate cache for every branch or pull request, it is likely because the default branch has never saved one. Run the workflow on the default branch (e.g. on `push` to `master`) so the cache is created there. After that, every branch and pull request with the same inputs will restore it instead of installing the packages again.
 
 ### Example workflow
 
