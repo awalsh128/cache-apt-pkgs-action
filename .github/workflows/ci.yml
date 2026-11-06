@@ -107,7 +107,7 @@ jobs:
 
       - name: Check Action Dependencies Pinned
         shell: bash
-        run: npm run check:latest-action-pin ./action.yml
+        run: npm run check:latest-action-pins
 
   testing:
     runs-on: ubuntu-latest
