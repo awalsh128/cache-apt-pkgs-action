@@ -27,17 +27,22 @@ runs:
       uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151 # v21
       with:
         name: ${{ env.build-artifacts-name }}
+        path: dist
         if_no_artifact_found: ignore
 
+    # With if_no_artifact_found: ignore the download step always succeeds, so
+    # check found_artifact instead of the step outcome.
     - name: Build
-      if: steps.try-download-artifact.outcome == 'failure'
+      if: steps.try-download-artifact.outputs.found_artifact != 'true'
       shell: bash
-      run: npm run build # Generates dist/ folder
+      run: npm run build # Generates dist/ folder, including the dist/index.js bundle
 
     - name: Upload Build Artifacts
-      if: steps.try-download-artifact.outcome == 'failure'
+      if: steps.try-download-artifact.outputs.found_artifact != 'true'
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: ${{ env.build-artifacts-name }}
         path: dist
         retention-days: 1
+        # Jobs in the same run each build when no earlier run has the artifact.
+        overwrite: true
