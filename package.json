@@ -86,7 +86,7 @@
     "class-transformer": "^0.5.1",
     "rollup": "^4.62.2",
     "tar": "^7.4.3",
-    "ts-apt": "git+https://github.com/awalsh128/ts-apt.git#4a0305c3fde1f42ea9a5c79ac53bf27fdf5d76c2",
+    "ts-apt": "git+https://github.com/awalsh128/ts-apt.git#e627c3bae667a36f4522823773645a2017dc7ebc",
     "winston": "^3.19.0"
   },
   "devDependencies": {
