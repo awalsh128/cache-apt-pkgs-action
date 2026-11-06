@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 describe("instrumentation", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   const ARTIFACT_FILENAMES = [
@@ -32,6 +33,8 @@ describe("instrumentation", () => {
     it("constructor generates a random runId when not provided", () => {
       const dir = "/path/to/artifacts";
       const debug = false;
+      // GitHub Actions sets this, so clear it to test the fallback.
+      vi.stubEnv("GITHUB_RUN_ID", undefined);
 
       const artifacts = new Artifacts(dir, ARTIFACT_FILENAMES, debug);
       expect(artifacts.runId).toMatch(/^ghrunid-notfound-/);
