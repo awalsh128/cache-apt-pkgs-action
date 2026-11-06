@@ -54,8 +54,8 @@
     "check:pr": "node --experimental-strip-types ./scripts/ops/pr_checks.mts",
     "check:configs": "node --experimental-strip-types ./scripts/ops/check_configs.mts",
     "check": "npm run -s runall -- check:latest-action-pins check:pr check:configs",
-    "dev:tsapt:link": "npm link ../ts-apt --save; echo \"NOTE: npm run dev:tsapt:unlink when you are finished.\"",
-    "dev:tsapt:unlink": "npm unlink ts-apt && npm install ts-apt",
+    "dev:tsapt:link": "npm link ../ts-apt --no-save; echo \"NOTE: npm run dev:tsapt:unlink when you are finished.\"",
+    "dev:tsapt:unlink": "npm unlink ts-apt --no-save && npm ci",
     "gh:auth": "gh auth status >/dev/null 2>&1 || gh auth login --web && gh auth setup-git",
     "setup:dev": "node --experimental-strip-types ./scripts/dev/setup_devenv.mts",
     "repo:sync": "node --experimental-strip-types ./scripts/dev/gh_sync.mts",
@@ -85,7 +85,7 @@
     "class-transformer": "^0.5.1",
     "rollup": "^4.62.2",
     "tar": "^7.4.3",
-    "ts-apt": "file:../ts-apt",
+    "ts-apt": "git+https://github.com/awalsh128/ts-apt.git#4a0305c3fde1f42ea9a5c79ac53bf27fdf5d76c2",
     "winston": "^3.19.0"
   },
   "devDependencies": {
