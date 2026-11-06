@@ -7,11 +7,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { ActionPackageNames, findInstallScript } from "./packages.js";
 import { Manifest, ManifestEntry } from "./manifest.js";
-import {
-  CommandRunner,
-  PackageInfo,
-  PackageName,
-} from "ts-apt";
+import { CommandRunner, PackageName } from "ts-apt";
 
 export const CACHE_DEFAULT_DIRNAME = "cache-apt-pkgs";
 export const CACHE_KEY_FILENAME = "cache_key.md5";
@@ -196,10 +192,16 @@ export class Cache {
     // Restore in the order apt installed the packages (i.e. the order of the
     // manifest entries) and not by archive filename. Install scripts can depend
     // on files from packages installed before them (see issue #196).
-    const archivePaths = manifestAll.entries.map((entry) => ({
-      packageName: entry.packageName,
-      archivePath: path.join(this.path, entry.packageName.serialize() + ".tar"),
-    }));
+    // Packages without files (e.g. metapackages) have no archive to restore.
+    const archivePaths = manifestAll.entries
+      .filter((entry) => entry.filepaths.length > 0)
+      .map((entry) => ({
+        packageName: entry.packageName,
+        archivePath: path.join(
+          this.path,
+          entry.packageName.serialize() + ".tar",
+        ),
+      }));
     for (const { archivePath } of archivePaths) {
       if (
         !(await fs
@@ -240,6 +242,13 @@ export class Cache {
     ) {
       this.logger.warn(
         `Archive already exists for package ${manifestEntry.packageName.serialize()} at ${archivePath}, skipping creation.`,
+      );
+      return;
+    }
+    if (manifestEntry.filepaths.length === 0) {
+      // tar can't create an empty archive, and restore skips these entries.
+      this.logger.info(
+        `No files to archive for package ${manifestEntry.packageName.serialize()}, skipping creation.`,
       );
       return;
     }
@@ -295,10 +304,14 @@ export class Cache {
     );
   }
 
-  async archiveAndSave(
-    key: CacheKey,
-    packageInfos: PackageInfo[],
-  ): Promise<number> {
+  /**
+   * Writes the manifests and per-package archives, then saves the cache.
+   *
+   * @param manifest Installed packages, in install order, with their files.
+   * @returns GitHub Actions cache ID.
+   */
+  async archiveAndSave(manifest: Manifest): Promise<number> {
+    const key = manifest.cacheKey;
     if (!ghcache.isFeatureAvailable()) {
       throw new Error(
         "GitHub Actions cache service is not available in this environment",
@@ -315,8 +328,6 @@ export class Cache {
       "utf8",
     );
     this.logger.info(`Wrote cache key`);
-
-    const manifest = Manifest.from(new Date(), key, packageInfos);
 
     await this.writeManifests(manifest);
     for (const entry of manifest.entries) {
