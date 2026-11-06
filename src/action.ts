@@ -45,14 +45,31 @@ export class ActionRunner {
   }
 
   /**
-   * Converts manifest entries into the action output CSV format.
+   * Converts package names into the action output CSV format.
    *
-   * @param manifest Parsed manifest.
-   * @returns Comma-delimited name=version list.
+   * Arch is shown only for foreign-arch packages (e.g. `libc6:i386=2.39`), so
+   * native output matches the v1 format while multi-arch installs stay
+   * unambiguous. Entries are sorted with `PackageName.compareTo` so the output
+   * is stable across install order.
+   *
+   * @param packageNames Installed package names.
+   * @param nativeArch Runner architecture as reported by dpkg (e.g. amd64).
+   * @returns Comma-delimited name[:arch]=version list.
    */
-  private toCsv(manifest: Manifest): string {
-    return manifest.entries
-      .map((entry) => entry.packageName.serialize())
+  private toCsv(
+    packageNames: readonly PackageName[],
+    nativeArch: string,
+  ): string {
+    return [...packageNames]
+      .sort((a, b) => a.compareTo(b))
+      .map((name) => {
+        const foreignArch =
+          name.arch !== undefined && name.arch !== nativeArch
+            ? `:${name.arch}`
+            : "";
+        const version = name.version === undefined ? "" : `=${name.version}`;
+        return `${name.name}${foreignArch}${version}`;
+      })
       .join(",");
   }
 
@@ -77,12 +94,14 @@ export class ActionRunner {
     );
     const cacheHit = manifest !== undefined;
 
+    // Needed on a cache hit too, to resolve the native arch for outputs.
+    const installManager = await createPackageManager(
+      true,
+      this.logger,
+      this.logger,
+    );
+
     if (!cacheHit) {
-      const installManager = await createPackageManager(
-        true,
-        this.logger,
-        this.logger,
-      );
       const packageInfos = await installManager.install(packageNames.toArray());
       // Collect each package's installed files so the archives have content.
       const entries = await Promise.all(
@@ -98,10 +117,15 @@ export class ActionRunner {
       await this.cache.archiveAndSave(manifest);
     }
 
+    const nativeArch = await installManager.getNativeArchitecture();
+    const installed = manifest!.entries.map((entry) => entry.packageName);
     return {
       cacheHit,
-      packageVersionList: this.toCsv(manifest!),
-      allPackageVersionList: this.toCsv(manifest!),
+      packageVersionList: this.toCsv(
+        installed.filter((name) => packageNames.includes(name)),
+        nativeArch,
+      ),
+      allPackageVersionList: this.toCsv(installed, nativeArch),
     };
   }
 }

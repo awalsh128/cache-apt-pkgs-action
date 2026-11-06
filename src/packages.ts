@@ -171,6 +171,25 @@ export class ActionPackageNames {
   toArray(): readonly PackageName[] {
     return this.items;
   }
+
+  /**
+   * Checks whether an installed package was one of the requested packages.
+   *
+   * Matches on name, and on arch only when both sides specify one. Version is
+   * ignored because requests usually omit it and apt resolves the installed one.
+   *
+   * @param installed Package name as reported by apt after install.
+   * @returns True when the package was requested.
+   */
+  includes(installed: PackageName): boolean {
+    return this.items.some(
+      (requested) =>
+        requested.name === installed.name &&
+        (requested.arch === undefined ||
+          installed.arch === undefined ||
+          requested.arch === installed.arch),
+    );
+  }
 }
 
 /**

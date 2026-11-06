@@ -170,5 +170,18 @@ describe("packages", () => {
         createPackageName("test-package", "1.0.0", "amd64"),
       ]);
     });
+
+    it.each([
+      ["same name without arch returns true", "xdot", createPackageName("xdot", "1.3-1"), true],
+      ["requested without arch returns true", "xdot", createPackageName("xdot", "1.3-1", "amd64"), true],
+      ["installed without arch returns true", "xdot:amd64", createPackageName("xdot", "1.3-1"), true],
+      ["matching arch returns true", "xdot:amd64", createPackageName("xdot", "1.3-1", "amd64"), true],
+      ["different arch returns false", "xdot:i386", createPackageName("xdot", "1.3-1", "amd64"), false],
+      ["different name returns false", "xdot", createPackageName("rolldice", "1.16"), false],
+    ])("includes %s", (_case, input, installed, expected) => {
+      expect(ActionPackageNames.fromInput(input).includes(installed)).toBe(
+        expected,
+      );
+    });
   });
 });
