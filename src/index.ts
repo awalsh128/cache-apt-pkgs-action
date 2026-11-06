@@ -70,7 +70,11 @@ async function main(): Promise<void> {
     const message = error instanceof Error ? error.message : String(error);
     core.setFailed(message);
   } finally {
-    instruments.artifacts.upload();
+    // Logs are diagnostics, so a failed upload shouldn't fail the action.
+    await instruments.artifacts.upload().catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      core.warning(`Failed to upload diagnostic artifacts: ${message}`);
+    });
   }
 }
 
