@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import * as ghcache from "@actions/cache";
 import * as tar from "tar";
-import { createPackageName } from "ts-apt";
+import { createPackageName, type PackageName } from "ts-apt";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import winston from "winston";
 
@@ -32,10 +32,15 @@ vi.mock("node:os", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:os")>();
   return { ...actual, homedir: () => HOME_DIR };
 });
-vi.mock("@actions/cache", () => ({ restoreCache: vi.fn() }));
+vi.mock("@actions/cache", () => ({
+  restoreCache: vi.fn(),
+  saveCache: vi.fn(),
+  isFeatureAvailable: vi.fn(),
+}));
 vi.mock("tar", () => ({ extract: vi.fn(), create: vi.fn() }));
 
 const CACHE_DIR = path.join(HOME_DIR, CACHE_DEFAULT_DIRNAME);
+const CACHE_ID = 42;
 const REQUESTED_PACKAGE = createPackageName("app", "1.0");
 // Install order from apt, deliberately not alphabetical.
 const INSTALL_ORDER = [
@@ -43,6 +48,8 @@ const INSTALL_ORDER = [
   createPackageName("libfoo", "2.0"),
   REQUESTED_PACKAGE,
 ];
+// Packages without files (e.g. metapackages) get no archive.
+const METAPACKAGE = createPackageName("meta", "1.0");
 const KEY = new CacheKey(
   "v1",
   "1",
@@ -50,22 +57,27 @@ const KEY = new CacheKey(
   ActionPackageNames.fromInput(REQUESTED_PACKAGE.serialize()),
 );
 
-const archivePath = (packageName: { serialize(): string }) =>
+const archivePath = (packageName: PackageName) =>
   path.join(CACHE_DIR, packageName.serialize() + ".tar");
+const filesOf = (packageName: PackageName) => [
+  `usr/lib/${packageName.name}.so`,
+];
+const entryOf = (packageName: PackageName) =>
+  new ManifestEntry(packageName, filesOf(packageName));
+const MANIFEST = new Manifest(
+  new Date(0),
+  [...INSTALL_ORDER.map(entryOf), new ManifestEntry(METAPACKAGE)],
+  KEY,
+);
 
 async function writeCache(archivedPackages = INSTALL_ORDER): Promise<void> {
   fs.mkdirSync(CACHE_DIR, { recursive: true });
-  const created = new Date(0);
   await new Manifest(
-    created,
-    [new ManifestEntry(REQUESTED_PACKAGE)],
+    MANIFEST.created,
+    [entryOf(REQUESTED_PACKAGE)],
     KEY,
   ).writeToFile(path.join(CACHE_DIR, MANIFEST_MAIN_FILENAME));
-  await new Manifest(
-    created,
-    INSTALL_ORDER.map((pkg) => new ManifestEntry(pkg)),
-    KEY,
-  ).writeToFile(path.join(CACHE_DIR, MANIFEST_ALL_FILENAME));
+  await MANIFEST.writeToFile(path.join(CACHE_DIR, MANIFEST_ALL_FILENAME));
   archivedPackages.forEach((pkg) => fs.writeFileSync(archivePath(pkg), ""));
 }
 
@@ -74,9 +86,11 @@ function createCache(): Cache {
   return new Cache({ run: vi.fn() } as never, logger);
 }
 
-describe("Cache.loadAndRestore", () => {
+describe("Cache", () => {
   beforeEach(() => {
     vi.mocked(ghcache.restoreCache).mockResolvedValue(KEY.hash);
+    vi.mocked(ghcache.saveCache).mockResolvedValue(CACHE_ID);
+    vi.mocked(ghcache.isFeatureAvailable).mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -102,5 +116,28 @@ describe("Cache.loadAndRestore", () => {
 
     expect(manifest).toBeUndefined();
     expect(tar.extract).not.toHaveBeenCalled();
+  });
+
+  it("archiveAndSave packages with files creates archives of their files", async () => {
+    const cacheId = await createCache().archiveAndSave(MANIFEST);
+
+    expect(cacheId).toBe(CACHE_ID);
+    // tar.create is overloaded, so type the (options, files) call shape used.
+    const createCalls = vi.mocked(tar.create).mock.calls as unknown as [
+      { file: string },
+      string[],
+    ][];
+    expect(createCalls.map(([options, files]) => [options.file, files])).toEqual(INSTALL_ORDER.map((pkg) => [archivePath(pkg), filesOf(pkg)]));
+  });
+
+  it("archiveAndSave manifest written records package files", async () => {
+    await createCache().archiveAndSave(MANIFEST);
+
+    const written = await Manifest.readFromFile(
+      path.join(CACHE_DIR, MANIFEST_ALL_FILENAME),
+    );
+    expect(written.entries.map((entry) => entry.filepaths)).toEqual(
+      MANIFEST.entries.map((entry) => entry.filepaths),
+    );
   });
 });

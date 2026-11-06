@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { CacheKey } from "./cache.js";
-import { packageNameFromJSON, PackageInfo, PackageName } from "ts-apt";
+import { packageNameFromJSON, PackageName } from "ts-apt";
 
 export class ManifestEntry {
   readonly packageName: PackageName;
@@ -44,17 +44,6 @@ export class Manifest {
   static async readFromFile(filePath: string): Promise<Manifest> {
     const content = await fs.promises.readFile(filePath, "utf-8");
     return Manifest.fromJSON(JSON.parse(content));
-  }
-
-  static from(
-    date: Date,
-    cacheKey: CacheKey,
-    packageInfos: PackageInfo[],
-  ): Manifest {
-    const entries = packageInfos.map(
-      (info: PackageInfo) => new ManifestEntry(info.name, []),
-    );
-    return new Manifest(date, entries, cacheKey);
   }
 
   async writeToFile(filePath: string): Promise<void> {

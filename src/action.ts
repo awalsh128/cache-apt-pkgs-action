@@ -4,8 +4,8 @@ import {
   type PackageName,
 } from "ts-apt";
 import { Cache, CacheKey } from "./cache.js";
-import { Manifest } from "./manifest.js";
-import { ActionPackageNames } from "./packages.js";
+import { Manifest, ManifestEntry } from "./manifest.js";
+import { ActionPackageNames, buildFileList } from "./packages.js";
 import winston from "winston";
 
 type EmptyPackageBehavior = "error" | "warn" | "ignore";
@@ -84,8 +84,18 @@ export class ActionRunner {
         this.logger,
       );
       const packageInfos = await installManager.install(packageNames.toArray());
-      manifest = Manifest.from(new Date(), cacheKey, packageInfos);
-      await this.cache.archiveAndSave(cacheKey, packageInfos);
+      // Collect each package's installed files so the archives have content.
+      const entries = await Promise.all(
+        packageInfos.map(
+          async (info) =>
+            new ManifestEntry(
+              info.name,
+              await buildFileList(info.name, installManager),
+            ),
+        ),
+      );
+      manifest = new Manifest(new Date(), entries, cacheKey);
+      await this.cache.archiveAndSave(manifest);
     }
 
     return {
