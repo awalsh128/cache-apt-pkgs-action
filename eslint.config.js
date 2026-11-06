@@ -5,7 +5,12 @@ export default [
     ignores: ["dist/**", "node_modules/**", "target/**"],
   },
   {
-    files: ["src/**/*.ts", "test/**/*.ts"],
+    files: [
+      "src/**/*.ts",
+      "test/**/*.ts",
+      "scripts/**/*.ts",
+      "scripts/**/*.mts",
+    ],
     languageOptions: {
       parser: tsParser,
       ecmaVersion: "latest",
