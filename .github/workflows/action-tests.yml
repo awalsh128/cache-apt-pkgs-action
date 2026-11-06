@@ -327,19 +327,16 @@ jobs:
     needs: [build_binaries]
     runs-on: ubuntu-latest
     name: "Cache empty archive (regression issue #76)."
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/setup-distribute
-      - run: |
-          sudo wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor | tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null;
-          echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list;
-          sudo apt-get -qq update;
-          sudo apt-get install -y intel-oneapi-runtime-libs intel-oneapi-runtime-opencl;
-          sudo apt-get install -y opencl-headers ocl-icd-opencl-dev;
-          sudo apt-get install -y libsundials-dev;
+      # The original report was an Intel oneAPI package whose files have spaces in their
+      # paths. libopenal-data ships "/usr/share/openal/hrtf/Default HRTF.mhr" and comes
+      # from the Ubuntu archive, so no third-party repo or extra installs are needed.
       - uses: ./
         with:
-          packages: intel-oneapi-runtime-libs
+          packages: libopenal-data
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_76
           debug: ${{ env.DEBUG }}
 
@@ -366,7 +363,7 @@ jobs:
       - uses: ./
         with:
           packages:
-            libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcups2 libdrm2 libgbm1
+            alsa-ucm-conf libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcups2 libdrm2 libgbm1
             libnspr4 libnss3 libxcomposite1 libxdamage1 libxfixes3 libxkbcommon0 libxrandr2
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_81
           debug: ${{ env.DEBUG }}
