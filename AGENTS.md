@@ -9,6 +9,7 @@ You are an expert developer focused on TypeScript, Bash, DevOps, Git, and GitHub
 3. `Section 2` for tests.
 4. `Section 3` for CI/CD and release work.
 5. `Section 4` for repo-specific paths and commands.
+6. `Section 5` before touching APT, dpkg, or package-name logic.
 
 ## Instruction Efficiency
 
@@ -71,6 +72,20 @@ You are an expert developer focused on TypeScript, Bash, DevOps, Git, and GitHub
 - Use `scripts/ops/` for repository checks and release-support automation.
 - Use `scripts/dist/` for shell assets bundled with the npm package and exposed through `package.json` bin/files entries.
 - Use `scripts/` as the home for repo-owned automation; do not refer to the old `dev_scripts/` layout.
+
+## 5) ts-apt Boundary
+
+- ts-apt owns APT and dpkg logic; its local clone is `../ts-apt`.
+- MUST make changes in `../ts-apt` when they run `apt`, `apt-get`, `apt-cache`, `apt-fast`, `dpkg`, or `dpkg-query`.
+- MUST make changes in `../ts-apt` when they parse APT or dpkg output or change `PackageName` behavior.
+- NEVER call APT or dpkg binaries from `src/`; add a `PackageManager` method in ts-apt and call it.
+- This repo owns cache keys, manifests, archives, action inputs, and action outputs.
+- Follow `../ts-apt/AGENTS.md` when editing ts-apt.
+- Add ts-apt unit tests for every new ts-apt method.
+- Use `npm run dev:tsapt:link` to test against local ts-apt; run `npm run dev:tsapt:unlink` when finished.
+- `package.json` pins ts-apt to a commit SHA; local ts-apt changes are not visible to CI.
+- MUST push the ts-apt change first, then bump the ts-apt SHA pin in the same change that uses it.
+- NEVER push action code that depends on an unpushed ts-apt change.
 
 ## Quick Commands
 

@@ -1,8 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import * as ghcache from "@actions/cache";
-import * as tar from "tar";
-import { createPackageName, type PackageName } from "ts-apt";
+import {
+  createPackageName,
+  type CommandOptions,
+  type PackageName,
+} from "ts-apt";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import winston from "winston";
 
@@ -37,7 +40,6 @@ vi.mock("@actions/cache", () => ({
   saveCache: vi.fn(),
   isFeatureAvailable: vi.fn(),
 }));
-vi.mock("tar", () => ({ extract: vi.fn(), create: vi.fn() }));
 
 const CACHE_DIR = path.join(HOME_DIR, CACHE_DEFAULT_DIRNAME);
 const CACHE_ID = 42;
@@ -81,9 +83,34 @@ async function writeCache(archivedPackages = INSTALL_ORDER): Promise<void> {
   archivedPackages.forEach((pkg) => fs.writeFileSync(archivePath(pkg), ""));
 }
 
-function createCache(): Cache {
+/** Archive operations observed through the command runner. */
+interface TarCalls {
+  created: [archive: string, files: string[]][];
+  extracted: string[];
+}
+
+const argValue = (args: string[], flag: string) =>
+  args.find((arg) => arg.startsWith(`${flag}=`))?.slice(flag.length + 1);
+
+/** Records sudo tar calls, including the file list piped to tar create. */
+function recordTar(calls: TarCalls) {
+  return vi.fn(
+    async (_command: string, args: string[] = [], options: CommandOptions = {}) => {
+      const archive = argValue(args, "--file") ?? "";
+      if (args.includes("--create")) {
+        calls.created.push([archive, String(options.input ?? "").split("\0")]);
+      }
+      if (args.includes("--extract")) {
+        calls.extracted.push(archive);
+      }
+      return { cmdLine: "", stdout: "", stderr: "", exitCode: 0 };
+    },
+  );
+}
+
+function createCache(calls: TarCalls = { created: [], extracted: [] }): Cache {
   const logger = winston.createLogger({ silent: true });
-  return new Cache({ run: vi.fn() } as never, logger);
+  return new Cache({ run: recordTar(calls) } as never, logger);
 }
 
 describe("Cache", () => {
@@ -101,33 +128,34 @@ describe("Cache", () => {
   it("loadAndRestore cache hit extracts archives in install order", async () => {
     await writeCache();
 
-    const manifest = await createCache().loadAndRestore(KEY, false);
+    const calls: TarCalls = { created: [], extracted: [] };
+
+    const manifest = await createCache(calls).loadAndRestore(KEY, false);
 
     expect(manifest).toBeDefined();
-    expect(
-      vi.mocked(tar.extract).mock.calls.map(([options]) => options?.file),
-    ).toEqual(INSTALL_ORDER.map(archivePath));
+    expect(calls.extracted).toEqual(INSTALL_ORDER.map(archivePath));
   });
 
   it("loadAndRestore archive missing returns undefined without extracting", async () => {
     await writeCache(INSTALL_ORDER.slice(1));
 
-    const manifest = await createCache().loadAndRestore(KEY, false);
+    const calls: TarCalls = { created: [], extracted: [] };
+
+    const manifest = await createCache(calls).loadAndRestore(KEY, false);
 
     expect(manifest).toBeUndefined();
-    expect(tar.extract).not.toHaveBeenCalled();
+    expect(calls.extracted).toEqual([]);
   });
 
   it("archiveAndSave packages with files creates archives of their files", async () => {
-    const cacheId = await createCache().archiveAndSave(MANIFEST);
+    const calls: TarCalls = { created: [], extracted: [] };
+
+    const cacheId = await createCache(calls).archiveAndSave(MANIFEST);
 
     expect(cacheId).toBe(CACHE_ID);
-    // tar.create is overloaded, so type the (options, files) call shape used.
-    const createCalls = vi.mocked(tar.create).mock.calls as unknown as [
-      { file: string },
-      string[],
-    ][];
-    expect(createCalls.map(([options, files]) => [options.file, files])).toEqual(INSTALL_ORDER.map((pkg) => [archivePath(pkg), filesOf(pkg)]));
+    expect(calls.created).toEqual(
+      INSTALL_ORDER.map((pkg) => [archivePath(pkg), filesOf(pkg)]),
+    );
   });
 
   it("archiveAndSave manifest written records package files", async () => {
@@ -139,5 +167,38 @@ describe("Cache", () => {
     expect(written.entries.map((entry) => entry.filepaths)).toEqual(
       MANIFEST.entries.map((entry) => entry.filepaths),
     );
+  });
+
+  it("loadAndRestore cache hit returns all installed packages", async () => {
+    await writeCache();
+
+    const manifest = await createCache().loadAndRestore(KEY, false);
+
+    expect(
+      manifest?.entries.map((entry) => entry.packageName.serialize()),
+    ).toEqual(MANIFEST.entries.map((entry) => entry.packageName.serialize()));
+  });
+
+  it("archiveAndSave requested package without version records installed entry in main manifest", async () => {
+    const unversionedKey = new CacheKey(
+      "v1",
+      "1",
+      "x86_64",
+      ActionPackageNames.fromInput(REQUESTED_PACKAGE.name),
+    );
+
+    await createCache().archiveAndSave(
+      new Manifest(MANIFEST.created, MANIFEST.entries, unversionedKey),
+    );
+
+    const written = await Manifest.readFromFile(
+      path.join(CACHE_DIR, MANIFEST_MAIN_FILENAME),
+    );
+    expect(
+      written.entries.map((entry) => [
+        entry.packageName.serialize(),
+        entry.filepaths,
+      ]),
+    ).toEqual([[REQUESTED_PACKAGE.serialize(), filesOf(REQUESTED_PACKAGE)]]);
   });
 });

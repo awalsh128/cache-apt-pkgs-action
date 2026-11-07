@@ -8,6 +8,7 @@ import {
   CACHE_KEY_FILENAME,
   MANIFEST_ALL_FILENAME,
   MANIFEST_MAIN_FILENAME,
+  resolveCacheDir,
 } from "./cache.js";
 
 const APP_LOG_FILENAME = "capa_app.log";
@@ -40,10 +41,26 @@ export class Artifacts {
   ) {}
 
   /** Upload artifacts to GitHub Actions via [@actions/artifact]. */
-  upload(): string {
+  /**
+   * Artifact name, unique per action step in a workflow run.
+   *
+   * Artifact names must be unique within a run, and every job (or step) using
+   * the action uploads one, so include the attempt, job and step IDs.
+   */
+  get name(): string {
+    const parts = [
+      this.runId,
+      process.env.GITHUB_RUN_ATTEMPT,
+      process.env.GITHUB_JOB,
+      process.env.GITHUB_ACTION,
+    ].filter((part) => part !== undefined && part !== "");
+    return ["capa_artifacts", ...parts].join("-");
+  }
+
+  async upload(): Promise<string> {
     const client = new DefaultArtifactClient();
-    client.uploadArtifact(
-      "capa_artifacts-" + this.runId,
+    await client.uploadArtifact(
+      this.name,
       this.artifactFilenames
         .map((filename) => path.join(this.dir, filename))
         .filter((filepath) => fs.existsSync(filepath)),
@@ -99,8 +116,10 @@ function createGitHubLogger(debug: boolean, filepath: string): winston.Logger {
 
 /** Container for all instrumentation: telemetry, logging, and artifacts generated */
 export class Instruments {
-  /** Cache directory where all artifacts are stored, including cached packages. */
+  /** Cache directory name where all artifacts are stored, including cached packages. */
   readonly cacheDir: string;
+  /** Absolute path of the cache directory (i.e. under the home directory). */
+  readonly cacheDirPath: string;
   /** Whether debug is enabled which affects artifacts otherwise not. */
   readonly debug: boolean;
   /** Manages artifact creation and upload.  */
@@ -112,11 +131,14 @@ export class Instruments {
 
   constructor(cacheDir: string, debug: boolean, artifacts?: Artifacts) {
     this.cacheDir = cacheDir;
+    this.cacheDirPath = resolveCacheDir(cacheDir);
     this.debug = debug;
+    // The log streams open their files right away, so the directory must exist.
+    fs.mkdirSync(this.cacheDirPath, { recursive: true });
 
     this.artifacts =
       artifacts ??
-      new Artifacts(cacheDir, [
+      new Artifacts(this.cacheDirPath, [
         APP_LOG_FILENAME,
         EXEC_LOG_FILENAME,
         CACHE_KEY_FILENAME,
@@ -125,11 +147,11 @@ export class Instruments {
       ]);
     this.appLogger = createGitHubLogger(
       debug,
-      path.join(cacheDir, APP_LOG_FILENAME),
+      path.join(this.cacheDirPath, APP_LOG_FILENAME),
     );
     this.execLogger = createExecLogger(
       debug,
-      path.join(cacheDir, EXEC_LOG_FILENAME),
+      path.join(this.cacheDirPath, EXEC_LOG_FILENAME),
     );
   }
 }

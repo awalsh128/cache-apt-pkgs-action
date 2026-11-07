@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { Artifacts, Instruments } from "../src/instrumentation.ts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -38,6 +41,41 @@ describe("instrumentation", () => {
 
       const artifacts = new Artifacts(dir, ARTIFACT_FILENAMES, debug);
       expect(artifacts.runId).toMatch(/^ghrunid-notfound-/);
+    });
+
+    it("name in a workflow step includes attempt, job and step", () => {
+      vi.stubEnv("GITHUB_RUN_ATTEMPT", "2");
+      vi.stubEnv("GITHUB_JOB", "list_versions");
+      vi.stubEnv("GITHUB_ACTION", "execute");
+
+      const artifacts = new Artifacts("/dir", ARTIFACT_FILENAMES, false, "123");
+
+      expect(artifacts.name).toBe(
+        "capa_artifacts-123-2-list_versions-execute",
+      );
+    });
+  });
+
+  describe("Instruments", () => {
+    const CACHE_DIRNAME = "cache-apt-pkgs";
+
+    it("constructor cache dir missing creates it under home with the logs", async () => {
+      const home = fs.mkdtempSync(path.join(os.tmpdir(), "instruments-test-"));
+      vi.stubEnv("HOME", home);
+      const expectedDir = path.join(home, CACHE_DIRNAME);
+
+      const instruments = new Instruments(CACHE_DIRNAME, false);
+      instruments.appLogger.info("app message");
+      await new Promise((resolve) => instruments.appLogger.end(resolve));
+
+      expect(instruments.cacheDirPath).toBe(expectedDir);
+      expect(instruments.artifacts.dir).toBe(expectedDir);
+      await vi.waitFor(() =>
+        expect(
+          fs.readFileSync(path.join(expectedDir, "capa_app.log"), "utf8"),
+        ).toContain("app message"),
+      );
+      fs.rmSync(home, { recursive: true, force: true });
     });
   });
 

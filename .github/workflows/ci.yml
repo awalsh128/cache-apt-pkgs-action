@@ -41,6 +41,18 @@ jobs:
         with:
           operation: build
 
+      # The integration jobs below run this bundle as the action (uses: ./).
+      - name: Upload Action Bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            action.yml
+            dist/action/
+            dist/scripts/
+          if-no-files-found: error
+          retention-days: 1
+
   codeql:
     # Fork PRs do not have permission to upload security events.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -107,6 +119,9 @@ jobs:
 
       - name: Check Action Dependencies Pinned
         shell: bash
+        env:
+          # Authenticated API requests avoid the shared runner IP rate limit.
+          GITHUB_TOKEN: ${{ github.token }}
         run: npm run check:latest-action-pins
 
   testing:
@@ -149,7 +164,7 @@ jobs:
 
   # All other jobs should depend on build_binaries (if run) or check_distribute (if not needed)
   list_all_versions:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # expected versions below are from Ubuntu 24.04
     needs: [testing]
     name: List all package versions (including deps).
     steps:
@@ -168,18 +183,18 @@ jobs:
       - name: Verify
         if: |
           steps.execute.outputs.cache-hit != 'false' ||
-          steps.execute.outputs.all-package-version-list != 'fonts-liberation2=1:2.1.5-3,gir1.2-atk-1.0=2.52.0-1build1,gir1.2-freedesktop=1.80.1-1,gir1.2-gdkpixbuf-2.0=2.42.10+dfsg-3ubuntu3.2,gir1.2-gtk-3.0=3.24.41-4ubuntu1.3,gir1.2-harfbuzz-0.0=8.3.0-2build2,gir1.2-pango-1.0=1.52.1+ds-1build1,graphviz=2.42.2-9ubuntu0.1,libann0=1.1.2+doc-9build1,libblas3=3.12.0-3build1.1,libcdt5=2.42.2-9ubuntu0.1,libcgraph6=2.42.2-9ubuntu0.1,libgts-0.7-5t64=0.7.6+darcs121130-5.2build1,libgts-bin=0.7.6+darcs121130-5.2build1,libgvc6=2.42.2-9ubuntu0.1,libgvpr2=2.42.2-9ubuntu0.1,libharfbuzz-gobject0=8.3.0-2build2,liblab-gamut1=2.42.2-9ubuntu0.1,liblapack3=3.12.0-3build1.1,libpangoxft-1.0-0=1.52.1+ds-1build1,libpathplan4=2.42.2-9ubuntu0.1,python3-cairo=1.25.1-2build2,python3-gi-cairo=3.48.2-1,python3-numpy=1:1.26.4+ds-6ubuntu1,xdot=1.3-1'
+          steps.execute.outputs.all-package-version-list != 'fonts-liberation2=1:2.1.5-3,gir1.2-atk-1.0=2.52.0-1build1,gir1.2-freedesktop=1.80.1-1,gir1.2-gdkpixbuf-2.0=2.42.10+dfsg-3ubuntu3.3,gir1.2-gtk-3.0=3.24.41-4ubuntu1.3,gir1.2-harfbuzz-0.0=8.3.0-2build2,gir1.2-pango-1.0=1.52.1+ds-1build1,graphviz=2.42.2-9ubuntu0.1,libann0=1.1.2+doc-9build1,libblas3=3.12.0-3build1.1,libcdt5=2.42.2-9ubuntu0.1,libcgraph6=2.42.2-9ubuntu0.1,libgts-0.7-5t64=0.7.6+darcs121130-5.2build1,libgts-bin=0.7.6+darcs121130-5.2build1,libgvc6=2.42.2-9ubuntu0.1,libgvpr2=2.42.2-9ubuntu0.1,libharfbuzz-gobject0=8.3.0-2build2,liblab-gamut1=2.42.2-9ubuntu0.1,liblapack3=3.12.0-3build1.1,libpangoxft-1.0-0=1.52.1+ds-1build1,libpathplan4=2.42.2-9ubuntu0.1,python3-cairo=1.25.1-2build2,python3-gi-cairo=3.48.2-1,python3-numpy=1:1.26.4+ds-6ubuntu1,xdot=1.3-1'
         run: |
           echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
           echo "package-version-list = ${{ steps.execute.outputs.package-version-list }}"
           echo "all-package-version-list = ${{ steps.execute.outputs.all-package-version-list }}"
           echo "diff all-package-version-list"
-          diff  <(echo "${{ steps.execute.outputs.all-package-version-list }}" ) <(echo "fonts-liberation2=1:2.1.5-3,gir1.2-atk-1.0=2.52.0-1build1,gir1.2-freedesktop=1.80.1-1,gir1.2-gdkpixbuf-2.0=2.42.10+dfsg-3ubuntu3.2,gir1.2-gtk-3.0=3.24.41-4ubuntu1.3,gir1.2-harfbuzz-0.0=8.3.0-2build2,gir1.2-pango-1.0=1.52.1+ds-1build1,graphviz=2.42.2-9ubuntu0.1,libann0=1.1.2+doc-9build1,libblas3=3.12.0-3build1.1,libcdt5=2.42.2-9ubuntu0.1,libcgraph6=2.42.2-9ubuntu0.1,libgts-0.7-5t64=0.7.6+darcs121130-5.2build1,libgts-bin=0.7.6+darcs121130-5.2build1,libgvc6=2.42.2-9ubuntu0.1,libgvpr2=2.42.2-9ubuntu0.1,libharfbuzz-gobject0=8.3.0-2build2,liblab-gamut1=2.42.2-9ubuntu0.1,liblapack3=3.12.0-3build1.1,libpangoxft-1.0-0=1.52.1+ds-1build1,libpathplan4=2.42.2-9ubuntu0.1,python3-cairo=1.25.1-2build2,python3-gi-cairo=3.48.2-1,python3-numpy=1:1.26.4+ds-6ubuntu1,xdot=1.3-1")
+          diff  <(echo "${{ steps.execute.outputs.all-package-version-list }}" ) <(echo "fonts-liberation2=1:2.1.5-3,gir1.2-atk-1.0=2.52.0-1build1,gir1.2-freedesktop=1.80.1-1,gir1.2-gdkpixbuf-2.0=2.42.10+dfsg-3ubuntu3.3,gir1.2-gtk-3.0=3.24.41-4ubuntu1.3,gir1.2-harfbuzz-0.0=8.3.0-2build2,gir1.2-pango-1.0=1.52.1+ds-1build1,graphviz=2.42.2-9ubuntu0.1,libann0=1.1.2+doc-9build1,libblas3=3.12.0-3build1.1,libcdt5=2.42.2-9ubuntu0.1,libcgraph6=2.42.2-9ubuntu0.1,libgts-0.7-5t64=0.7.6+darcs121130-5.2build1,libgts-bin=0.7.6+darcs121130-5.2build1,libgvc6=2.42.2-9ubuntu0.1,libgvpr2=2.42.2-9ubuntu0.1,libharfbuzz-gobject0=8.3.0-2build2,liblab-gamut1=2.42.2-9ubuntu0.1,liblapack3=3.12.0-3build1.1,libpangoxft-1.0-0=1.52.1+ds-1build1,libpathplan4=2.42.2-9ubuntu0.1,python3-cairo=1.25.1-2build2,python3-gi-cairo=3.48.2-1,python3-numpy=1:1.26.4+ds-6ubuntu1,xdot=1.3-1")
           exit 1
         shell: bash
 
   list_versions:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # expected versions below are from Ubuntu 24.04
     needs: [testing]
     name: List package versions.
     steps:
@@ -233,7 +248,7 @@ jobs:
 
   standard_workflow_install_with_new_version:
     runs-on: ubuntu-latest
-    needs: [testing]
+    needs: [standard_workflow_install]
     name: Standard workflow packages with new version.
     steps:
       - name: Download Action Bundle
@@ -257,7 +272,7 @@ jobs:
 
   standard_workflow_restore:
     runs-on: ubuntu-latest
-    needs: [testing]
+    needs: [standard_workflow_install]
     name: Standard workflow restore cached packages.
     steps:
       - name: Download Action Bundle
@@ -281,7 +296,7 @@ jobs:
 
   standard_workflow_restore_with_packages_out_of_order:
     runs-on: ubuntu-latest
-    needs: [testing]
+    needs: [standard_workflow_install]
     name: Standard workflow restore with packages out of order.
     steps:
       - name: Download Action Bundle
@@ -305,7 +320,7 @@ jobs:
 
   standard_workflow_add_package:
     runs-on: ubuntu-latest
-    needs: [testing]
+    needs: [standard_workflow_install]
     name: Standard workflow add another package.
     steps:
       - name: Download Action Bundle
@@ -329,7 +344,7 @@ jobs:
 
   standard_workflow_restore_add_package:
     runs-on: ubuntu-latest
-    needs: [testing]
+    needs: [standard_workflow_add_package]
     name: Standard workflow restore added package.
     steps:
       - name: Download Action Bundle
@@ -500,22 +515,19 @@ jobs:
     runs-on: ubuntu-latest
     needs: [testing]
     name: "Cache empty archive (regression issue #76)."
+    timeout-minutes: 15
     steps:
       - name: Download Action Bundle
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
-      - run: |
-          sudo wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor | tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null;
-          echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list;
-          sudo apt-get -qq update;
-          sudo apt-get install -y intel-oneapi-runtime-libs intel-oneapi-runtime-opencl;
-          sudo apt-get install -y opencl-headers ocl-icd-opencl-dev;
-          sudo apt-get install -y libsundials-dev;
+      # The original report was an Intel oneAPI package whose files have spaces in their
+      # paths. libopenal-data ships "/usr/share/openal/hrtf/Default HRTF.mhr" and comes
+      # from the Ubuntu archive, so no third-party repo or extra installs are needed.
       - uses: ./
         with:
-          packages: intel-oneapi-runtime-libs
+          packages: libopenal-data
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_76
           debug: ${{ env.DEBUG }}
 
@@ -548,7 +560,7 @@ jobs:
       - uses: ./
         with:
           packages:
-            libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcups2 libdrm2 libgbm1
+            alsa-ucm-conf libasound2t64 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcups2 libdrm2 libgbm1
             libnspr4 libnss3 libxcomposite1 libxdamage1 libxfixes3 libxkbcommon0 libxrandr2
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_81
           debug: ${{ env.DEBUG }}
