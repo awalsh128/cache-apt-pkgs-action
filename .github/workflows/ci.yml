@@ -124,6 +124,11 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: npm run check:latest-action-pins
 
+      # Fails if ts-apt is linked locally or not pinned to a pushed commit SHA.
+      - name: Check ts-apt Pin
+        shell: bash
+        run: npm run check:tsapt-pin
+
   testing:
     runs-on: ubuntu-latest
     needs: setup-and-cache

@@ -86,6 +86,8 @@ You are an expert developer focused on TypeScript, Bash, DevOps, Git, and GitHub
 - `package.json` pins ts-apt to a commit SHA; local ts-apt changes are not visible to CI.
 - MUST push the ts-apt change first, then bump the ts-apt SHA pin in the same change that uses it.
 - NEVER push action code that depends on an unpushed ts-apt change.
+- `npm run check:tsapt-pin` enforces the pin; it runs in CI and in the `.githooks/pre-push` hook installed by `npm install`.
+- NEVER bypass the pre-push hook with `--no-verify`; unlink ts-apt instead.
 
 ## Quick Commands
 
