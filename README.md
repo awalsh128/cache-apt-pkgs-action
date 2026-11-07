@@ -1,4 +1,5 @@
-<img src="https://raw.githubusercontent.com/awalsh128/cache-apt-pkgs-action/main-2/logo.png" alt="Cache APT Packages logo" height="80" align="center"> <b>Cache APT Packages Action</b>
+<p align="center"><img src="https://raw.githubusercontent.com/awalsh128/cache-apt-pkgs-action/main-2/logo.png" alt="Cache APT Packages logo" height="80"></p>
+<h1 align="center">Cache APT Packages Action</h1>
 
 [![License: Apache2](https://shields.io/badge/license-apache2-blue.svg)](https://github.com/awalsh128/cache-apt-pkgs-action/blob/master/LICENSE)
 [![Master tests](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/action-tests.yml?label=Tests%20Master&branch=master)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/action-tests.yml?query=branch%3Amaster)
