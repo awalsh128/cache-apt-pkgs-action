@@ -23,7 +23,7 @@ jobs:
   # All other jobs should depend on build_binaries (if run) or check_distribute (if not needed)
   list_all_versions:
     needs: [build_binaries]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # expected versions below are from Ubuntu 24.04
     name: List all package versions (including deps).
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -50,7 +50,7 @@ jobs:
 
   list_versions:
     needs: [build_binaries]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # expected versions below are from Ubuntu 24.04
     name: List package versions.
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
