@@ -87,6 +87,8 @@ async function writeCache(archivedPackages = INSTALL_ORDER): Promise<void> {
 interface TarCalls {
   created: [archive: string, files: string[]][];
   extracted: string[];
+  /** Number of commands run that extracted archives. */
+  extractCommands?: number;
 }
 
 const argValue = (args: string[], flag: string) =>
@@ -100,8 +102,10 @@ function recordTar(calls: TarCalls) {
       if (args.includes("--create")) {
         calls.created.push([archive, String(options.input ?? "").split("\0")]);
       }
-      if (args.includes("--extract")) {
-        calls.extracted.push(archive);
+      // Extraction runs as `sh -c <script> sh <archive>...`.
+      if (args[0] === "sh" && args[1] === "-c") {
+        calls.extracted.push(...args.slice(4));
+        calls.extractCommands = (calls.extractCommands ?? 0) + 1;
       }
       return { cmdLine: "", stdout: "", stderr: "", exitCode: 0 };
     },
@@ -134,6 +138,27 @@ describe("Cache", () => {
 
     expect(manifest).toBeDefined();
     expect(calls.extracted).toEqual(INSTALL_ORDER.map(archivePath));
+  });
+
+  it("loadAndRestore without install scripts extracts all archives in one command", async () => {
+    await writeCache();
+
+    const calls: TarCalls = { created: [], extracted: [] };
+
+    await createCache(calls).loadAndRestore(KEY, false);
+
+    expect(calls.extractCommands).toBe(1);
+  });
+
+  it("loadAndRestore with install scripts extracts archives one at a time in install order", async () => {
+    await writeCache();
+
+    const calls: TarCalls = { created: [], extracted: [] };
+
+    await createCache(calls).loadAndRestore(KEY, true);
+
+    expect(calls.extracted).toEqual(INSTALL_ORDER.map(archivePath));
+    expect(calls.extractCommands).toBe(INSTALL_ORDER.length);
   });
 
   it("loadAndRestore archive missing returns undefined without extracting", async () => {

@@ -29,7 +29,7 @@ inputs:
     required: false
     default: "error"
   debug:
-    description: "Enable debugging when there are issues with action. Minor performance penalty."
+    description: "Enable debugging when there are issues with action. Also uploads the action logs and manifests as a workflow artifact, which is otherwise done only when the action fails. Minor performance penalty."
     required: false
     default: "false"
 
@@ -37,9 +37,15 @@ outputs:
   cache-hit:
     description: "A boolean value to indicate a cache was found for the packages requested."
   package-version-list:
-    description: "The main requested packages and versions that are installed. Represented as a sorted comma delimited list with equals delimit on the package version (i.e. <package1>=<version1>,<package2>=<version2>,...). Packages installed for a non-native architecture include it (i.e. <package>:<arch>=<version>)."
+    description: >
+      The main requested packages and versions that are installed.
+      Represented as a sorted comma delimited list with equals delimit on the package version (i.e. <package1>=<version1>,<package2>=<version2>,...).
+      Packages installed for a non-native architecture include it (i.e. <package>:<arch>=<version>).
   all-package-version-list:
-    description: "All the pulled in packages and versions, including dependencies, that are installed. Represented as a sorted comma delimited list with equals delimit on the package version (i.e. <package1>=<version1>,<package2>=<version2>,...). Packages installed for a non-native architecture include it (i.e. <package>:<arch>=<version>)."
+    description: >
+      All the pulled in packages and versions, including dependencies, that are installed.
+      Represented as a sorted comma delimited list with equals delimit on the package version (i.e. <package1>=<version1>,<package2>=<version2>,...).
+      Packages installed for a non-native architecture include it (i.e. <package>:<arch>=<version>).
 
 runs:
   using: "node24"
