@@ -9,7 +9,7 @@
  *   2. package.json pins <name> to a full commit SHA (`...#<40 hex chars>`).
  *   3. package-lock.json resolves <name> to that same SHA and not a link.
  *
- * Used by .githooks/pre-push and the CI action-deps-pinned job.
+ * Used by .husky/pre-push and the CI action-deps-pinned job.
  *
  * Usage: check_deps_pin.mts <dependency> [<dependency>...]
  */

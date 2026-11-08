@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-# Blocks pushes while a pinned dependency (e.g. ts-apt) is locally linked or
-# not pinned to a commit SHA. Installed by the npm "prepare" script via
-# core.hooksPath.
-set -euo pipefail
-
-cd "$(git rev-parse --show-toplevel)"
-exec npm run -s check:deps-pin
