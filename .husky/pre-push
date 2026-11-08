@@ -1,0 +1,3 @@
+# Blocks pushes while a pinned dependency (e.g. ts-apt) is locally linked or
+# not pinned to a commit SHA.
+npm run -s check:deps-pin
