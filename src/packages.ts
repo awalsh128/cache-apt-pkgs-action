@@ -66,10 +66,15 @@ export async function findInstallScript(
     return undefined;
   }
 
-  const pattern = new RegExp(`^${packageName.name}(:.*)?\\.${extension}$`);
+  // Match on plain strings since package names can hold regex metacharacters
+  // (e.g. g++, libstdc++6). Scripts are named <name>[:<arch>].<extension>.
+  const suffix = `.${extension}`;
+  const isMatch = (entry: string) =>
+    entry === `${packageName.name}${suffix}` ||
+    (entry.startsWith(`${packageName.name}:`) && entry.endsWith(suffix));
   const matches = fs
     .readdirSync(scriptsDir)
-    .filter((entry) => pattern.test(entry))
+    .filter(isMatch)
     .sort((a, b) => a.localeCompare(b));
   const candidate = matches[0];
   if (!candidate) {
