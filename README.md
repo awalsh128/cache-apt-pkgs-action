@@ -1,9 +1,8 @@
 # <img src="logo.png" alt="Description" height="80" align="center"> Cache APT Packages Action v2
 
 [![License: Apache2](https://shields.io/badge/license-apache2-blue.svg)](https://github.com/awalsh128/fluentcpp/blob/master/LICENSE)
-![Main CI](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20Main&branch=dev-v2.0)
-![Staging CI](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20Staging&branch=dev-v2.0)
-[![codecov](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/branch/main/graph/badge.svg)](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action)
+![CI](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20Main&branch=main-2)
+[![codecov](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/branch/main-2/graph/badge.svg)](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action)
 
 This action allows caching of Advanced Package Tool (APT) package dependencies to improve workflow execution time instead of installing the packages on every run.
 
