@@ -84,7 +84,7 @@
     "@actions/artifact": "^6.2.1",
     "@actions/cache": "^6.1.0",
     "@actions/core": "^3.0.1",
-    "ts-apt": "git+https://github.com/awalsh128/ts-apt.git#342c7d0f453dcf1a69da83d7d195f9df2611a351",
+    "ts-apt": "git+https://github.com/awalsh128/ts-apt.git#64aaab829c940f6d1999bb8b530817bcf26bfe58",
     "winston": "^3.19.0"
   },
   "devDependencies": {
