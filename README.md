@@ -1,4 +1,4 @@
-<img src="logo.png" alt="Description" height="80" align="center" style="padding-right: 1em;"> <span style="font-size: 2em; font-weight: bold;">Cache APT Packages Action v2</span>
+# <img src="logo.png" alt="Description" height="80" align="center"> Cache APT Packages Action v2
 
 [![License: Apache2](https://shields.io/badge/license-apache2-blue.svg)](https://github.com/awalsh128/fluentcpp/blob/master/LICENSE)
 ![Main CI](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20Main&branch=dev-v2.0)
