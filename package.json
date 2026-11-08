@@ -55,8 +55,8 @@
     "check:latest-action-pins": "node --experimental-strip-types ./scripts/ops/check_latest_action_pin.mts --scan",
     "check:pr": "node --experimental-strip-types ./scripts/ops/pr_checks.mts",
     "check:configs": "node --experimental-strip-types ./scripts/ops/check_configs.mts",
-    "check:tsapt-pin": "./scripts/ops/check_tsapt_pin.sh",
-    "check": "npm run -s runall -- check:latest-action-pins check:pr check:configs check:tsapt-pin",
+    "check:deps-pin": "node --experimental-strip-types ./scripts/ops/check_deps_pin.mts ts-apt",
+    "check": "npm run -s runall -- check:latest-action-pins check:pr check:configs check:deps-pin",
     "dev:tsapt:link": "npm link ../ts-apt --no-save; echo \"NOTE: npm run dev:tsapt:unlink when you are finished.\"",
     "dev:tsapt:unlink": "npm unlink ts-apt --no-save && npm ci",
     "gh:auth": "gh auth status >/dev/null 2>&1 || gh auth login --web && gh auth setup-git",
@@ -72,7 +72,6 @@
     "repo:tags:upload": "npm run repo::sync --  upload --target tags",
     "repo:all:download": "npm run repo::sync --  download --target all",
     "repo:all:upload": "npm run repo::sync --  upload --target all",
-    "docs:api": "typedoc --options typedoc.json",
     "release": "semantic-release",
     "release:dry-run": "semantic-release --dry-run",
     "lint": "eslint src test scripts --ext .ts,.mts",
@@ -85,14 +84,10 @@
     "@actions/artifact": "^6.2.1",
     "@actions/cache": "^6.1.0",
     "@actions/core": "^3.0.1",
-    "class-transformer": "^0.5.1",
-    "rollup": "^4.62.2",
-    "tar": "^7.4.3",
-    "ts-apt": "git+https://github.com/awalsh128/ts-apt.git#67d450ee524f1a6145e5d30eaf5d3d6615e3d0ef",
+    "ts-apt": "git+https://github.com/awalsh128/ts-apt.git#342c7d0f453dcf1a69da83d7d195f9df2611a351",
     "winston": "^3.19.0"
   },
   "devDependencies": {
-    "@devcontainers/cli": "^0.87.0",
     "@robingenz/zli": "^0.2.0",
     "@rollup/plugin-commonjs": "^29.0.3",
     "@rollup/plugin-json": "^6.1.0",
@@ -104,19 +99,27 @@
     "@semantic-release/npm": "^13.1.5",
     "@semantic-release/release-notes-generator": "^14.1.1",
     "@types/node": "^24.1.0",
-    "@types/tar": "^6.1.13",
-    "@typescript-eslint/eslint-plugin": "^8.62.1",
     "@typescript-eslint/parser": "^8.62.1",
     "@vitest/coverage-v8": "^4.1.9",
     "eslint": "^10.6.0",
-    "internet-message": "^1.0.0",
     "npm-run-all": "^4.1.5",
+    "rollup": "^4.68.0",
     "semantic-release": "^25.0.5",
     "type-coverage": "^2.29.7",
-    "typedoc": "^0.28.19",
-    "typedoc-plugin-markdown": "^4.12.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10",
     "zod": "^4.4.3"
+  },
+  "overrides": {
+    "glob@>=9.0.0 <14.0.2": "^14.0.4",
+    "eslint": {
+      "minimatch": "^11.0.5"
+    },
+    "@typescript-eslint/parser": {
+      "minimatch": "^11.0.5"
+    },
+    "type-coverage": {
+      "minimatch": "^11.0.5"
+    }
   }
 }
