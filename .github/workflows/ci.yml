@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   setup-and-cache:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     strategy:
@@ -56,7 +56,7 @@ jobs:
   codeql:
     # Fork PRs do not have permission to upload security events.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: setup-and-cache
     permissions:
       actions: read
@@ -80,7 +80,7 @@ jobs:
         uses: github/codeql-action/analyze@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a # v4
 
   linters:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: setup-and-cache
     permissions:
       contents: read
@@ -103,7 +103,7 @@ jobs:
         run: npm run typecheck
 
   action-deps-pinned:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: setup-and-cache
     permissions:
       contents: read
@@ -130,7 +130,7 @@ jobs:
         run: npm run check:deps-pin
 
   testing:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: setup-and-cache
     permissions:
       contents: read
@@ -216,8 +216,7 @@ jobs:
           version: ${{ github.run_id }}-${{ github.run_attempt }}-list_versions
           debug: ${{ env.DEBUG }}
       - name: Verify
-        if:
-          steps.execute.outputs.cache-hit != 'false' || steps.execute.outputs.package-version-list
+        if: steps.execute.outputs.cache-hit != 'false' || steps.execute.outputs.package-version-list
           != 'rolldice=1.16-1build3,xdot=1.3-1'
         run: |
           echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
@@ -228,7 +227,7 @@ jobs:
         shell: bash
 
   standard_workflow_install:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: Standard workflow install package and cache.
     steps:
@@ -252,7 +251,7 @@ jobs:
         shell: bash
 
   standard_workflow_install_with_new_version:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [standard_workflow_install]
     name: Standard workflow packages with new version.
     steps:
@@ -276,7 +275,7 @@ jobs:
         shell: bash
 
   standard_workflow_restore:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [standard_workflow_install]
     name: Standard workflow restore cached packages.
     steps:
@@ -300,7 +299,7 @@ jobs:
         shell: bash
 
   standard_workflow_restore_with_packages_out_of_order:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [standard_workflow_install]
     name: Standard workflow restore with packages out of order.
     steps:
@@ -324,7 +323,7 @@ jobs:
         shell: bash
 
   standard_workflow_add_package:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [standard_workflow_install]
     name: Standard workflow add another package.
     steps:
@@ -348,7 +347,7 @@ jobs:
         shell: bash
 
   standard_workflow_restore_add_package:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [standard_workflow_add_package]
     name: Standard workflow restore added package.
     steps:
@@ -372,7 +371,7 @@ jobs:
         shell: bash
 
   no_packages:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: No packages passed.
     steps:
@@ -393,7 +392,7 @@ jobs:
         shell: bash
 
   package_not_found:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: Package not found.
     steps:
@@ -414,7 +413,7 @@ jobs:
         shell: bash
 
   version_contains_spaces:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: Version contains spaces.
     steps:
@@ -437,7 +436,7 @@ jobs:
         shell: bash
 
   regression_36:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: "Reinstall existing package (regression issue #36)."
     steps:
@@ -453,7 +452,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_37:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: "Install with reported package dependencies not installed (regression issue #37)."
     steps:
@@ -469,7 +468,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   debug_disabled:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: Debug disabled.
     steps:
@@ -485,7 +484,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_72_1:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: "Cache Java CA certs package v1 (regression issue #72)."
     steps:
@@ -501,7 +500,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_72_2:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: "Cache Java CA certs package v2 (regression issue #72)."
     steps:
@@ -517,7 +516,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_76:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: "Cache empty archive (regression issue #76)."
     timeout-minutes: 15
@@ -537,7 +536,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_79:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: "Tar error with libboost-dev (regression issue #79)."
     steps:
@@ -553,7 +552,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_81:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: "Tar error with alsa-ucm-conf (regression issue #81)."
     steps:
@@ -571,7 +570,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_84_literal_block_install:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: "Install multiline package listing using literal block style (regression issue #84)."
     steps:
@@ -588,7 +587,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_84_literal_block_restore:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [regression_84_literal_block_install]
     name: "Restore multiline package listing using literal block style (regression issue #84)."
     steps:
@@ -612,7 +611,7 @@ jobs:
         shell: bash
 
   regression_84_folded_block_install:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: "Install multiline package listing using literal block style (regression issue #84)."
     steps:
@@ -630,7 +629,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_84_folded_block_restore:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [regression_84_folded_block_install]
     name: "Restore multiline package listing using literal block style (regression issue #84)."
     steps:
@@ -654,7 +653,7 @@ jobs:
         shell: bash
 
   regression_89:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: "Upload logs artifact name (regression issue #89)."
     steps:
@@ -670,7 +669,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_98:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: "Install error due to SHELLOPTS override (regression issue #98)."
     steps:
@@ -686,7 +685,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_106_install:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: "Stale apt repo not finding package on restore, install phase (regression issue #106)."
     steps:
@@ -702,7 +701,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   regression_106_restore:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [regression_106_install]
     name: "Stale apt repo not finding package on restore, restore phase (regression issue #106)."
     steps:
@@ -718,7 +717,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   multi_arch_cache_key:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: "Cache packages with multi-arch cache key."
     steps:
@@ -734,7 +733,7 @@ jobs:
           debug: ${{ env.DEBUG }}
 
   virtual_package:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [testing]
     name: "Cache virtual package."
     steps:
