@@ -1,13 +1,16 @@
 #!/usr/bin/env -S node --experimental-strip-types
 /**
- * Fails when a dependency is not resolved from a pushed commit SHA pin.
+ * Fails when a dependency is not pinned to an immutable, published source.
  *
  * Guards against shipping code built or tested against a locally linked
  * dependency (e.g. npm run dev:tsapt:link), which CI cannot see. For each
  * dependency name given as an argument, checks that:
  *   1. node_modules/<name> is not a symlink (skipped if it is absent).
- *   2. package.json pins <name> to a full commit SHA (`...#<40 hex chars>`).
- *   3. package-lock.json resolves <name> to that same SHA and not a link.
+ *   2. package.json pins <name> to either an exact npm registry version
+ *      (e.g. `1.1.1`, no ranges) or a full git commit SHA (`...#<40 hex>`).
+ *   3. package-lock.json resolves <name> to that same pin and not a link.
+ *      A registry pin must resolve from registry.npmjs.org with an integrity
+ *      hash, since npm never lets a published version change.
  *
  * Used by .husky/pre-push and the CI action-deps-pinned job.
  *
@@ -27,18 +30,26 @@ import {
 } from "../devopslib.mts";
 
 const SHA_PIN_PATTERN = /#([0-9a-f]{40})$/;
+/** Exact semver version, optionally prerelease; rejects ranges and tags. */
+const EXACT_VERSION_PATTERN =
+  /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$/;
+const NPM_REGISTRY_URL = "https://registry.npmjs.org/";
 
-type PackageJson = {
+/** Parsed package.json, limited to the fields the check reads. */
+export type PackageJson = {
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
 };
 
 type LockEntry = {
+  version?: string;
   resolved?: string;
+  integrity?: string;
   link?: boolean;
 };
 
-type PackageLock = {
+/** Parsed package-lock.json, limited to the fields the check reads. */
+export type PackageLock = {
   packages?: Record<
     string,
     LockEntry & {
@@ -59,15 +70,24 @@ function isSymlink(filePath: string): boolean {
   }
 }
 
-/** Returns one problem message per failed check for the dependency. */
-function checkDependencyPin(
+/**
+ * Checks that a dependency is pinned to an immutable source.
+ *
+ * @param name Dependency name as it appears in package.json.
+ * @param packageJson Parsed package.json.
+ * @param packageLock Parsed package-lock.json.
+ * @param rootDir Repository root used to find node_modules.
+ * @returns One problem message per failed check; empty when the pin is valid.
+ */
+export function checkDependencyPin(
   name: string,
   packageJson: PackageJson,
   packageLock: PackageLock,
+  rootDir: string = ROOT_DIR,
 ): string[] {
   const problems: string[] = [];
 
-  const modulePath = path.join(ROOT_DIR, "node_modules", name);
+  const modulePath = path.join(rootDir, "node_modules", name);
   if (isSymlink(modulePath)) {
     problems.push(
       `node_modules/${name} is a symlink to ${fs.readlinkSync(modulePath)}; unlink it and run 'npm ci' first.`,
@@ -81,16 +101,16 @@ function checkDependencyPin(
     return problems;
   }
   const sha = SHA_PIN_PATTERN.exec(spec)?.[1];
-  if (sha === undefined) {
+  const isExactVersion = EXACT_VERSION_PATTERN.test(spec);
+  if (sha === undefined && !isExactVersion) {
     problems.push(
-      `package.json ${name} '${spec}' is not pinned to a full commit SHA.`,
+      `package.json ${name} '${spec}' is not pinned to an exact registry version or a full commit SHA.`,
     );
     return problems;
   }
 
   const root = packageLock.packages?.[""];
-  const rootSpec =
-    root?.dependencies?.[name] ?? root?.devDependencies?.[name];
+  const rootSpec = root?.dependencies?.[name] ?? root?.devDependencies?.[name];
   if (rootSpec !== spec) {
     problems.push(
       `package-lock.json root ${name} '${rootSpec}' does not match package.json '${spec}'.`,
@@ -104,10 +124,26 @@ function checkDependencyPin(
     problems.push(
       `package-lock.json ${name} is a link to '${entry.resolved}'.`,
     );
-  } else if (!entry.resolved?.endsWith(`#${sha}`)) {
-    problems.push(
-      `package-lock.json ${name} resolved '${entry.resolved}' does not match pin ${sha}.`,
-    );
+  } else if (sha !== undefined) {
+    if (!entry.resolved?.endsWith(`#${sha}`)) {
+      problems.push(
+        `package-lock.json ${name} resolved '${entry.resolved}' does not match pin ${sha}.`,
+      );
+    }
+  } else {
+    if (entry.version !== spec) {
+      problems.push(
+        `package-lock.json ${name} version '${entry.version}' does not match pin ${spec}.`,
+      );
+    }
+    if (!entry.resolved?.startsWith(NPM_REGISTRY_URL)) {
+      problems.push(
+        `package-lock.json ${name} resolved '${entry.resolved}' is not from ${NPM_REGISTRY_URL}.`,
+      );
+    }
+    if (!entry.integrity?.startsWith("sha512-")) {
+      problems.push(`package-lock.json ${name} has no sha512 integrity hash.`);
+    }
   }
 
   return problems;
@@ -139,4 +175,7 @@ function main(): void {
   logSuccess(`Dependency pin check passed for ${names.join(", ")}.`);
 }
 
-await runMain(main, 1);
+// Run only as a script, so tests can import checkDependencyPin.
+if (import.meta.main) {
+  await runMain(main, 1);
+}
