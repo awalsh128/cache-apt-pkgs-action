@@ -1,9 +1,7 @@
-<p align="center"><img src="https://raw.githubusercontent.com/awalsh128/cache-apt-pkgs-action/main-2/logo.png" alt="Cache APT Packages logo" height="80"></p>
-<h1 align="center">Cache APT Packages Action</h1>
+# <img src="https://raw.githubusercontent.com/awalsh128/cache-apt-pkgs-action/main-2/logo.png" align="center" alt="Cache APT Packages logo" height="60"> Cache APT Packages Action
 
 [![License: Apache2](https://shields.io/badge/license-apache2-blue.svg)](https://github.com/awalsh128/cache-apt-pkgs-action/blob/master/LICENSE)
 [![Master tests](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/action-tests.yml?label=Tests%20Master&branch=master)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/action-tests.yml?query=branch%3Amaster)
-[![Dev tests](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/action-tests.yml?label=Tests%20Dev&branch=dev)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/action-tests.yml?query=branch%3Adev)
 [![Latest release](https://img.shields.io/github/v/release/awalsh128/cache-apt-pkgs-action?label=Release)](https://github.com/awalsh128/cache-apt-pkgs-action/releases)
 
 This action allows caching of Advanced Package Tool (APT) package dependencies to improve workflow execution time instead of installing the packages on every run.
