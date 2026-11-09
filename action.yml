@@ -11,11 +11,13 @@ inputs:
     required: true
     default: ""
   version:
-    description: "Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed."
+    description: "User defined version value of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed."
     required: false
     default: ""
   execute_install_scripts:
-    description: "Execute Debian package pre and post install script upon restore. See README.md caveats for more information."
+    description: >
+      Execute Debian package pre and post install script upon restore.
+      See https://github.com/awalsh128/cache-apt-pkgs-action/tree/main-2/README.md caveats for more information.
     required: false
     default: "false"
   empty_packages_behavior:
