@@ -37,4 +37,15 @@ describe("manifest", () => {
     expect(parsed.entries).toHaveLength(1);
     expect(parsed.entries[0]?.packageName.serialize()).toBe("curl:amd64=8.1.0");
   });
+
+  it("ManifestEntry fromJSON parsed entry returns package and sorted files", () => {
+    const entry = new ManifestEntry(createPackageName("curl", "8.1.0", "amd64"), [
+      "usr/bin/curl",
+      "etc/curlrc",
+    ]);
+
+    const parsed = ManifestEntry.fromJSON(JSON.parse(JSON.stringify(entry)));
+
+    expect(parsed).toEqual(entry);
+  });
 });

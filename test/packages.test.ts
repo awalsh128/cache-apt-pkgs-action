@@ -101,6 +101,42 @@ describe("packages", () => {
     expect(result).toBeUndefined();
   });
 
+  it("buildFileList installed paths missing on disk excludes them", async () => {
+    const root = makeTempRoot("pkg-missing-file-");
+    const presentFile = path.join(root, "present");
+    fs.writeFileSync(presentFile, "", "utf8");
+    const manager = {
+      listInstalledFiles: vi.fn().mockResolvedValue([presentFile, path.join(root, "absent")]),
+    };
+
+    const result = await buildFileList(PACKAGE_NAME, manager as any, root);
+
+    expect(result).toEqual([presentFile.slice(1)]);
+  });
+
+  it("updateAptLists lists directory with files skips update", async () => {
+    const aptListsPath = makeTempRoot("apt-lists-populated-");
+    fs.mkdirSync(path.join(aptListsPath, "partial"));
+    fs.writeFileSync(path.join(aptListsPath, "partial", "archive_Packages"), "", "utf8");
+    const packageManager = { update: vi.fn() };
+
+    await updateAptLists(packageManager as any, { info: vi.fn() } as any, aptListsPath);
+
+    expect(packageManager.update).not.toHaveBeenCalled();
+  });
+
+  it("updateAptLists files only below max search depth runs update", async () => {
+    const aptListsPath = makeTempRoot("apt-lists-deep-");
+    const deepDir = path.join(aptListsPath, "a", "b", "c", "d", "e");
+    fs.mkdirSync(deepDir, { recursive: true });
+    fs.writeFileSync(path.join(deepDir, "archive_Packages"), "", "utf8");
+    const packageManager = { update: vi.fn().mockResolvedValue(undefined) };
+
+    await updateAptLists(packageManager as any, { info: vi.fn() } as any, aptListsPath);
+
+    expect(packageManager.update).toHaveBeenCalledTimes(1);
+  });
+
   it("updateAptLists calls the package manager's update method", async () => {
     const aptListsPath = makeTempRoot("apt-lists-");
 
@@ -126,6 +162,12 @@ describe("packages", () => {
         createPackageName("other-package", "2.0.0", "i386"),
         createPackageName("test-package", "1.0.0", "amd64"),
       ]);
+    });
+
+    it("fromInput version without package name ignores the token", () => {
+      const result = ActionPackageNames.fromInput("=1.0.0 curl");
+
+      expect(result.toArray()).toEqual([createPackageName("curl")]);
     });
 
     it("fromInput returns an empty list when input is empty", () => {
