@@ -95,8 +95,9 @@ export class ActionRunner {
     const cacheHit = manifest !== undefined;
 
     // Needed on a cache hit too, to resolve the native arch for outputs.
+    // apt-fast only speeds up installs, so skip probing for it on a hit.
     const installManager = await createPackageManager(
-      true,
+      !cacheHit,
       this.logger,
       this.logger,
     );

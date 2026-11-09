@@ -31,6 +31,15 @@ export function resolveCacheDir(
  */
 const NO_TIMEOUT_MS = -1;
 
+/**
+ * Shell script that extracts each archive given as an argument onto `/`.
+ *
+ * Paths are passed as positional arguments, not interpolated, so they are
+ * never parsed by the shell.
+ */
+const EXTRACT_ARCHIVES_SCRIPT =
+  'for archive do tar --extract --file="$archive" --directory=/ --keep-directory-symlink || exit 1; done';
+
 /** Maintainer scripts run on restore when install scripts are enabled. */
 type InstallScriptType = "preinst" | "postinst";
 
@@ -258,12 +267,15 @@ export class Cache {
       }
     }
 
-    for (const { packageName, archivePath } of archivePaths) {
-      await this.extractArchive(archivePath);
-
-      if (executeInstallScripts) {
+    if (executeInstallScripts) {
+      // Each package's scripts must run before the next package is extracted.
+      for (const { packageName, archivePath } of archivePaths) {
+        await this.extractArchives([archivePath]);
         await this.runInstallScripts(packageName);
       }
+    } else {
+      // One process for all archives avoids a sudo and tar spawn per package.
+      await this.extractArchives(archivePaths.map((item) => item.archivePath));
     }
 
     // Return every installed package so outputs can report dependencies too.
@@ -271,23 +283,23 @@ export class Cache {
   }
 
   /**
-   * Extracts a package archive onto the root filesystem.
+   * Extracts package archives, in order, onto the root filesystem.
    *
    * Runs system tar under sudo because package files live in root-owned
-   * directories. Fails on any entry error instead of skipping it.
+   * directories. All archives share one sudo shell so the process cost is paid
+   * once. Stops at the first archive with any entry error.
    *
-   * @param archivePath Absolute path to the package archive.
+   * @param archivePaths Absolute paths to the package archives.
    */
-  private async extractArchive(archivePath: string): Promise<void> {
+  private async extractArchives(
+    archivePaths: readonly string[],
+  ): Promise<void> {
+    if (archivePaths.length === 0) {
+      return;
+    }
     await this.commandRunner.run(
       "sudo",
-      [
-        "tar",
-        "--extract",
-        `--file=${archivePath}`,
-        "--directory=/",
-        "--keep-directory-symlink",
-      ],
+      ["sh", "-c", EXTRACT_ARCHIVES_SCRIPT, "sh", ...archivePaths],
       { timeoutMs: NO_TIMEOUT_MS },
     );
   }

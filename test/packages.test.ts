@@ -98,6 +98,38 @@ describe("packages", () => {
     expect(result).toBe(path.join(scriptsDir, "test-package.preinst"));
   });
 
+  it.each([
+    ["g++", "g++.postinst"],
+    ["libstdc++6", "libstdc++6:amd64.postinst"],
+  ])(
+    "findInstallScript name %s with regex metacharacters returns its script",
+    async (name, scriptFilename) => {
+      const root = makeTempRoot("pkg-metachar-");
+      const scriptsDir = ensureScriptsDir(root);
+      fs.writeFileSync(path.join(scriptsDir, scriptFilename), "", "utf8");
+
+      const result = await findInstallScript(
+        createPackageName(name),
+        "postinst",
+        root,
+      );
+      expect(result).toBe(path.join(scriptsDir, scriptFilename));
+    },
+  );
+
+  it("findInstallScript name with dot does not match a similarly named package", async () => {
+    const root = makeTempRoot("pkg-dot-");
+    const scriptsDir = ensureScriptsDir(root);
+    fs.writeFileSync(path.join(scriptsDir, "libaXb.postinst"), "", "utf8");
+
+    const result = await findInstallScript(
+      createPackageName("liba.b"),
+      "postinst",
+      root,
+    );
+    expect(result).toBeUndefined();
+  });
+
   it("updateAptLists calls the package manager's update method", async () => {
     const aptListsPath = makeTempRoot("apt-lists-");
 

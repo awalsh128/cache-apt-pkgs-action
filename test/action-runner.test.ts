@@ -63,6 +63,28 @@ describe("ActionRunner", () => {
     expect(cache.archiveAndSave).not.toHaveBeenCalled();
   });
 
+  it("runAction cache hit creates package manager without apt-fast", async () => {
+    const { runner, cache } = createRunner();
+    const packageNames = ActionPackageNames.fromInput("curl");
+    const cacheKey = new CacheKey("v1", "0", process.arch, packageNames);
+    cache.loadAndRestore.mockResolvedValue(
+      new Manifest(new Date(), [], cacheKey),
+    );
+    vi.mocked(createPackageManager).mockResolvedValue({
+      getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
+    } as never);
+
+    await runner.runAction({
+      packages: "curl",
+      version: "v1",
+      executeInstallScripts: false,
+      emptyPackagesBehavior: "error",
+      debug: false,
+    });
+
+    expect(vi.mocked(createPackageManager).mock.calls[0]?.[0]).toBe(false);
+  });
+
   it("runAction cache miss archives installed packages with their files", async () => {
     // Unlikely to have dpkg install scripts on the test host.
     const installedPackage = createPackageName("test-pkg-not-real", "1.0.0");

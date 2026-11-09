@@ -75,7 +75,9 @@ function getInputs(): ActionInputs {
 async function main(): Promise<void> {
   const cacheDir = CACHE_DEFAULT_DIRNAME;
   const inputs = getInputs();
-  const instruments = new Instruments(cacheDir, inputs.debug || core.isDebug());
+  const debug = inputs.debug || core.isDebug();
+  const instruments = new Instruments(cacheDir, debug);
+  let failed = false;
   try {
     ensureBundledScriptsExecutable();
     const commandRunner = new DefaultCommandRunner(
@@ -96,12 +98,16 @@ async function main(): Promise<void> {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     core.setFailed(message);
+    failed = true;
   } finally {
-    // Logs are diagnostics, so a failed upload shouldn't fail the action.
-    await instruments.artifacts.upload().catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : String(error);
-      core.warning(`Failed to upload diagnostic artifacts: ${message}`);
-    });
+    // The upload takes over a second, so only pay for it when the logs are
+    // wanted. Logs are diagnostics, so a failed upload shouldn't fail the action.
+    if (debug || failed) {
+      await instruments.artifacts.upload().catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        core.warning(`Failed to upload diagnostic artifacts: ${message}`);
+      });
+    }
   }
 }
 
