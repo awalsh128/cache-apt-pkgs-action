@@ -92,11 +92,7 @@ function extractActionUses(content: string): ActionUse[] {
     }
 
     const spec = match[1] ?? "";
-    if (
-      !spec.includes("@") ||
-      spec.startsWith("./") ||
-      spec.startsWith("docker://")
-    ) {
+    if (!spec.includes("@") || spec.startsWith("./") || spec.startsWith("docker://")) {
       continue;
     }
 
@@ -133,16 +129,9 @@ function findActionRefChanges(
   previousContent: string,
   currentContent: string,
 ): ActionRefChange[] {
-  const previousByPath = groupUsesByActionPath(
-    extractActionUses(previousContent),
-  );
-  const currentByPath = groupUsesByActionPath(
-    extractActionUses(currentContent),
-  );
-  const actionPaths = new Set<string>([
-    ...previousByPath.keys(),
-    ...currentByPath.keys(),
-  ]);
+  const previousByPath = groupUsesByActionPath(extractActionUses(previousContent));
+  const currentByPath = groupUsesByActionPath(extractActionUses(currentContent));
+  const actionPaths = new Set<string>([...previousByPath.keys(), ...currentByPath.keys()]);
   const changes: ActionRefChange[] = [];
 
   for (const actionPath of actionPaths) {
@@ -170,11 +159,7 @@ function findActionRefChanges(
     }
 
     if (currentUses.length > previousUses.length) {
-      for (
-        let index = previousUses.length;
-        index < currentUses.length;
-        index += 1
-      ) {
+      for (let index = previousUses.length; index < currentUses.length; index += 1) {
         const currentUse = currentUses[index];
         if (!currentUse) {
           continue;
@@ -196,15 +181,7 @@ function findActionRefChanges(
 
 function getChangedWorkflowYamlFiles(diffRange: string): string[] {
   const files = runGitNameOnly(
-    [
-      "diff",
-      "--name-only",
-      "--diff-filter=ACMR",
-      diffRange,
-      "--",
-      ".github/workflows",
-      ".github/actions",
-    ],
+    ["diff", "--name-only", "--diff-filter=ACMR", diffRange, "--", ".github/workflows", ".github/actions"],
     ROOT_DIR,
   );
 
@@ -223,21 +200,11 @@ function getFileContentAtRef(ref: string, filePath: string): string | null {
   return result.stdout;
 }
 
-function validateModifiedActionRefs(
-  baseRef: string,
-  headRef: string,
-): string[] {
+function validateModifiedActionRefs(baseRef: string, headRef: string): string[] {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const fetched = tryGit([
-    "fetch",
-    "--no-tags",
-    "--depth=200",
-    "origin",
-    baseRef,
-    headRef,
-  ]);
+  const fetched = tryGit(["fetch", "--no-tags", "--depth=200", "origin", baseRef, headRef]);
   if (!fetched.ok) {
     errors.push(
       `Unable to fetch refs for action pin checks (${baseRef}, ${headRef}): ${fetched.stderr || "unknown error"}`,
@@ -261,18 +228,14 @@ function validateModifiedActionRefs(
       continue;
     }
 
-    actionRefChanges.push(
-      ...findActionRefChanges(filePath, previousContent, currentContent),
-    );
+    actionRefChanges.push(...findActionRefChanges(filePath, previousContent, currentContent));
   }
 
   if (actionRefChanges.length === 0) {
     return errors;
   }
 
-  logInfo(
-    `Validating ${actionRefChanges.length} modified GitHub Action reference(s) in PR changes.`,
-  );
+  logInfo(`Validating ${actionRefChanges.length} modified GitHub Action reference(s) in PR changes.`);
 
   for (const change of actionRefChanges) {
     if (!SHA_PIN_PATTERN.test(change.currentRef)) {
@@ -288,22 +251,9 @@ function validateModifiedActionRefs(
 
     try {
       const repoSlug = parseActionRepoSlug(change.actionPath);
-      const { tagToSha, shaToBestVersion } = loadActionRepoData(
-        repoSlug,
-        ROOT_DIR,
-      );
-      const previousSha = resolveActionRefSha(
-        repoSlug,
-        change.previousRef,
-        tagToSha,
-        ROOT_DIR,
-      );
-      const currentSha = resolveActionRefSha(
-        repoSlug,
-        change.currentRef,
-        tagToSha,
-        ROOT_DIR,
-      );
+      const { tagToSha, shaToBestVersion } = loadActionRepoData(repoSlug, ROOT_DIR);
+      const previousSha = resolveActionRefSha(repoSlug, change.previousRef, tagToSha, ROOT_DIR);
+      const currentSha = resolveActionRefSha(repoSlug, change.currentRef, tagToSha, ROOT_DIR);
 
       if (!previousSha || !currentSha) {
         warnings.push(
@@ -341,28 +291,19 @@ function validateModifiedActionRefs(
   return errors;
 }
 
-const PROHIBITED_PATHS = [
-  "docs/api",
-  "docs/api-md",
-];
+const PROHIBITED_PATHS = ["docs/api", "docs/api-md"];
 
 function getProhibitedPathsChanges(): string[] {
   const prohibitedPaths = PROHIBITED_PATHS;
-  const staged = runGitNameOnly(
-    ["diff", "--name-only", "--cached", "--", ...prohibitedPaths],
-    ROOT_DIR,
-  );
-  const unstaged = runGitNameOnly(
-    ["diff", "--name-only", "--", ...prohibitedPaths],
-    ROOT_DIR,
-  );
+  const staged = runGitNameOnly(["diff", "--name-only", "--cached", "--", ...prohibitedPaths], ROOT_DIR);
+  const unstaged = runGitNameOnly(["diff", "--name-only", "--", ...prohibitedPaths], ROOT_DIR);
   const untracked = runGitNameOnly(
     ["ls-files", "--others", "--exclude-standard", "--", ...prohibitedPaths],
     ROOT_DIR,
   );
 
-  return [...new Set([...staged, ...unstaged, ...untracked])].sort(
-    (left, right) => left.localeCompare(right),
+  return [...new Set([...staged, ...unstaged, ...untracked])].sort((left, right) =>
+    left.localeCompare(right),
   );
 }
 
@@ -374,21 +315,11 @@ function resolveRefs(options: PrCheckOptions): {
   baseRef: string;
   headRef: string;
 } {
-  const baseRef = getNormalizedRef(
-    options.baseRef || process.env.GITHUB_BASE_REF || "",
-  );
-  const headRef = getNormalizedRef(
-    options.headRef || process.env.GITHUB_HEAD_REF || "",
-  );
+  const baseRef = getNormalizedRef(options.baseRef || process.env.GITHUB_BASE_REF || "");
+  const headRef = getNormalizedRef(options.headRef || process.env.GITHUB_HEAD_REF || "");
 
-  if (
-    (baseRef.length > 0 && headRef.length === 0) ||
-    (headRef.length > 0 && baseRef.length === 0)
-  ) {
-    fail(
-      "Both base and head refs must be provided together (flags or environment).",
-      1,
-    );
+  if ((baseRef.length > 0 && headRef.length === 0) || (headRef.length > 0 && baseRef.length === 0)) {
+    fail("Both base and head refs must be provided together (flags or environment).", 1);
   }
 
   return { baseRef, headRef };
@@ -402,9 +333,7 @@ async function runChecks(options: PrCheckOptions): Promise<string[]> {
 
   if (baseRef.length > 0 && headRef.length > 0) {
     if (baseRef === "main" && headRef !== "staging") {
-      errors.push(
-        `Merge to 'main' is only allowed from 'staging'. Current source: '${headRef}'.`,
-      );
+      errors.push(`Merge to 'main' is only allowed from 'staging'. Current source: '${headRef}'.`);
       errors.push("To fix this, rebase your feature branch onto 'staging'.");
     }
 
@@ -425,33 +354,23 @@ async function runChecks(options: PrCheckOptions): Promise<string[]> {
   return errors;
 }
 
-async function shouldAllowAdminBypass(
-  options: PrCheckOptions,
-): Promise<boolean> {
+async function shouldAllowAdminBypass(options: PrCheckOptions): Promise<boolean> {
   if (!options.allowAdminBypass) {
     return false;
   }
 
-  return isAdminActor(
-    process.env.GITHUB_ACTOR ?? "",
-    process.env.GITHUB_REPOSITORY ?? "",
-  );
+  return isAdminActor(process.env.GITHUB_ACTOR ?? "", process.env.GITHUB_REPOSITORY ?? "");
 }
 
 const prChecksCommand = defineCommand({
   description: "Run pull request checks",
   options: defineOptions(
     z.object({
-      baseRef: z
-        .string()
-        .default("")
-        .describe("Pull request base branch ref (for example: staging)"),
+      baseRef: z.string().default("").describe("Pull request base branch ref (for example: staging)"),
       headRef: z
         .string()
         .default("")
-        .describe(
-          "Pull request head branch ref (for example: feature/my-feature)",
-        ),
+        .describe("Pull request head branch ref (for example: feature/my-feature)"),
       allowAdminBypass: z
         .boolean()
         .default(false)
@@ -476,9 +395,7 @@ const prChecksCommand = defineCommand({
       logError(error);
     }
     if (allowAdminBypass) {
-      logWarn(
-        "Admin bypass is allowed for this pull request actor. Treating as warning only.",
-      );
+      logWarn("Admin bypass is allowed for this pull request actor. Treating as warning only.");
     } else {
       fail("Pull request checks failed.");
     }

@@ -2,12 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createPackageName } from "ts-apt";
-import {
-  ActionPackageNames,
-  updateAptLists,
-  buildFileList,
-  findInstallScript,
-} from "../src/packages.js";
+import { ActionPackageNames, updateAptLists, buildFileList, findInstallScript } from "../src/packages.js";
 import { describe, expect, it, vi } from "vitest";
 
 const PACKAGE_NAME = createPackageName("test-package", "1.0.0", "amd64");
@@ -58,22 +53,14 @@ describe("packages", () => {
   it("findInstallScript returns undefined when scripts directory does not exist", async () => {
     const missingRoot = makeTempRoot("pkg-missing-");
 
-    const result = await findInstallScript(
-      PACKAGE_NAME,
-      "preinst",
-      missingRoot,
-    );
+    const result = await findInstallScript(PACKAGE_NAME, "preinst", missingRoot);
     expect(result).toBeUndefined();
   });
 
   it("findInstallScript returns undefined when no matching scripts are found", async () => {
     const root = makeTempRoot("pkg-no-match-");
     const scriptsDir = ensureScriptsDir(root);
-    fs.writeFileSync(
-      path.join(scriptsDir, "other-package.preinst"),
-      "",
-      "utf8",
-    );
+    fs.writeFileSync(path.join(scriptsDir, "other-package.preinst"), "", "utf8");
 
     const result = await findInstallScript(PACKAGE_NAME, "preinst", root);
     expect(result).toBeUndefined();
@@ -82,17 +69,9 @@ describe("packages", () => {
   it("findInstallScript returns the first matching script when multiple are found", async () => {
     const root = makeTempRoot("pkg-match-");
     const scriptsDir = ensureScriptsDir(root);
-    fs.writeFileSync(
-      path.join(scriptsDir, "test-package.postinst"),
-      "",
-      "utf8",
-    );
+    fs.writeFileSync(path.join(scriptsDir, "test-package.postinst"), "", "utf8");
     fs.writeFileSync(path.join(scriptsDir, "test-package.preinst"), "", "utf8");
-    fs.writeFileSync(
-      path.join(scriptsDir, "test-package.preinst.backup"),
-      "",
-      "utf8",
-    );
+    fs.writeFileSync(path.join(scriptsDir, "test-package.preinst.backup"), "", "utf8");
 
     const result = await findInstallScript(PACKAGE_NAME, "preinst", root);
     expect(result).toBe(path.join(scriptsDir, "test-package.preinst"));
@@ -108,11 +87,7 @@ describe("packages", () => {
       const scriptsDir = ensureScriptsDir(root);
       fs.writeFileSync(path.join(scriptsDir, scriptFilename), "", "utf8");
 
-      const result = await findInstallScript(
-        createPackageName(name),
-        "postinst",
-        root,
-      );
+      const result = await findInstallScript(createPackageName(name), "postinst", root);
       expect(result).toBe(path.join(scriptsDir, scriptFilename));
     },
   );
@@ -122,11 +97,7 @@ describe("packages", () => {
     const scriptsDir = ensureScriptsDir(root);
     fs.writeFileSync(path.join(scriptsDir, "libaXb.postinst"), "", "utf8");
 
-    const result = await findInstallScript(
-      createPackageName("liba.b"),
-      "postinst",
-      root,
-    );
+    const result = await findInstallScript(createPackageName("liba.b"), "postinst", root);
     expect(result).toBeUndefined();
   });
 
@@ -142,11 +113,7 @@ describe("packages", () => {
       update: mockUpdate,
     };
 
-    await updateAptLists(
-      packageManager as any,
-      mockLogger as any,
-      aptListsPath,
-    );
+    await updateAptLists(packageManager as any, mockLogger as any, aptListsPath);
 
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
@@ -211,9 +178,7 @@ describe("packages", () => {
       ["different arch returns false", "xdot:i386", createPackageName("xdot", "1.3-1", "amd64"), false],
       ["different name returns false", "xdot", createPackageName("rolldice", "1.16"), false],
     ])("includes %s", (_case, input, installed, expected) => {
-      expect(ActionPackageNames.fromInput(input).includes(installed)).toBe(
-        expected,
-      );
+      expect(ActionPackageNames.fromInput(input).includes(installed)).toBe(expected);
     });
   });
 });

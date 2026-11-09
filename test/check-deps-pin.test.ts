@@ -2,11 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  checkDependencyPin,
-  type PackageJson,
-  type PackageLock,
-} from "../scripts/ops/check_deps_pin.mts";
+import { checkDependencyPin, type PackageJson, type PackageLock } from "../scripts/ops/check_deps_pin.mts";
 
 const NAME = "pinned-dep";
 const VERSION = "1.2.3";
@@ -21,10 +17,7 @@ const packageJsonOf = (spec: string): PackageJson => ({
   dependencies: { [NAME]: spec },
 });
 
-const lockOf = (
-  rootSpec: string,
-  entry: NonNullable<PackageLock["packages"]>[string],
-): PackageLock => ({
+const lockOf = (rootSpec: string, entry: NonNullable<PackageLock["packages"]>[string]): PackageLock => ({
   packages: {
     "": { dependencies: { [NAME]: rootSpec } },
     [`node_modules/${NAME}`]: entry,
@@ -54,27 +47,19 @@ describe("checkDependencyPin", () => {
   it.each(["^1.2.3", "~1.2.3", "latest", "1.2", "git+https://x.git#main"])(
     "checkDependencyPin unpinned spec %s returns a pin problem",
     (spec) => {
-      expect(check(spec, lockOf(spec, REGISTRY_ENTRY))).toEqual([
-        expect.stringContaining("is not pinned"),
-      ]);
+      expect(check(spec, lockOf(spec, REGISTRY_ENTRY))).toEqual([expect.stringContaining("is not pinned")]);
     },
   );
 
   it.each([
     ["version", { ...REGISTRY_ENTRY, version: "1.2.4" }, "version"],
-    [
-      "resolved",
-      { ...REGISTRY_ENTRY, resolved: "https://evil.example/x.tgz" },
-      "is not from",
-    ],
+    ["resolved", { ...REGISTRY_ENTRY, resolved: "https://evil.example/x.tgz" }, "is not from"],
     ["integrity", { ...REGISTRY_ENTRY, integrity: undefined }, "integrity"],
     ["link", { ...REGISTRY_ENTRY, link: true }, "is a link"],
   ])(
     "checkDependencyPin registry pin with mismatched lock %s returns a problem",
     (_field, entry, message) => {
-      expect(check(VERSION, lockOf(VERSION, entry))).toEqual([
-        expect.stringContaining(message),
-      ]);
+      expect(check(VERSION, lockOf(VERSION, entry))).toEqual([expect.stringContaining(message)]);
     },
   );
 

@@ -50,9 +50,7 @@ describe("instrumentation", () => {
 
       const artifacts = new Artifacts("/dir", ARTIFACT_FILENAMES, false, "123");
 
-      expect(artifacts.name).toBe(
-        "capa_artifacts-123-2-list_versions-execute",
-      );
+      expect(artifacts.name).toBe("capa_artifacts-123-2-list_versions-execute");
     });
   });
 
@@ -71,9 +69,7 @@ describe("instrumentation", () => {
       expect(instruments.cacheDirPath).toBe(expectedDir);
       expect(instruments.artifacts.dir).toBe(expectedDir);
       await vi.waitFor(() =>
-        expect(
-          fs.readFileSync(path.join(expectedDir, "capa_app.log"), "utf8"),
-        ).toContain("app message"),
+        expect(fs.readFileSync(path.join(expectedDir, "capa_app.log"), "utf8")).toContain("app message"),
       );
       fs.rmSync(home, { recursive: true, force: true });
     });

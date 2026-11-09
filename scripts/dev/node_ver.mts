@@ -63,22 +63,18 @@ function listYamlFiles(rootPath: string): string[] {
 }
 
 function buildReferenceSpecs(nodeMajor: string): ReferenceSpec[] {
-  const yamlReferenceSpecs: ReferenceSpec[] = listYamlFiles(rootDir).map(
-    (filePath) => ({
-      path: filePath,
-      replacements: [
-        [/node-version:\s*\[\d+(?:\.x)?\]/g, `node-version: [${nodeMajor}]`],
-        [/node-version:\s*\d+(?:\.x)?/g, `node-version: ${nodeMajor}`],
-      ],
-    }),
-  );
+  const yamlReferenceSpecs: ReferenceSpec[] = listYamlFiles(rootDir).map((filePath) => ({
+    path: filePath,
+    replacements: [
+      [/node-version:\s*\[\d+(?:\.x)?\]/g, `node-version: [${nodeMajor}]`],
+      [/node-version:\s*\d+(?:\.x)?/g, `node-version: ${nodeMajor}`],
+    ],
+  }));
 
   return [
     {
       path: `${rootDir}/package.json`,
-      replacements: [
-        [/"node":\s*">=\d+(?:\.\d+\.\d+)?"/g, `"node": ">=${nodeMajor}"`],
-      ],
+      replacements: [[/"node":\s*">=\d+(?:\.\d+\.\d+)?"/g, `"node": ">=${nodeMajor}"`]],
     },
     {
       path: `${rootDir}/scripts/devopslib.mts`,
@@ -97,10 +93,7 @@ function buildReferenceSpecs(nodeMajor: string): ReferenceSpec[] {
   ];
 }
 
-function applyReplacements(
-  content: string,
-  replacements: ReferenceSpec["replacements"],
-): string {
+function applyReplacements(content: string, replacements: ReferenceSpec["replacements"]): string {
   let updated = content;
   for (const [pattern, replacement] of replacements) {
     updated = updated.replace(pattern, replacement);
@@ -160,9 +153,7 @@ async function getAvailableNodeMajors(): Promise<string[]> {
     });
 
     if (!response.ok) {
-      fail(
-        `Unable to read Node.js versions from npm registry: HTTP ${response.status}`,
-      );
+      fail(`Unable to read Node.js versions from npm registry: HTTP ${response.status}`);
     }
 
     packageJson = (await response.json()) as NodeRegistryPackage;
@@ -179,9 +170,7 @@ async function getAvailableNodeMajors(): Promise<string[]> {
 
   return [
     ...new Set(
-      versions
-        .map((version) => String(version).split(".")[0] ?? "")
-        .filter((major) => major.length > 0),
+      versions.map((version) => String(version).split(".")[0] ?? "").filter((major) => major.length > 0),
     ),
   ]
     .filter((major) => /^\d+$/.test(major))
@@ -206,15 +195,11 @@ function runScriptWithOptionalSudo(scriptText: string): void {
   });
 
   if (result.error) {
-    throw new Error(
-      `Failed to execute NodeSource setup script: ${result.error.message}`,
-    );
+    throw new Error(`Failed to execute NodeSource setup script: ${result.error.message}`);
   }
 
   if (result.status !== 0) {
-    throw new Error(
-      `NodeSource setup script failed with exit code ${result.status ?? "unknown"}.`,
-    );
+    throw new Error(`NodeSource setup script failed with exit code ${result.status ?? "unknown"}.`);
   }
 }
 
@@ -233,9 +218,7 @@ async function setupNodeSourceRepo(nodeMajor: string): Promise<void> {
     });
 
     if (!response.ok) {
-      fail(
-        `Unable to download NodeSource setup script: HTTP ${response.status}`,
-      );
+      fail(`Unable to download NodeSource setup script: HTTP ${response.status}`);
     }
 
     scriptText = await response.text();
@@ -273,14 +256,10 @@ function installNodejs(nodeMajor: string): void {
 
   const fullNodeVersion = runCaptureOutput("node", ["-v"], { cwd: rootDir });
   if (!fullNodeVersion.startsWith(`v${nodeMajor}.`)) {
-    fail(
-      `Installed Node.js version (${fullNodeVersion}) does not match expected major v${nodeMajor}.`,
-    );
+    fail(`Installed Node.js version (${fullNodeVersion}) does not match expected major v${nodeMajor}.`);
   }
 
-  logSuccess(
-    `Node.js ${fullNodeVersion} installed/updated for major ${nodeMajor}.`,
-  );
+  logSuccess(`Node.js ${fullNodeVersion} installed/updated for major ${nodeMajor}.`);
 }
 
 function verifyInstalledNodeMajor(nodeMajor: string): void {
@@ -291,9 +270,7 @@ function verifyInstalledNodeMajor(nodeMajor: string): void {
 
   const fullNodeVersion = String(nodeResult.stdout ?? "").trim();
   if (!fullNodeVersion.startsWith(`v${nodeMajor}.`)) {
-    fail(
-      `Installed Node.js version (${fullNodeVersion}) does not match expected major v${nodeMajor}.`,
-    );
+    fail(`Installed Node.js version (${fullNodeVersion}) does not match expected major v${nodeMajor}.`);
   }
 
   logSuccess(`Installed Node.js version matches major ${nodeMajor}.`);
@@ -302,14 +279,8 @@ function verifyInstalledNodeMajor(nodeMajor: string): void {
 const nodeVersionOptions = defineOptions(
   z
     .object({
-      verify: z
-        .boolean()
-        .default(false)
-        .describe("Verify version references and installed Node.js"),
-      update: z
-        .boolean()
-        .default(false)
-        .describe("Update version references and install Node.js"),
+      verify: z.boolean().default(false).describe("Verify version references and installed Node.js"),
+      update: z.boolean().default(false).describe("Update version references and install Node.js"),
     })
     .refine((options) => options.verify !== options.update, {
       message: "Specify exactly one of --verify or --update.",

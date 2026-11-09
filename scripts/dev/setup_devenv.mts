@@ -35,13 +35,7 @@ type SetupDevEnvOptions = {
   ide: SupportedIde;
 };
 
-const SUPPORTED_IDES: SupportedIde[] = [
-  "vscode",
-  "cursor",
-  "windsurf",
-  "zed",
-  "jetbrains",
-];
+const SUPPORTED_IDES: SupportedIde[] = ["vscode", "cursor", "windsurf", "zed", "jetbrains"];
 
 const IDE_TARGET_DIRS: Record<SupportedIde, string> = {
   vscode: ".vscode",
@@ -59,11 +53,7 @@ const IDE_SETTINGS_RELPATHS: Partial<Record<SupportedIde, string>> = {
 };
 
 const AGENTS_MD_SETTING_KEY = "chat.useAgentsMdFile";
-const AGENTS_MD_SUPPORTED_IDES: ReadonlySet<SupportedIde> = new Set([
-  "vscode",
-  "cursor",
-  "windsurf",
-]);
+const AGENTS_MD_SUPPORTED_IDES: ReadonlySet<SupportedIde> = new Set(["vscode", "cursor", "windsurf"]);
 
 type JsonPrimitive = null | boolean | number | string;
 interface JsonArray extends Array<JsonLike> {}
@@ -76,10 +66,7 @@ function isJsonRecord(value: unknown): value is JsonRecord {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function mergeJsonArrays(
-  existing: JsonLike[],
-  template: JsonLike[],
-): JsonLike[] {
+function mergeJsonArrays(existing: JsonLike[], template: JsonLike[]): JsonLike[] {
   const merged = [...existing];
   const seen = new Set(existing.map((item) => JSON.stringify(item)));
 
@@ -94,10 +81,7 @@ function mergeJsonArrays(
   return merged;
 }
 
-function mergeJsonWithTemplate(
-  existing: JsonLike,
-  template: JsonLike,
-): JsonLike {
+function mergeJsonWithTemplate(existing: JsonLike, template: JsonLike): JsonLike {
   if (Array.isArray(existing) && Array.isArray(template)) {
     return mergeJsonArrays(existing, template);
   }
@@ -123,13 +107,7 @@ function mergeJsonWithTemplate(
 }
 
 function applyIdeTemplate(ide: SupportedIde): void {
-  const templateDir = path.join(
-    ROOT_DIR,
-    "scripts",
-    "dev",
-    "ide_templates",
-    ide,
-  );
+  const templateDir = path.join(ROOT_DIR, "scripts", "dev", "ide_templates", ide);
   if (!existsSync(templateDir)) {
     fail(`IDE template directory does not exist: ${templateDir}`);
   }
@@ -187,14 +165,7 @@ function ensureIdeSettingsFile(ide: SupportedIde): string | null {
   const ideSettingsDir = path.dirname(ideSettingsPath);
   ensureDirExists(ideSettingsDir);
 
-  const templateSettingsPath = path.join(
-    ROOT_DIR,
-    "scripts",
-    "dev",
-    "ide_templates",
-    ide,
-    "settings.json",
-  );
+  const templateSettingsPath = path.join(ROOT_DIR, "scripts", "dev", "ide_templates", ide, "settings.json");
 
   if (!existsSync(templateSettingsPath)) {
     if (!existsSync(ideSettingsPath)) {
@@ -213,10 +184,7 @@ function ensureIdeSettingsFile(ide: SupportedIde): string | null {
   }
 
   const existingSettingsJson = readJsonFile(ideSettingsPath) as JsonLike;
-  const mergedSettingsJson = mergeJsonWithTemplate(
-    existingSettingsJson,
-    templateSettingsJson,
-  );
+  const mergedSettingsJson = mergeJsonWithTemplate(existingSettingsJson, templateSettingsJson);
   writeJsonFile(ideSettingsPath, mergedSettingsJson);
 
   return ideSettingsPath;
@@ -237,9 +205,7 @@ function ensureAgentsFilesUsed(ide: SupportedIde): void {
   if (!ideSettingsJson[AGENTS_MD_SETTING_KEY]) {
     ideSettingsJson[AGENTS_MD_SETTING_KEY] = true;
     writeJsonFile(ideSettingsPath, ideSettingsJson);
-    logWarn(
-      `Updated ${ideSettingsPath} to enable chat.useAgentsMdFile for AGENTS.md support.`,
-    );
+    logWarn(`Updated ${ideSettingsPath} to enable chat.useAgentsMdFile for AGENTS.md support.`);
   }
 }
 
@@ -260,9 +226,7 @@ function ensureAptDependencies(): void {
 
   const missingPackages = [
     ...new Set(
-      aptPackages
-        .filter(([command]) => !commandExists(command))
-        .map(([, packageName]) => packageName),
+      aptPackages.filter(([command]) => !commandExists(command)).map(([, packageName]) => packageName),
     ),
   ];
 
@@ -282,23 +246,17 @@ function ensureAptDependencies(): void {
 
 function ensureNodeDependencies(nodeVersionMajor: string): void {
   if (!commandExists("npm")) {
-    fail(
-      `npm is required but not installed. Install Node.js >=${nodeVersionMajor} first.`,
-    );
+    fail(`npm is required but not installed. Install Node.js >=${nodeVersionMajor} first.`);
   }
 
   // Fast deterministic install path aligned with lockfile-based CI behavior.
-  logInfo(
-    "Installing npm dependencies (including devDependencies) via npm ci...",
-  );
+  logInfo("Installing npm dependencies (including devDependencies) via npm ci...");
   run("npm", ["ci", "--include=dev"]);
 }
 
 function warnIfDockerMissing(): void {
   if (commandExists("docker")) {
-    logSuccess(
-      "Docker CLI detected for devcontainer-backed integration tests.",
-    );
+    logSuccess("Docker CLI detected for devcontainer-backed integration tests.");
     return;
   }
 
@@ -370,14 +328,10 @@ function ensureAuditRemediation(): void {
   );
   runAuditFix(false);
   counts = getAuditCounts();
-  logInfo(
-    `Audit after npm audit fix: high=${counts.high}, critical=${counts.critical}.`,
-  );
+  logInfo(`Audit after npm audit fix: high=${counts.high}, critical=${counts.critical}.`);
 
   if (counts.high === 0 && counts.critical === 0) {
-    logSuccess(
-      "High/critical npm vulnerabilities remediated with npm audit fix.",
-    );
+    logSuccess("High/critical npm vulnerabilities remediated with npm audit fix.");
     return;
   }
 
@@ -386,9 +340,7 @@ function ensureAuditRemediation(): void {
   );
   runAuditFix(true);
   counts = getAuditCounts();
-  logInfo(
-    `Audit after npm audit fix --force: high=${counts.high}, critical=${counts.critical}.`,
-  );
+  logInfo(`Audit after npm audit fix --force: high=${counts.high}, critical=${counts.critical}.`);
 
   if (counts.high > 0 || counts.critical > 0) {
     fail(
@@ -414,9 +366,7 @@ async function main(options: SetupDevEnvOptions): Promise<void> {
   logInfo("Ensuring required APT dependencies are installed...");
   ensureAptDependencies();
   logInfo("Checking optional Docker support...");
-  logInfo(
-    `Setting up development environment for Node.js v${nodeVersionMajor}.x...`,
-  );
+  logInfo(`Setting up development environment for Node.js v${nodeVersionMajor}.x...`);
   ensureNodeDependencies(nodeVersionMajor);
   ensureAuditRemediation();
   warnIfDockerMissing();

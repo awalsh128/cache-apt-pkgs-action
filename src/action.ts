@@ -1,8 +1,4 @@
-import {
-  createPackageManager,
-  type CommandRunner,
-  type PackageName,
-} from "ts-apt";
+import { createPackageManager, type CommandRunner, type PackageName } from "ts-apt";
 import { Cache, CacheKey } from "./cache.js";
 import { Manifest, ManifestEntry } from "./manifest.js";
 import { ActionPackageNames, buildFileList } from "./packages.js";
@@ -34,11 +30,7 @@ export class ActionRunner {
   private readonly commandRunner: CommandRunner;
   private readonly logger: winston.Logger;
 
-  constructor(
-    cache: Cache,
-    commandRunner: CommandRunner,
-    logger: winston.Logger,
-  ) {
+  constructor(cache: Cache, commandRunner: CommandRunner, logger: winston.Logger) {
     this.cache = cache;
     this.commandRunner = commandRunner;
     this.logger = logger;
@@ -56,17 +48,11 @@ export class ActionRunner {
    * @param nativeArch Runner architecture as reported by dpkg (e.g. amd64).
    * @returns Comma-delimited name[:arch]=version list.
    */
-  private toCsv(
-    packageNames: readonly PackageName[],
-    nativeArch: string,
-  ): string {
+  private toCsv(packageNames: readonly PackageName[], nativeArch: string): string {
     return [...packageNames]
       .sort((a, b) => a.compareTo(b))
       .map((name) => {
-        const foreignArch =
-          name.arch !== undefined && name.arch !== nativeArch
-            ? `:${name.arch}`
-            : "";
+        const foreignArch = name.arch !== undefined && name.arch !== nativeArch ? `:${name.arch}` : "";
         const version = name.version === undefined ? "" : `=${name.version}`;
         return `${name.name}${foreignArch}${version}`;
       })
@@ -81,37 +67,21 @@ export class ActionRunner {
    */
   async runAction(inputs: ActionInputs): Promise<ActionOutputs> {
     const packageNames = ActionPackageNames.fromInput(inputs.packages);
-    const cacheKey = new CacheKey(
-      inputs.version,
-      FORCE_UPDATE_INCREMENT,
-      process.arch,
-      packageNames,
-    );
+    const cacheKey = new CacheKey(inputs.version, FORCE_UPDATE_INCREMENT, process.arch, packageNames);
 
-    let manifest = await this.cache.loadAndRestore(
-      cacheKey,
-      inputs.executeInstallScripts,
-    );
+    let manifest = await this.cache.loadAndRestore(cacheKey, inputs.executeInstallScripts);
     const cacheHit = manifest !== undefined;
 
     // Needed on a cache hit too, to resolve the native arch for outputs.
     // apt-fast only speeds up installs, so skip probing for it on a hit.
-    const installManager = await createPackageManager(
-      !cacheHit,
-      this.logger,
-      this.logger,
-    );
+    const installManager = await createPackageManager(!cacheHit, this.logger, this.logger);
 
     if (!cacheHit) {
       const packageInfos = await installManager.install(packageNames.toArray());
       // Collect each package's installed files so the archives have content.
       const entries = await Promise.all(
         packageInfos.map(
-          async (info) =>
-            new ManifestEntry(
-              info.name,
-              await buildFileList(info.name, installManager),
-            ),
+          async (info) => new ManifestEntry(info.name, await buildFileList(info.name, installManager)),
         ),
       );
       manifest = new Manifest(new Date(), entries, cacheKey);

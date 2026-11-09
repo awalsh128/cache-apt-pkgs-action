@@ -17,9 +17,7 @@ export const CACHE_KEY_FILENAME = "cache_key.md5";
  * @param cacheDir Directory name under the user's home directory.
  * @returns Absolute path to the cache directory.
  */
-export function resolveCacheDir(
-  cacheDir: string = CACHE_DEFAULT_DIRNAME,
-): string {
+export function resolveCacheDir(cacheDir: string = CACHE_DEFAULT_DIRNAME): string {
   return path.join(os.homedir(), cacheDir);
 }
 
@@ -44,10 +42,7 @@ const EXTRACT_ARCHIVES_SCRIPT =
 type InstallScriptType = "preinst" | "postinst";
 
 /** Order dpkg runs maintainer scripts in during install. */
-const INSTALL_SCRIPT_ORDER: readonly InstallScriptType[] = [
-  "preinst",
-  "postinst",
-];
+const INSTALL_SCRIPT_ORDER: readonly InstallScriptType[] = ["preinst", "postinst"];
 
 /** Action argument dpkg passes to each maintainer script on a fresh install. */
 const INSTALL_SCRIPT_ACTIONS: Readonly<Record<InstallScriptType, string>> = {
@@ -73,20 +68,12 @@ export class CacheKey {
   /** MD5 hash of the serialized cache key. Not considered sensitive in the GitHub Cache action. */
   readonly hash: string;
 
-  constructor(
-    version: string,
-    forceUpdateIncrement: string,
-    arch: string,
-    packageNames: ActionPackageNames,
-  ) {
+  constructor(version: string, forceUpdateIncrement: string, arch: string, packageNames: ActionPackageNames) {
     this.version = version;
     this.forceUpdateIncrement = forceUpdateIncrement;
     this.arch = arch;
     this.packageNames = packageNames;
-    this.hash = crypto
-      .createHash("md5")
-      .update(this.toJSON(false))
-      .digest("hex");
+    this.hash = crypto.createHash("md5").update(this.toJSON(false)).digest("hex");
   }
 
   /**
@@ -171,38 +158,26 @@ export class Cache {
    * @param packageName Package whose script to run.
    * @param scriptType Maintainer script to run.
    */
-  private async runInstallScript(
-    packageName: PackageName,
-    scriptType: InstallScriptType,
-  ): Promise<void> {
+  private async runInstallScript(packageName: PackageName, scriptType: InstallScriptType): Promise<void> {
     const scriptPath = await findInstallScript(packageName, scriptType, "/");
     if (!scriptPath) {
-      this.logger.info(
-        `No ${scriptType} script found for package ${packageName.serialize()}, skipping`,
-      );
+      this.logger.info(`No ${scriptType} script found for package ${packageName.serialize()}, skipping`);
       return;
     }
     this.logger.info(
       `Running ${scriptType} script '${path.basename(scriptPath)}' for package ${packageName.serialize()}...`,
     );
-    await this.commandRunner.run(
-      "sudo",
-      ["sh", "-x", scriptPath, INSTALL_SCRIPT_ACTIONS[scriptType]],
-      { timeoutMs: NO_TIMEOUT_MS },
-    );
+    await this.commandRunner.run("sudo", ["sh", "-x", scriptPath, INSTALL_SCRIPT_ACTIONS[scriptType]], {
+      timeoutMs: NO_TIMEOUT_MS,
+    });
     this.logger.info(`Ran ${scriptType} script for ${packageName.name}`);
   }
 
-  async loadAndRestore(
-    key: CacheKey,
-    executeInstallScripts: boolean,
-  ): Promise<Manifest | undefined> {
+  async loadAndRestore(key: CacheKey, executeInstallScripts: boolean): Promise<Manifest | undefined> {
     const cacheHit = await ghcache.restoreCache([this.path], key.hash);
 
     if (!cacheHit) {
-      this.logger.info(
-        `Cache miss for key ${key.hash}, skipping cache restore.`,
-      );
+      this.logger.info(`Cache miss for key ${key.hash}, skipping cache restore.`);
       return undefined;
     }
 
@@ -210,9 +185,7 @@ export class Cache {
       const contents = await fs
         .readdir(this.path)
         .then((entries) => entries.join("\n"))
-        .catch(
-          (reason: any) => `Unable to read cache directory contents: ${reason}`,
-        );
+        .catch((reason: any) => `Unable to read cache directory contents: ${reason}`);
       this.logger.error(
         `${prefixMessage}, skipping cache restore.\n` +
           `This may indicate a cache corruption or an unexpected cache hit for a different package set.\n` +
@@ -232,13 +205,9 @@ export class Cache {
       return undefined;
     }
     const manifestAllPath = path.join(this.path, MANIFEST_ALL_FILENAME);
-    const manifestAll = await Manifest.readFromFile(manifestAllPath).catch(
-      () => undefined,
-    );
+    const manifestAll = await Manifest.readFromFile(manifestAllPath).catch(() => undefined);
     if (!manifestAll || manifestAll.entries.length === 0) {
-      await logFileError(
-        `Manifest of all packages not found or empty at ${manifestAllPath}`,
-      );
+      await logFileError(`Manifest of all packages not found or empty at ${manifestAllPath}`);
       return undefined;
     }
 
@@ -250,10 +219,7 @@ export class Cache {
       .filter((entry) => entry.filepaths.length > 0)
       .map((entry) => ({
         packageName: entry.packageName,
-        archivePath: path.join(
-          this.path,
-          entry.packageName.serialize() + ".tar",
-        ),
+        archivePath: path.join(this.path, entry.packageName.serialize() + ".tar"),
       }));
     for (const { archivePath } of archivePaths) {
       if (
@@ -291,24 +257,17 @@ export class Cache {
    *
    * @param archivePaths Absolute paths to the package archives.
    */
-  private async extractArchives(
-    archivePaths: readonly string[],
-  ): Promise<void> {
+  private async extractArchives(archivePaths: readonly string[]): Promise<void> {
     if (archivePaths.length === 0) {
       return;
     }
-    await this.commandRunner.run(
-      "sudo",
-      ["sh", "-c", EXTRACT_ARCHIVES_SCRIPT, "sh", ...archivePaths],
-      { timeoutMs: NO_TIMEOUT_MS },
-    );
+    await this.commandRunner.run("sudo", ["sh", "-c", EXTRACT_ARCHIVES_SCRIPT, "sh", ...archivePaths], {
+      timeoutMs: NO_TIMEOUT_MS,
+    });
   }
 
   private async createArchive(manifestEntry: ManifestEntry): Promise<void> {
-    const archivePath = path.join(
-      this.path,
-      manifestEntry.packageName.serialize() + ".tar",
-    );
+    const archivePath = path.join(this.path, manifestEntry.packageName.serialize() + ".tar");
     if (
       await fs
         .access(archivePath)
@@ -348,11 +307,7 @@ export class Cache {
       { input: manifestEntry.filepaths.join("\0"), timeoutMs: NO_TIMEOUT_MS },
     );
     // Hand the archive back to the runner user so the cache save can manage it.
-    await this.commandRunner.run("sudo", [
-      "chown",
-      `${os.userInfo().uid}:${os.userInfo().gid}`,
-      archivePath,
-    ]);
+    await this.commandRunner.run("sudo", ["chown", `${os.userInfo().uid}:${os.userInfo().gid}`, archivePath]);
     this.logger.info(
       `Archive created for package ${manifestEntry.packageName.serialize()} at ${archivePath}`,
     );
@@ -362,9 +317,7 @@ export class Cache {
     const allEntries = manifest.entries;
     const packages = manifest.cacheKey.packageNames;
     // Keep the installed name, which carries the resolved version and arch.
-    const mainEntries = allEntries.filter((entry) =>
-      packages.includes(entry.packageName),
-    );
+    const mainEntries = allEntries.filter((entry) => packages.includes(entry.packageName));
 
     const write = async (manifest: Manifest, filename: string) => {
       this.logger.info(
@@ -378,14 +331,8 @@ export class Cache {
 
     const now = new Date();
 
-    await write(
-      new Manifest(now, mainEntries, manifest.cacheKey),
-      MANIFEST_MAIN_FILENAME,
-    );
-    await write(
-      new Manifest(now, allEntries, manifest.cacheKey),
-      MANIFEST_ALL_FILENAME,
-    );
+    await write(new Manifest(now, mainEntries, manifest.cacheKey), MANIFEST_MAIN_FILENAME);
+    await write(new Manifest(now, allEntries, manifest.cacheKey), MANIFEST_ALL_FILENAME);
   }
 
   /**
@@ -397,20 +344,12 @@ export class Cache {
   async archiveAndSave(manifest: Manifest): Promise<number> {
     const key = manifest.cacheKey;
     if (!ghcache.isFeatureAvailable()) {
-      throw new Error(
-        "GitHub Actions cache service is not available in this environment",
-      );
+      throw new Error("GitHub Actions cache service is not available in this environment");
     }
     await fs.mkdir(this.path, { recursive: true });
 
-    this.logger.info(
-      `Writing cache key to ${path.join(this.path, CACHE_KEY_FILENAME)} with ${key}...`,
-    );
-    await fs.writeFile(
-      path.join(this.path, CACHE_KEY_FILENAME),
-      key.hash,
-      "utf8",
-    );
+    this.logger.info(`Writing cache key to ${path.join(this.path, CACHE_KEY_FILENAME)} with ${key}...`);
+    await fs.writeFile(path.join(this.path, CACHE_KEY_FILENAME), key.hash, "utf8");
     this.logger.info(`Wrote cache key`);
 
     await this.writeManifests(manifest);
@@ -418,15 +357,10 @@ export class Cache {
       await this.createArchive(entry);
     }
 
-    this.logger.info(
-      `Saving cache with key ${key} for ${manifest.entries.length} entries...`,
-    );
+    this.logger.info(`Saving cache with key ${key} for ${manifest.entries.length} entries...`);
 
     try {
-      const cacheId = await ghcache.saveCache(
-        [this.path],
-        manifest.cacheKey.hash,
-      );
+      const cacheId = await ghcache.saveCache([this.path], manifest.cacheKey.hash);
       if (cacheId === undefined) {
         throw new Error("Cache save failed: no cache action ID returned.");
       }

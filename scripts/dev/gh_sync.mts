@@ -17,13 +17,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { defineCommand, defineOptions } from "@robingenz/zli";
@@ -79,12 +73,7 @@ type SettingsFile = {
 
 type BypassActor = {
   actor_id: number;
-  actor_type:
-    | "RepositoryRole"
-    | "Team"
-    | "Integration"
-    | "OrganizationAdmin"
-    | "DeployKey";
+  actor_type: "RepositoryRole" | "Team" | "Integration" | "OrganizationAdmin" | "DeployKey";
   bypass_mode: "always" | "pull_request";
 };
 
@@ -194,11 +183,7 @@ function ensureDirForFile(filePath: string): string {
   return absPath;
 }
 
-function writeJsonFile(
-  filePath: string,
-  payload: unknown,
-  successLabel: string,
-): void {
+function writeJsonFile(filePath: string, payload: unknown, successLabel: string): void {
   const absPath = ensureDirForFile(filePath);
   writeFileSync(absPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
   logSuccess(`Wrote ${successLabel} to ${absPath}`);
@@ -223,11 +208,7 @@ function writeTempPayload(payload: unknown, prefix: string): string {
   return payloadFile;
 }
 
-function withTempPayload<T>(
-  payload: unknown,
-  prefix: string,
-  fn: (payloadFile: string) => T,
-): T {
+function withTempPayload<T>(payload: unknown, prefix: string, fn: (payloadFile: string) => T): T {
   const tempDir = mkdtempSync(path.join(tmpdir(), prefix));
   const payloadFile = path.join(tempDir, "payload.json");
 
@@ -291,12 +272,7 @@ function downloadSettings(owner: string, repo: string, filePath: string): void {
   writeJsonFile(filePath, payload, "repository settings");
 }
 
-function uploadSettings(
-  owner: string,
-  repo: string,
-  filePath: string,
-  dryRun: boolean,
-): void {
+function uploadSettings(owner: string, repo: string, filePath: string, dryRun: boolean): void {
   const settingsFile = readSettingsFile(filePath);
   const payload = buildPatchPayload(settingsFile.settings);
 
@@ -314,14 +290,7 @@ function uploadSettings(
   }
 
   withTempPayload(payload, "ts-apt-repo-settings-", (payloadFile) => {
-    runGh([
-      "api",
-      "-X",
-      "PATCH",
-      `repos/${owner}/${repo}`,
-      "--input",
-      payloadFile,
-    ]);
+    runGh(["api", "-X", "PATCH", `repos/${owner}/${repo}`, "--input", payloadFile]);
   });
 
   logSuccess(`Uploaded repository settings to ${owner}/${repo}`);
@@ -342,24 +311,17 @@ function fetchRulesets(owner: string, repo: string): Ruleset[] {
   const list = JSON.parse(listRaw) as Array<{ id: number }>;
 
   return list.map((entry) => {
-    const detailRaw = runGh([
-      "api",
-      `/repos/${owner}/${repo}/rulesets/${entry.id}`,
-    ]);
+    const detailRaw = runGh(["api", `/repos/${owner}/${repo}/rulesets/${entry.id}`]);
     return JSON.parse(detailRaw) as Ruleset;
   });
 }
 
-function mergeBypassActors(
-  ruleset: Ruleset,
-  appsBypassActors: AppBypassConfig[],
-): BypassActor[] {
+function mergeBypassActors(ruleset: Ruleset, appsBypassActors: AppBypassConfig[]): BypassActor[] {
   const desiredActors = [...ruleset.bypass_actors];
 
   for (const cfg of appsBypassActors) {
     const exists = desiredActors.some(
-      (actor) =>
-        actor.actor_id === cfg.appId && actor.actor_type === "Integration",
+      (actor) => actor.actor_id === cfg.appId && actor.actor_type === "Integration",
     );
 
     if (exists) {
@@ -416,12 +378,7 @@ function downloadRulesets(owner: string, repo: string, filePath: string): void {
   logInfo(`Found ${rulesets.length} ruleset(s).`);
 }
 
-function uploadRulesets(
-  owner: string,
-  repo: string,
-  filePath: string,
-  dryRun: boolean,
-): void {
+function uploadRulesets(owner: string, repo: string, filePath: string, dryRun: boolean): void {
   const config = readRulesetsFile(filePath);
 
   if (config.rulesets.length === 0) {
@@ -431,9 +388,7 @@ function uploadRulesets(
 
   logInfo(`Fetching current rulesets for ${owner}/${repo}...`);
   const remoteRulesets = fetchRulesets(owner, repo);
-  const remoteById = new Map(
-    remoteRulesets.map((ruleset) => [ruleset.id, ruleset]),
-  );
+  const remoteById = new Map(remoteRulesets.map((ruleset) => [ruleset.id, ruleset]));
 
   if (remoteRulesets.length === 0) {
     logWarn("No rulesets found in the repository.");
@@ -448,37 +403,22 @@ function uploadRulesets(
     }
 
     const payload = buildRulesetPutPayload(ruleset, config.appsBypassActors);
-    logInfo(
-      `Ruleset "${ruleset.name}" (${ruleset.id}): syncing full definition...`,
-    );
+    logInfo(`Ruleset "${ruleset.name}" (${ruleset.id}): syncing full definition...`);
 
     if (dryRun) {
-      logInfo(
-        `Dry-run mode: would PUT with ${JSON.stringify(payload, null, 2)}`,
-      );
+      logInfo(`Dry-run mode: would PUT with ${JSON.stringify(payload, null, 2)}`);
       continue;
     }
 
     runGh(
-      [
-        "api",
-        "-X",
-        "PUT",
-        `/repos/${owner}/${repo}/rulesets/${ruleset.id}`,
-        "--input",
-        "-",
-      ],
+      ["api", "-X", "PUT", `/repos/${owner}/${repo}/rulesets/${ruleset.id}`, "--input", "-"],
       JSON.stringify(payload),
     );
 
     logSuccess(`Ruleset "${ruleset.name}" (${ruleset.id}) synchronized.`);
   }
 
-  logSuccess(
-    dryRun
-      ? "Dry-run complete. No remote changes were made."
-      : "Rulesets applied successfully.",
-  );
+  logSuccess(dryRun ? "Dry-run complete. No remote changes were made." : "Rulesets applied successfully.");
 }
 
 function readVariablesFile(filePath: string): VariablesFile {
@@ -500,11 +440,7 @@ function fetchVariables(owner: string, repo: string): RepoVariable[] {
     .sort((left, right) => left.name.localeCompare(right.name));
 }
 
-function downloadVariables(
-  owner: string,
-  repo: string,
-  filePath: string,
-): void {
+function downloadVariables(owner: string, repo: string, filePath: string): void {
   logInfo(`Downloading repository variables for ${owner}/${repo}...`);
   const payload: VariablesFile = {
     owner,
@@ -516,17 +452,10 @@ function downloadVariables(
   writeJsonFile(filePath, payload, "repository variables");
 }
 
-function uploadVariables(
-  owner: string,
-  repo: string,
-  filePath: string,
-  dryRun: boolean,
-): void {
+function uploadVariables(owner: string, repo: string, filePath: string, dryRun: boolean): void {
   const config = readVariablesFile(filePath);
   const remoteVariables = fetchVariables(owner, repo);
-  const remoteByName = new Map(
-    remoteVariables.map((variable) => [variable.name, variable]),
-  );
+  const remoteByName = new Map(remoteVariables.map((variable) => [variable.name, variable]));
 
   if (config.variables.length === 0) {
     logWarn("No repository variables configured; nothing to apply.");
@@ -540,14 +469,7 @@ function uploadVariables(
       logInfo(`Repository variable "${variable.name}": creating...`);
       if (!dryRun) {
         runGh(
-          [
-            "api",
-            "-X",
-            "POST",
-            `/repos/${owner}/${repo}/actions/variables`,
-            "--input",
-            "-",
-          ],
+          ["api", "-X", "POST", `/repos/${owner}/${repo}/actions/variables`, "--input", "-"],
           JSON.stringify(variable),
         );
       }
@@ -562,23 +484,14 @@ function uploadVariables(
     logInfo(`Repository variable "${variable.name}": updating...`);
     if (!dryRun) {
       runGh(
-        [
-          "api",
-          "-X",
-          "PATCH",
-          `/repos/${owner}/${repo}/actions/variables/${variable.name}`,
-          "--input",
-          "-",
-        ],
+        ["api", "-X", "PATCH", `/repos/${owner}/${repo}/actions/variables/${variable.name}`, "--input", "-"],
         JSON.stringify({ value: variable.value }),
       );
     }
   }
 
   logSuccess(
-    dryRun
-      ? "Dry-run complete. No remote changes were made."
-      : "Repository variables applied successfully.",
+    dryRun ? "Dry-run complete. No remote changes were made." : "Repository variables applied successfully.",
   );
 }
 
@@ -615,12 +528,7 @@ function downloadTags(owner: string, repo: string, filePath: string): void {
   writeJsonFile(filePath, payload, "repository tags");
 }
 
-function uploadTags(
-  owner: string,
-  repo: string,
-  filePath: string,
-  dryRun: boolean,
-): void {
+function uploadTags(owner: string, repo: string, filePath: string, dryRun: boolean): void {
   const config = readTagsFile(filePath);
   const remoteTags = fetchTags(owner, repo);
   const remoteByName = new Map(remoteTags.map((tag) => [tag.name, tag]));
@@ -637,14 +545,7 @@ function uploadTags(
       logInfo(`Repository tag "${tag.name}": creating at ${tag.sha}...`);
       if (!dryRun) {
         runGh(
-          [
-            "api",
-            "-X",
-            "POST",
-            `/repos/${owner}/${repo}/git/refs`,
-            "--input",
-            "-",
-          ],
+          ["api", "-X", "POST", `/repos/${owner}/${repo}/git/refs`, "--input", "-"],
           JSON.stringify({ ref: `refs/tags/${tag.name}`, sha: tag.sha }),
         );
       }
@@ -663,16 +564,11 @@ function uploadTags(
   }
 
   logSuccess(
-    dryRun
-      ? "Dry-run complete. No remote changes were made."
-      : "Repository tags applied successfully.",
+    dryRun ? "Dry-run complete. No remote changes were made." : "Repository tags applied successfully.",
   );
 }
 
-function resolveFilePath(
-  target: Exclude<SyncTarget, "all">,
-  fileOverride?: string,
-): string {
+function resolveFilePath(target: Exclude<SyncTarget, "all">, fileOverride?: string): string {
   return fileOverride?.trim() || DEFAULT_TARGET_PATHS[target];
 }
 
@@ -730,17 +626,10 @@ function applyTargets(
 ): void {
   if (target === "all") {
     if (fileOverride?.trim()) {
-      fail(
-        "--file cannot be used with --target all. Use the default target files instead.",
-      );
+      fail("--file cannot be used with --target all. Use the default target files instead.");
     }
 
-    for (const currentTarget of [
-      "settings",
-      "rulesets",
-      "vars",
-      "tags",
-    ] as const) {
+    for (const currentTarget of ["settings", "rulesets", "vars", "tags"] as const) {
       applyTarget(action, currentTarget, owner, repo, undefined, dryRun);
     }
     return;
@@ -774,14 +663,8 @@ const sharedOptions = defineOptions(
       .enum(["settings", "rulesets", "vars", "tags", "all"])
       .default("all")
       .describe("Metadata target to sync"),
-    file: z
-      .string()
-      .optional()
-      .describe("Override the default JSON file path for a single target"),
-    dryRun: z
-      .boolean()
-      .default(false)
-      .describe("Print changes without applying them"),
+    file: z.string().optional().describe("Override the default JSON file path for a single target"),
+    dryRun: z.boolean().default(false).describe("Print changes without applying them"),
   }),
   { o: "owner", r: "repo", t: "target", f: "file", d: "dryRun" },
 );
@@ -790,14 +673,7 @@ const downloadCommand = defineCommand({
   description: "Download GitHub repository metadata to tracked JSON files",
   options: sharedOptions,
   action: async (options) => {
-    applyTargets(
-      "download",
-      options.target,
-      options.owner,
-      options.repo,
-      options.file,
-      options.dryRun,
-    );
+    applyTargets("download", options.target, options.owner, options.repo, options.file, options.dryRun);
   },
 });
 
@@ -805,14 +681,7 @@ const uploadCommand = defineCommand({
   description: "Upload GitHub repository metadata from tracked JSON files",
   options: sharedOptions,
   action: async (options) => {
-    applyTargets(
-      "upload",
-      options.target,
-      options.owner,
-      options.repo,
-      options.file,
-      options.dryRun,
-    );
+    applyTargets("upload", options.target, options.owner, options.repo, options.file, options.dryRun);
   },
 });
 

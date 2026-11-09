@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  runAction,
-  type ActionInputs,
-  type ActionOutputs,
-} from "../src/action.js";
+import { runAction, type ActionInputs, type ActionOutputs } from "../src/action.js";
 import { Manifest, ManifestEntry } from "../src/manifest.js";
 import { CacheKey } from "../src/cache.js";
 import { createPackageName } from "ts-apt";
@@ -38,12 +34,7 @@ describe("runAction", () => {
     };
 
     const packageNames = ActionPackageNames.fromInput(inputs.packages);
-    const cacheKey = new CacheKey(
-      inputs.version,
-      "0",
-      process.arch,
-      packageNames,
-    );
+    const cacheKey = new CacheKey(inputs.version, "0", process.arch, packageNames);
     const manifest = new Manifest(
       new Date(),
       [
@@ -111,16 +102,9 @@ describe("runAction", () => {
     );
     const mockCache = { loadAndRestore: async () => manifest };
 
-    const outputs = await runAction(
-      inputs,
-      {} as never,
-      mockCache as never,
-      {} as never,
-    );
+    const outputs = await runAction(inputs, {} as never, mockCache as never, {} as never);
 
-    expect(outputs.packageVersionList).toBe(
-      `${PKG_NAME}=${PKG_VER},${PKG2_NAME}:${FOREIGN_ARCH}=${PKG_VER}`,
-    );
+    expect(outputs.packageVersionList).toBe(`${PKG_NAME}=${PKG_VER},${PKG2_NAME}:${FOREIGN_ARCH}=${PKG_VER}`);
     expect(outputs.allPackageVersionList).toBe(
       `${PKG_NAME}=${PKG_VER},${PKG2_NAME}:${FOREIGN_ARCH}=${PKG_VER},${PKG3_NAME}=${PKG_VER}`,
     );

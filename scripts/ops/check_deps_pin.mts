@@ -19,20 +19,11 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import {
-  fail,
-  logError,
-  logSuccess,
-  readJsonFile,
-  ROOT_DIR,
-  runMain,
-  usage,
-} from "../devopslib.mts";
+import { fail, logError, logSuccess, readJsonFile, ROOT_DIR, runMain, usage } from "../devopslib.mts";
 
 const SHA_PIN_PATTERN = /#([0-9a-f]{40})$/;
 /** Exact semver version, optionally prerelease; rejects ranges and tags. */
-const EXACT_VERSION_PATTERN =
-  /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$/;
+const EXACT_VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$/;
 const NPM_REGISTRY_URL = "https://registry.npmjs.org/";
 
 /** Parsed package.json, limited to the fields the check reads. */
@@ -94,8 +85,7 @@ export function checkDependencyPin(
     );
   }
 
-  const spec =
-    packageJson.dependencies?.[name] ?? packageJson.devDependencies?.[name];
+  const spec = packageJson.dependencies?.[name] ?? packageJson.devDependencies?.[name];
   if (spec === undefined) {
     problems.push(`package.json has no ${name} dependency.`);
     return problems;
@@ -112,29 +102,21 @@ export function checkDependencyPin(
   const root = packageLock.packages?.[""];
   const rootSpec = root?.dependencies?.[name] ?? root?.devDependencies?.[name];
   if (rootSpec !== spec) {
-    problems.push(
-      `package-lock.json root ${name} '${rootSpec}' does not match package.json '${spec}'.`,
-    );
+    problems.push(`package-lock.json root ${name} '${rootSpec}' does not match package.json '${spec}'.`);
   }
 
   const entry = packageLock.packages?.[`node_modules/${name}`];
   if (entry === undefined) {
     problems.push(`package-lock.json has no node_modules/${name} entry.`);
   } else if (entry.link) {
-    problems.push(
-      `package-lock.json ${name} is a link to '${entry.resolved}'.`,
-    );
+    problems.push(`package-lock.json ${name} is a link to '${entry.resolved}'.`);
   } else if (sha !== undefined) {
     if (!entry.resolved?.endsWith(`#${sha}`)) {
-      problems.push(
-        `package-lock.json ${name} resolved '${entry.resolved}' does not match pin ${sha}.`,
-      );
+      problems.push(`package-lock.json ${name} resolved '${entry.resolved}' does not match pin ${sha}.`);
     }
   } else {
     if (entry.version !== spec) {
-      problems.push(
-        `package-lock.json ${name} version '${entry.version}' does not match pin ${spec}.`,
-      );
+      problems.push(`package-lock.json ${name} version '${entry.version}' does not match pin ${spec}.`);
     }
     if (!entry.resolved?.startsWith(NPM_REGISTRY_URL)) {
       problems.push(
@@ -155,16 +137,10 @@ function main(): void {
     fail(usage(import.meta.url, "<dependency> [<dependency>...]"));
   }
 
-  const packageJson = readJsonFile(
-    path.join(ROOT_DIR, "package.json"),
-  ) as PackageJson;
-  const packageLock = readJsonFile(
-    path.join(ROOT_DIR, "package-lock.json"),
-  ) as PackageLock;
+  const packageJson = readJsonFile(path.join(ROOT_DIR, "package.json")) as PackageJson;
+  const packageLock = readJsonFile(path.join(ROOT_DIR, "package-lock.json")) as PackageLock;
 
-  const problems = names.flatMap((name) =>
-    checkDependencyPin(name, packageJson, packageLock),
-  );
+  const problems = names.flatMap((name) => checkDependencyPin(name, packageJson, packageLock));
   for (const problem of problems) {
     logError(problem);
   }

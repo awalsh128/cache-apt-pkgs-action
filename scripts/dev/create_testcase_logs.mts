@@ -26,10 +26,7 @@ function toLog(result: LogResult): string {
 }
 
 /** Determine exit code: use code if available, else map signal to 137 (SIGKILL) or 143 (SIGTERM) */
-function getFinalExitCode(
-  code: number | null,
-  signal: NodeJS.Signals | null,
-): number {
+function getFinalExitCode(code: number | null, signal: NodeJS.Signals | null): number {
   if (code !== null) {
     return code;
   } else if (signal === "SIGTERM") {
@@ -127,11 +124,7 @@ async function execute(cmdLine: string): Promise<LogResult> {
   });
 }
 
-async function writeLogFile(
-  baseDir: string,
-  relativePath: string,
-  result: LogResult,
-): Promise<string> {
+async function writeLogFile(baseDir: string, relativePath: string, result: LogResult): Promise<string> {
   const outputPath = resolve(baseDir, `${relativePath}.log`);
   await mkdir(dirname(outputPath), { recursive: true });
   await writeFile(outputPath, toLog(result), "utf8");
@@ -172,30 +165,25 @@ async function main(): Promise<void> {
 const testLogFiles: TestLogEntry[] = [
   {
     filepath: "autoclean",
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 autoclean",
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 autoclean",
   },
   {
     filepath: "autoremove_found",
     preExecCmdLine: ["apt-get install -y xdot", "apt-get remove -y xdot"],
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 autoremove",
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 autoremove",
   },
   {
     filepath: "autoremove_notfound",
     preExecCmdLine: ["apt-get autoremove -y"],
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 autoremove",
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 autoremove",
   },
   {
     filepath: "cacheshow_mixedfoundnotfound",
-    execCmdLine:
-      "/usr/bin/apt-cache --quiet=0 --no-all-versions show xdot python3 nonexistentpackage",
+    execCmdLine: "/usr/bin/apt-cache --quiet=0 --no-all-versions show xdot python3 nonexistentpackage",
   },
   {
     filepath: "cacheshow_multiplefound",
-    execCmdLine:
-      "/usr/bin/apt-cache --quiet=0 --no-all-versions show xdot python3",
+    execCmdLine: "/usr/bin/apt-cache --quiet=0 --no-all-versions show xdot python3",
   },
   {
     filepath: "cacheshow_singlefound",
@@ -203,8 +191,7 @@ const testLogFiles: TestLogEntry[] = [
   },
   {
     filepath: "cacheshow_singlenotfound",
-    execCmdLine:
-      "/usr/bin/apt-cache --quiet=0 --no-all-versions show nonexistentpackage",
+    execCmdLine: "/usr/bin/apt-cache --quiet=0 --no-all-versions show nonexistentpackage",
   },
   {
     filepath: "cacheshow_virtualpackage",
@@ -212,8 +199,7 @@ const testLogFiles: TestLogEntry[] = [
   },
   {
     filepath: "cacheshow_virtualandnotpackages",
-    execCmdLine:
-      "/usr/bin/apt-cache --quiet=0 --no-all-versions show libvips xdot",
+    execCmdLine: "/usr/bin/apt-cache --quiet=0 --no-all-versions show libvips xdot",
   },
   {
     filepath: "cacheshowpkg_virtualpackage",
@@ -222,35 +208,26 @@ const testLogFiles: TestLogEntry[] = [
   {
     filepath: "install_mixedfoundnotfound",
     preExecCmdLine: ["apt-get remove -y xdot"],
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install -f xdot nonexistentpackage",
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install -f xdot nonexistentpackage",
   },
   {
     filepath: "install_mixedinstallstatus",
-    preExecCmdLine: [
-      "apt-get install -y xdot",
-      "apt-get remove -y rolldice",
-      "apt-get autoremove -y",
-    ],
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install -f rolldice xdot",
+    preExecCmdLine: ["apt-get install -y xdot", "apt-get remove -y rolldice", "apt-get autoremove -y"],
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install -f rolldice xdot",
   },
   {
     filepath: "install_singleinstalled",
     preExecCmdLine: ["apt-get install -y xdot"],
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install -f xdot",
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install -f xdot",
   },
   {
     filepath: "install_singlenotfound",
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install -f nonexistentpackage",
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install -f nonexistentpackage",
   },
   {
     filepath: "install_singlenotinstalled",
     preExecCmdLine: ["apt-get remove -y xdot", "apt-get autoremove -y"],
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install -f xdot",
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install -f xdot",
   },
   {
     filepath: "listinstalled",
@@ -296,8 +273,7 @@ const testLogFiles: TestLogEntry[] = [
   {
     filepath: "remove_singlenotinstalled",
     preExecCmdLine: ["apt-get remove -y xdot"],
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 remove -f xdot --autoremove",
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 remove -f xdot --autoremove",
   },
   {
     filepath: "remove_singlenotfound",
@@ -307,8 +283,7 @@ const testLogFiles: TestLogEntry[] = [
   {
     filepath: "remove_singleinstalled",
     preExecCmdLine: ["apt-get install -y xdot"],
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 remove -f xdot --autoremove",
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 remove -f xdot --autoremove",
   },
   {
     filepath: "search_multiplefound",
@@ -329,8 +304,7 @@ const testLogFiles: TestLogEntry[] = [
   {
     filepath: "upgrade_mixedfoundnotfound",
     preExecCmdLine: ["apt-get remove -y xdot"],
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install xdot nonexistentpackage",
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install xdot nonexistentpackage",
   },
   {
     filepath: "upgrade_mixedupgradestatus",
@@ -339,42 +313,29 @@ const testLogFiles: TestLogEntry[] = [
       "apt-get remove -y xxd",
       "apt-get install -y xxd=2:8.1.2269-1ubuntu5.30",
     ],
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install xxd xdot",
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install xxd xdot",
   },
   {
     filepath: "upgrade_singleupgraded",
     preExecCmdLine: ["apt-get upgrade -y xdot"],
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 upgrade",
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 upgrade",
   },
   {
     filepath: "upgrade_singlenotfound",
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install nonexistentpackage",
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install nonexistentpackage",
   },
   {
     filepath: "upgrade_singlenotupgraded",
-    preExecCmdLine: [
-      "apt-get remove -y xxd",
-      "apt-get install -y xxd=2:8.1.2269-1ubuntu5.30",
-    ],
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install xxd",
+    preExecCmdLine: ["apt-get remove -y xxd", "apt-get install -y xxd=2:8.1.2269-1ubuntu5.30"],
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install xxd",
   },
   {
     filepath: "upgrade_singleinstalled",
     preExecCmdLine: ["apt-get install xdot"],
-    execCmdLine:
-      "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install xdot",
+    execCmdLine: "/usr/bin/apt-get --quiet=0 -y -o DPkg::Lock::Timeout=-1 install xdot",
   },
 ];
 
 await main().catch((error) => {
-  fail(
-    "Error occurred during log creation:\n" +
-      String(error) +
-      "\n" +
-      (error.stack || ""),
-  );
+  fail("Error occurred during log creation:\n" + String(error) + "\n" + (error.stack || ""));
 });

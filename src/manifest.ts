@@ -29,10 +29,7 @@ export class ManifestEntry {
    * @returns The deserialized entry.
    */
   static fromJSON(json: any): ManifestEntry {
-    return new ManifestEntry(
-      packageNameFromJSON(json.packageName),
-      json.filepaths as string[],
-    );
+    return new ManifestEntry(packageNameFromJSON(json.packageName), json.filepaths as string[]);
   }
 }
 
@@ -69,11 +66,7 @@ export class Manifest {
     return new Manifest(
       new Date(json.created),
       json.entries.map(
-        (e: any) =>
-          new ManifestEntry(
-            packageNameFromJSON(e.packageName),
-            e.filepaths as string[],
-          ),
+        (e: any) => new ManifestEntry(packageNameFromJSON(e.packageName), e.filepaths as string[]),
       ),
       CacheKey.fromJSON(json.cacheKey),
     );
@@ -97,10 +90,6 @@ export class Manifest {
    * @param filePath Destination path.
    */
   async writeToFile(filePath: string): Promise<void> {
-    await fs.promises.writeFile(
-      filePath,
-      JSON.stringify(this, null, 2),
-      "utf8",
-    );
+    await fs.promises.writeFile(filePath, JSON.stringify(this, null, 2), "utf8");
   }
 }

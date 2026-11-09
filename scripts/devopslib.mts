@@ -1,18 +1,7 @@
 #!/usr/bin/env -S node --experimental-strip-types
 
-import {
-  accessSync,
-  constants,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
-import {
-  execFileSync,
-  spawnSync,
-  type ExecFileSyncOptions,
-  type SpawnSyncOptions,
-} from "node:child_process";
+import { accessSync, constants, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync, type ExecFileSyncOptions, type SpawnSyncOptions } from "node:child_process";
 import {
   defineConfig,
   processConfig,
@@ -90,9 +79,7 @@ export function fail(message: string, exitCode = 1, params: LogParams = {}) {
 }
 
 export function log(message: string, params: LogParams = {}) {
-  console.log(
-    `${" ".repeat(params.indent ?? 0)}${params.color ?? ""}${message}${COLORS.reset}`,
-  );
+  console.log(`${" ".repeat(params.indent ?? 0)}${params.color ?? ""}${message}${COLORS.reset}`);
 }
 
 export function logInfo(message: string, params: LogParams = {}) {
@@ -111,11 +98,7 @@ export function logError(message: string, params: LogParams = {}) {
   log(`❌ ${message}`, params);
 }
 
-export function assertNonEmpty(
-  value: string,
-  message: string,
-  usageMessage?: string,
-) {
+export function assertNonEmpty(value: string, message: string, usageMessage?: string) {
   if (!value || value.trim().length === 0) {
     if (usageMessage) {
       console.error(usageMessage);
@@ -140,9 +123,7 @@ export function commandExists(command: string) {
 
   const pathValue = process.env.PATH ?? "";
   const dirs = pathValue.split(path.delimiter).filter(Boolean);
-  return dirs.some((dirPath: string) =>
-    isExecutable(path.join(dirPath, command)),
-  );
+  return dirs.some((dirPath: string) => isExecutable(path.join(dirPath, command)));
 }
 
 export function ensureDirExists(dirPath: string) {
@@ -183,9 +164,7 @@ export function readNodeMajorVersion(rootDir = ROOT_DIR): string {
     fail(".node_ver must contain exactly one non-empty line.");
   }
   if (!/^\d+$/.test(rawVersion)) {
-    fail(
-      ".node_ver must contain only the Node.js major version (e.g. 20, 24).",
-    );
+    fail(".node_ver must contain only the Node.js major version (e.g. 20, 24).");
   }
 
   return rawVersion;
@@ -249,9 +228,7 @@ export function run(
     return execFileSync(command, args, options);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `Failed to execute '${command} ${args.join(" ")}'. ${message}`,
-    );
+    throw new Error(`Failed to execute '${command} ${args.join(" ")}'. ${message}`);
   }
 }
 
@@ -264,9 +241,7 @@ export function tryRun(
   const result = spawnSync(command, args, options);
 
   if (result.error) {
-    throw new Error(
-      `Failed to spawn '${command} ${args.join(" ")}'. ${result.error.message}`,
-    );
+    throw new Error(`Failed to spawn '${command} ${args.join(" ")}'. ${result.error.message}`);
   }
 
   return {
@@ -286,9 +261,7 @@ export function runCaptureOutput(
   const result = spawnSync(command, args, normalizedOptions);
 
   if (result.error) {
-    throw new Error(
-      `Failed to spawn '${command} ${args.join(" ")}'. ${result.error.message}`,
-    );
+    throw new Error(`Failed to spawn '${command} ${args.join(" ")}'. ${result.error.message}`);
   }
   if (result.status !== 0) {
     throw new Error(
@@ -299,10 +272,7 @@ export function runCaptureOutput(
   return String(result.stdout ?? "").trim();
 }
 
-type CliAction = (
-  options: unknown,
-  args: string[],
-) => unknown | Promise<unknown>;
+type CliAction = (options: unknown, args: string[]) => unknown | Promise<unknown>;
 
 type CliResult = ProcessResult<CommandDefinition<any, any>>;
 
@@ -340,9 +310,7 @@ export function createCliConfig(params: CliConfigParams) {
       }
     }
 
-    fail(
-      "createCliConfig requires either a non-empty 'name' or a valid 'importMetaUrl'.",
-    );
+    fail("createCliConfig requires either a non-empty 'name' or a valid 'importMetaUrl'.");
   })();
 
   return defineConfig({
@@ -356,19 +324,13 @@ export function createCliConfig(params: CliConfigParams) {
   });
 }
 
-export async function runCli(
-  cliConfig: CliConfig,
-  argv: string[] = process.argv.slice(2),
-): Promise<void> {
+export async function runCli(cliConfig: CliConfig, argv: string[] = process.argv.slice(2)): Promise<void> {
   const result = processConfig(cliConfig, argv) as CliResult;
   const commandResult = result as unknown as CliResultCommand;
   await commandResult.command.action(commandResult.options, commandResult.args);
 }
 
-export async function runMain(
-  action: () => void | Promise<void>,
-  exitCode = 1,
-): Promise<void> {
+export async function runMain(action: () => void | Promise<void>, exitCode = 1): Promise<void> {
   try {
     await action();
   } catch (error) {
@@ -395,9 +357,7 @@ export async function confirmPrompt(
         .replace(/\\([^\\])/g, "$1");
     while (true) {
       const answer = await rl
-        .question(
-          `${message} [${getText(yesPattern)} | ${getText(noPattern)}] `,
-        )
+        .question(`${message} [${getText(yesPattern)} | ${getText(noPattern)}] `)
         .then((ans: string) => ans.trim().toLowerCase());
       if (yesPattern.test(answer) || answer.trim() === "") {
         return;

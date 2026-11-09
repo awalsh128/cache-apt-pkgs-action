@@ -1,14 +1,6 @@
 #!/usr/bin/env -S node --experimental-strip-types
 
-import {
-  fail,
-  logInfo,
-  logSuccess,
-  logError,
-  readJsonFile,
-  ROOT_DIR,
-  REPO_SLUG,
-} from "../devopslib.mts";
+import { fail, logInfo, logSuccess, logError, readJsonFile, ROOT_DIR, REPO_SLUG } from "../devopslib.mts";
 
 type ErrorCollector = {
   errors: string[];
@@ -18,9 +10,7 @@ type ErrorCollector = {
 type JsonRecord = Record<string, unknown>;
 
 const packageJson = readJsonFile(`${ROOT_DIR}/package.json`) as JsonRecord;
-const vscodeSettingsJson = readJsonFile(
-  `${ROOT_DIR}/.vscode/settings.json`,
-) as JsonRecord;
+const vscodeSettingsJson = readJsonFile(`${ROOT_DIR}/.vscode/settings.json`) as JsonRecord;
 const tsconfigJson = readJsonFile(`${ROOT_DIR}/tsconfig.json`) as JsonRecord;
 const typedocJson = readJsonFile(`${ROOT_DIR}/typedoc.json`) as JsonRecord;
 
@@ -68,10 +58,7 @@ function tokenizePath(pathExpression: string): Array<string | number> {
   return tokens;
 }
 
-function getByPath(
-  root: unknown,
-  pathExpression: string,
-): { found: boolean; value: unknown } {
+function getByPath(root: unknown, pathExpression: string): { found: boolean; value: unknown } {
   const tokens = tokenizePath(pathExpression);
   let cursor = root;
 
@@ -134,9 +121,7 @@ function expectFieldType(
 
   const actualType = valueType(result.value);
   if (actualType !== expectedType) {
-    addError(
-      `field '${fieldPath}' type '${actualType}' does not match expected '${expectedType}'`,
-    );
+    addError(`field '${fieldPath}' type '${actualType}' does not match expected '${expectedType}'`);
   }
 }
 
@@ -167,12 +152,7 @@ function validatePackageJson(json: JsonRecord): string[] {
   expectFieldValue(json, "name", "ts-apt", add);
   expectFieldValue(json, "license", "Apache-2.0", add);
   expectFieldValue(json, "repository.type", "git", add);
-  expectFieldValue(
-    json,
-    "repository.url",
-    `https://github.com/${REPO_SLUG}.git`,
-    add,
-  );
+  expectFieldValue(json, "repository.url", `https://github.com/${REPO_SLUG}.git`, add);
 
   return errors;
 }
