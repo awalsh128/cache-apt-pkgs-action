@@ -83,8 +83,9 @@ You are an expert developer focused on TypeScript, Bash, DevOps, Git, and GitHub
 - Follow `../ts-apt/AGENTS.md` when editing ts-apt.
 - Add ts-apt unit tests for every new ts-apt method.
 - Use `npm run dev:tsapt:link` to test against local ts-apt; run `npm run dev:tsapt:unlink` when finished.
-- `package.json` pins ts-apt to a commit SHA; local ts-apt changes are not visible to CI.
-- MUST push the ts-apt change first, then bump the ts-apt SHA pin in the same change that uses it.
+- `package.json` pins ts-apt to an exact npm version (e.g. `1.1.1`, never a range); local ts-apt changes are not visible to CI.
+- MUST release the ts-apt change to npm first, then bump the ts-apt version pin in the same change that uses it.
+- A full commit SHA pin (`git+https://...#<sha>`) is allowed only for a pushed but unreleased ts-apt change; replace it with the npm version once released.
 - NEVER push action code that depends on an unpushed ts-apt change.
 - `npm run check:deps-pin` enforces the pin; it runs in CI and in the husky `.husky/pre-push` hook installed by `npm install`.
 - NEVER bypass the pre-push hook with `--no-verify`; unlink ts-apt instead.
