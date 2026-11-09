@@ -18,13 +18,7 @@ import { Instruments } from "./instrumentation.js";
 function ensureBundledScriptsExecutable(
   bundleDir: string = path.dirname(fileURLToPath(import.meta.url)),
 ): void {
-  const aptFastPath = path.join(
-    bundleDir,
-    "..",
-    "scripts",
-    "dist",
-    "apt-fast.sh",
-  );
+  const aptFastPath = path.join(bundleDir, "..", "scripts", "dist", "apt-fast.sh");
   if (fs.existsSync(aptFastPath)) {
     fs.chmodSync(aptFastPath, 0o755);
   }
@@ -37,16 +31,12 @@ function ensureBundledScriptsExecutable(
  * @returns Parsed behavior enum value.
  * @throws Error when value is outside the supported set.
  */
-function parseEmptyPackagesBehavior(
-  value: string,
-): "error" | "warn" | "ignore" {
+function parseEmptyPackagesBehavior(value: string): "error" | "warn" | "ignore" {
   if (value === "error" || value === "warn" || value === "ignore") {
     return value;
   }
 
-  throw new Error(
-    `empty_packages_behavior value '${value}' must be one of: error, warn, ignore.`,
-  );
+  throw new Error(`empty_packages_behavior value '${value}' must be one of: error, warn, ignore.`);
 }
 
 /**
@@ -55,8 +45,7 @@ function parseEmptyPackagesBehavior(
  * @returns Parsed and validated action inputs.
  */
 function getInputs(): ActionInputs {
-  const emptyPackagesBehaviorRaw =
-    core.getInput("empty_packages_behavior") || "error";
+  const emptyPackagesBehaviorRaw = core.getInput("empty_packages_behavior") || "error";
 
   return {
     packages: core.getInput("packages", { required: true }),
@@ -80,10 +69,7 @@ async function main(): Promise<void> {
   let failed = false;
   try {
     ensureBundledScriptsExecutable();
-    const commandRunner = new DefaultCommandRunner(
-      instruments.execLogger,
-      instruments.execLogger,
-    );
+    const commandRunner = new DefaultCommandRunner(instruments.execLogger, instruments.execLogger);
 
     const outputs = await runAction(
       inputs,

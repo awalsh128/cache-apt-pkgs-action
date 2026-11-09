@@ -9,20 +9,10 @@ import { ActionPackageNames } from "../src/packages.js";
 
 describe("manifest", () => {
   it("serializes and deserializes manifest entries", () => {
-    const cacheKey = new CacheKey(
-      "v1",
-      "4",
-      "amd64",
-      ActionPackageNames.fromInput("curl git"),
-    );
+    const cacheKey = new CacheKey("v1", "4", "amd64", ActionPackageNames.fromInput("curl git"));
     const manifest = new Manifest(
       new Date("2026-01-01T00:00:00.000Z"),
-      [
-        new ManifestEntry(createPackageName("curl", "8.1.0", "amd64"), [
-          "/b",
-          "/a",
-        ]),
-      ],
+      [new ManifestEntry(createPackageName("curl", "8.1.0", "amd64"), ["/b", "/a"])],
       cacheKey,
     );
 
@@ -35,19 +25,10 @@ describe("manifest", () => {
   it("writes and reads manifest files", async () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "manifest-test-"));
     const filePath = path.join(tempDir, "manifest.json");
-    const cacheKey = new CacheKey(
-      "v1",
-      "4",
-      "amd64",
-      ActionPackageNames.fromInput("curl"),
-    );
+    const cacheKey = new CacheKey("v1", "4", "amd64", ActionPackageNames.fromInput("curl"));
     const manifest = new Manifest(
       new Date("2026-01-01T00:00:00.000Z"),
-      [
-        new ManifestEntry(createPackageName("curl", "8.1.0", "amd64"), [
-          "usr/bin/curl",
-        ]),
-      ],
+      [new ManifestEntry(createPackageName("curl", "8.1.0", "amd64"), ["usr/bin/curl"])],
       cacheKey,
     );
 
@@ -55,5 +36,16 @@ describe("manifest", () => {
     const parsed = await Manifest.readFromFile(filePath);
     expect(parsed.entries).toHaveLength(1);
     expect(parsed.entries[0]?.packageName.serialize()).toBe("curl:amd64=8.1.0");
+  });
+
+  it("ManifestEntry fromJSON parsed entry returns package and sorted files", () => {
+    const entry = new ManifestEntry(createPackageName("curl", "8.1.0", "amd64"), [
+      "usr/bin/curl",
+      "etc/curlrc",
+    ]);
+
+    const parsed = ManifestEntry.fromJSON(JSON.parse(JSON.stringify(entry)));
+
+    expect(parsed).toEqual(entry);
   });
 });

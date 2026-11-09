@@ -5,11 +5,7 @@ import path from "node:path";
 import process from "node:process";
 import { defineCommand, defineOptions } from "@robingenz/zli";
 import { z } from "zod";
-import {
-  loadActionRepoData,
-  parseActionRepoSlug,
-  resolveActionRefSha,
-} from "./opslib.mts";
+import { loadActionRepoData, parseActionRepoSlug, resolveActionRefSha } from "./opslib.mts";
 import {
   COLORS,
   createCliConfig,
@@ -78,21 +74,13 @@ async function fetchJson(url: string): Promise<unknown | null> {
   return response.json();
 }
 
-async function getLatestRelease(
-  repoSlug: string,
-): Promise<GitHubRelease | null> {
-  const release = await fetchJson(
-    `${GITHUB_API_BASE_URL}/repos/${repoSlug}/releases/latest`,
-  );
-  return release && typeof release === "object"
-    ? (release as GitHubRelease)
-    : null;
+async function getLatestRelease(repoSlug: string): Promise<GitHubRelease | null> {
+  const release = await fetchJson(`${GITHUB_API_BASE_URL}/repos/${repoSlug}/releases/latest`);
+  return release && typeof release === "object" ? (release as GitHubRelease) : null;
 }
 
 async function getReleases(repoSlug: string): Promise<GitHubRelease[]> {
-  const releases = await fetchJson(
-    `${GITHUB_API_BASE_URL}/repos/${repoSlug}/releases?per_page=100`,
-  );
+  const releases = await fetchJson(`${GITHUB_API_BASE_URL}/repos/${repoSlug}/releases?per_page=100`);
   return Array.isArray(releases) ? releases : [];
 }
 
@@ -101,11 +89,7 @@ function findReleaseBySha(
   tagMap: Map<string, string>,
   sha: string,
 ): GitHubRelease | null {
-  return (
-    releases.find(
-      (release) => tagMap.get(release.tag_name)?.toLowerCase() === sha,
-    ) ?? null
-  );
+  return releases.find((release) => tagMap.get(release.tag_name)?.toLowerCase() === sha) ?? null;
 }
 
 function walkFiles(rootDir: string): string[] {
@@ -142,11 +126,7 @@ function findActionPins(rootDir: string): ActionPin[] {
       }
 
       const spec = match[1] ?? "";
-      if (
-        !spec.includes("@") ||
-        spec.startsWith("./") ||
-        spec.startsWith("docker://")
-      ) {
+      if (!spec.includes("@") || spec.startsWith("./") || spec.startsWith("docker://")) {
         continue;
       }
 
@@ -179,10 +159,7 @@ async function getRepoData(repoSlug: string): Promise<RepoData> {
 
   const promise = (async (): Promise<RepoData> => {
     const { tagToSha: tagMap } = loadActionRepoData(repoSlug, process.cwd());
-    const [latestRelease, releases] = await Promise.all([
-      getLatestRelease(repoSlug),
-      getReleases(repoSlug),
-    ]);
+    const [latestRelease, releases] = await Promise.all([getLatestRelease(repoSlug), getReleases(repoSlug)]);
     return { tagMap, latestRelease, releases };
   })();
 
@@ -190,25 +167,15 @@ async function getRepoData(repoSlug: string): Promise<RepoData> {
   return promise;
 }
 
-async function analyzeAction(
-  actionPath: string,
-  currentRef: string,
-): Promise<ActionAnalysis> {
+async function analyzeAction(actionPath: string, currentRef: string): Promise<ActionAnalysis> {
   const repoSlug = parseActionRepoSlug(actionPath);
   const { tagMap, latestRelease, releases } = await getRepoData(repoSlug);
-  const currentSha = resolveActionRefSha(
-    repoSlug,
-    currentRef,
-    tagMap,
-    process.cwd(),
-  );
+  const currentSha = resolveActionRefSha(repoSlug, currentRef, tagMap, process.cwd());
   if (!currentSha) {
     throw new Error(`Unable to resolve ref '${currentRef}' for ${repoSlug}.`);
   }
   const currentRelease = findReleaseBySha(releases, tagMap, currentSha);
-  const latestSha = latestRelease
-    ? (tagMap.get(latestRelease.tag_name) ?? null)
-    : null;
+  const latestSha = latestRelease ? (tagMap.get(latestRelease.tag_name) ?? null) : null;
   const isCurrent = latestSha !== null && latestSha === currentSha;
 
   return {
@@ -235,21 +202,10 @@ function printAnalysis(analysis: ActionAnalysis): number {
   logFieldValue("Current ref", analysis.currentRef);
   logFieldValue("Current sha", analysis.currentSha);
   logFieldValue("Current release", analysis.currentRelease?.tag_name ?? "none");
-  logFieldValue(
-    "Current release URL",
-    analysis.currentRelease?.html_url ?? "none",
-  );
+  logFieldValue("Current release URL", analysis.currentRelease?.html_url ?? "none");
   logFieldValue("Latest release", analysis.latestRelease?.tag_name ?? "none");
-  logFieldValue(
-    "Latest pin",
-    analysis.latestSha
-      ? `${analysis.actionPath}@${analysis.latestSha}`
-      : "none",
-  );
-  logFieldValue(
-    "Latest release URL",
-    analysis.latestRelease?.html_url ?? "none",
-  );
+  logFieldValue("Latest pin", analysis.latestSha ? `${analysis.actionPath}@${analysis.latestSha}` : "none");
+  logFieldValue("Latest release URL", analysis.latestRelease?.html_url ?? "none");
   if (analysis.latestSha === null) {
     logError(`Status: no release found`);
     return 1;
@@ -266,10 +222,7 @@ const checkLatestActionPinCommand = defineCommand({
   description: "Check whether a GitHub Actions reference is up to date",
   options: defineOptions(
     z.object({
-      scan: z
-        .boolean()
-        .default(false)
-        .describe("Scan a directory for pinned GitHub Actions references"),
+      scan: z.boolean().default(false).describe("Scan a directory for pinned GitHub Actions references"),
     }),
     { s: "scan" },
   ),
@@ -312,9 +265,7 @@ const checkLatestActionPinCommand = defineCommand({
       const singleArg = args[0] ?? "";
       const atIndex = singleArg.lastIndexOf("@");
       if (atIndex <= 0 || atIndex === singleArg.length - 1) {
-        fail(
-          "Action reference must be provided as <owner/repo[/path]@ref> or <owner/repo[/path] ref>.",
-        );
+        fail("Action reference must be provided as <owner/repo[/path]@ref> or <owner/repo[/path] ref>.");
       }
 
       actionPath = singleArg.slice(0, atIndex);
@@ -323,14 +274,10 @@ const checkLatestActionPinCommand = defineCommand({
       actionPath = args[0] ?? "";
       currentRef = args[1] ?? "";
       if (actionPath.length === 0 || currentRef.length === 0) {
-        fail(
-          "Action reference must be provided as <owner/repo[/path]@ref> or <owner/repo[/path] ref>.",
-        );
+        fail("Action reference must be provided as <owner/repo[/path]@ref> or <owner/repo[/path] ref>.");
       }
     } else {
-      fail(
-        "Action reference must be provided as <owner/repo[/path]@ref> or <owner/repo[/path] ref>.",
-      );
+      fail("Action reference must be provided as <owner/repo[/path]@ref> or <owner/repo[/path] ref>.");
     }
 
     const analysis = await analyzeAction(actionPath, currentRef);

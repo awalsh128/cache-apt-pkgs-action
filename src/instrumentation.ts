@@ -14,9 +14,7 @@ import {
 const APP_LOG_FILENAME = "capa_app.log";
 const EXEC_LOG_FILENAME = "capa_exec.log";
 
-function createStream(
-  filepath: string,
-): winston.transports.StreamTransportInstance {
+function createStream(filepath: string): winston.transports.StreamTransportInstance {
   return new winston.transports.Stream({
     stream: fs.createWriteStream(filepath, {
       flags: "a",
@@ -36,8 +34,7 @@ export class Artifacts {
     /** Whether debug is enabled which affects artifacts otherwise not. */
     readonly debug: boolean = false,
     /** Unique runner ID of the GitHub Action workflow run. */
-    readonly runId: string = process.env.GITHUB_RUN_ID ??
-      `ghrunid-notfound-${crypto.randomUUID()}`,
+    readonly runId: string = process.env.GITHUB_RUN_ID ?? `ghrunid-notfound-${crypto.randomUUID()}`,
   ) {}
 
   /** Upload artifacts to GitHub Actions via [@actions/artifact]. */
@@ -145,13 +142,7 @@ export class Instruments {
         MANIFEST_MAIN_FILENAME,
         MANIFEST_ALL_FILENAME,
       ]);
-    this.appLogger = createGitHubLogger(
-      debug,
-      path.join(this.cacheDirPath, APP_LOG_FILENAME),
-    );
-    this.execLogger = createExecLogger(
-      debug,
-      path.join(this.cacheDirPath, EXEC_LOG_FILENAME),
-    );
+    this.appLogger = createGitHubLogger(debug, path.join(this.cacheDirPath, APP_LOG_FILENAME));
+    this.execLogger = createExecLogger(debug, path.join(this.cacheDirPath, EXEC_LOG_FILENAME));
   }
 }

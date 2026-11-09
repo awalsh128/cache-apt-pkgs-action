@@ -20,22 +20,12 @@ import {
 type BranchName = string;
 
 function branchExistsOnOrigin(branch: BranchName): boolean {
-  return tryRun(
-    "git",
-    ["ls-remote", "--exit-code", "--heads", "origin", branch],
-    { cwd: ROOT_DIR },
-  ).ok;
+  return tryRun("git", ["ls-remote", "--exit-code", "--heads", "origin", branch], { cwd: ROOT_DIR }).ok;
 }
 
-function createOrCheckoutBranch(
-  issueId: string,
-  checkoutBranch: BranchName,
-  baseBranch: BranchName,
-): void {
+function createOrCheckoutBranch(issueId: string, checkoutBranch: BranchName, baseBranch: BranchName): void {
   if (branchExistsOnOrigin(checkoutBranch)) {
-    logInfo(
-      `Branch ${checkoutBranch} exists. Checking out and merging ${baseBranch}...`,
-    );
+    logInfo(`Branch ${checkoutBranch} exists. Checking out and merging ${baseBranch}...`);
     run("git", ["checkout", checkoutBranch], { cwd: ROOT_DIR });
     run("git", ["pull", "origin", checkoutBranch], { cwd: ROOT_DIR });
     run("git", ["merge", baseBranch], { cwd: ROOT_DIR });
@@ -64,12 +54,7 @@ function commitIfNeeded(message: string): void {
   process.exit(commit.status ?? 1);
 }
 
-function pushChanges(
-  issueId: string,
-  fixType: string,
-  syncBranch: BranchName,
-  syncBase: BranchName,
-): void {
+function pushChanges(issueId: string, fixType: string, syncBranch: BranchName, syncBase: BranchName): void {
   const message = `${fixType}: resolve critical production issue in #${issueId}`;
   commitIfNeeded(message);
 
@@ -96,20 +81,9 @@ function pushChanges(
     logSuccess(`PR already exists: ${prUrl}`);
   } else {
     logInfo("No PR found. Creating new PR...");
-    run(
-      "gh",
-      [
-        "pr",
-        "create",
-        "--head",
-        syncBranch,
-        "--base",
-        syncBase,
-        "--title",
-        message,
-      ],
-      { cwd: ROOT_DIR },
-    );
+    run("gh", ["pr", "create", "--head", syncBranch, "--base", syncBase, "--title", message], {
+      cwd: ROOT_DIR,
+    });
   }
 
   logInfo(`Pushing changes from ${syncBase} to ${syncBranch}...`);
@@ -118,10 +92,7 @@ function pushChanges(
 
 const hotfixCommand = defineCommand({
   description: "Create or update hotfix and sync branches for an issue",
-  args: z.tuple([
-    z.string().describe("Issue ID"),
-    z.string().describe("Target branch"),
-  ]),
+  args: z.tuple([z.string().describe("Issue ID"), z.string().describe("Target branch")]),
   action: async (_options, args) => {
     const [issueId, base] = args;
 

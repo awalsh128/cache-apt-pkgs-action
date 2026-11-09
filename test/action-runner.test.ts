@@ -67,9 +67,7 @@ describe("ActionRunner", () => {
     const { runner, cache } = createRunner();
     const packageNames = ActionPackageNames.fromInput("curl");
     const cacheKey = new CacheKey("v1", "0", process.arch, packageNames);
-    cache.loadAndRestore.mockResolvedValue(
-      new Manifest(new Date(), [], cacheKey),
-    );
+    cache.loadAndRestore.mockResolvedValue(new Manifest(new Date(), [], cacheKey));
     vi.mocked(createPackageManager).mockResolvedValue({
       getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
     } as never);
@@ -108,8 +106,6 @@ describe("ActionRunner", () => {
 
     expect(cache.archiveAndSave).toHaveBeenCalledTimes(1);
     const [manifest] = cache.archiveAndSave.mock.calls[0]!;
-    expect(manifest.entries).toEqual([
-      new ManifestEntry(installedPackage, [installedFile.slice(1)]),
-    ]);
+    expect(manifest.entries).toEqual([new ManifestEntry(installedPackage, [installedFile.slice(1)])]);
   });
 });

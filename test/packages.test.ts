@@ -2,12 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createPackageName } from "ts-apt";
-import {
-  ActionPackageNames,
-  updateAptLists,
-  buildFileList,
-  findInstallScript,
-} from "../src/packages.js";
+import { ActionPackageNames, updateAptLists, buildFileList, findInstallScript } from "../src/packages.js";
 import { describe, expect, it, vi } from "vitest";
 
 const PACKAGE_NAME = createPackageName("test-package", "1.0.0", "amd64");
@@ -58,22 +53,14 @@ describe("packages", () => {
   it("findInstallScript returns undefined when scripts directory does not exist", async () => {
     const missingRoot = makeTempRoot("pkg-missing-");
 
-    const result = await findInstallScript(
-      PACKAGE_NAME,
-      "preinst",
-      missingRoot,
-    );
+    const result = await findInstallScript(PACKAGE_NAME, "preinst", missingRoot);
     expect(result).toBeUndefined();
   });
 
   it("findInstallScript returns undefined when no matching scripts are found", async () => {
     const root = makeTempRoot("pkg-no-match-");
     const scriptsDir = ensureScriptsDir(root);
-    fs.writeFileSync(
-      path.join(scriptsDir, "other-package.preinst"),
-      "",
-      "utf8",
-    );
+    fs.writeFileSync(path.join(scriptsDir, "other-package.preinst"), "", "utf8");
 
     const result = await findInstallScript(PACKAGE_NAME, "preinst", root);
     expect(result).toBeUndefined();
@@ -82,17 +69,9 @@ describe("packages", () => {
   it("findInstallScript returns the first matching script when multiple are found", async () => {
     const root = makeTempRoot("pkg-match-");
     const scriptsDir = ensureScriptsDir(root);
-    fs.writeFileSync(
-      path.join(scriptsDir, "test-package.postinst"),
-      "",
-      "utf8",
-    );
+    fs.writeFileSync(path.join(scriptsDir, "test-package.postinst"), "", "utf8");
     fs.writeFileSync(path.join(scriptsDir, "test-package.preinst"), "", "utf8");
-    fs.writeFileSync(
-      path.join(scriptsDir, "test-package.preinst.backup"),
-      "",
-      "utf8",
-    );
+    fs.writeFileSync(path.join(scriptsDir, "test-package.preinst.backup"), "", "utf8");
 
     const result = await findInstallScript(PACKAGE_NAME, "preinst", root);
     expect(result).toBe(path.join(scriptsDir, "test-package.preinst"));
@@ -108,11 +87,7 @@ describe("packages", () => {
       const scriptsDir = ensureScriptsDir(root);
       fs.writeFileSync(path.join(scriptsDir, scriptFilename), "", "utf8");
 
-      const result = await findInstallScript(
-        createPackageName(name),
-        "postinst",
-        root,
-      );
+      const result = await findInstallScript(createPackageName(name), "postinst", root);
       expect(result).toBe(path.join(scriptsDir, scriptFilename));
     },
   );
@@ -122,12 +97,44 @@ describe("packages", () => {
     const scriptsDir = ensureScriptsDir(root);
     fs.writeFileSync(path.join(scriptsDir, "libaXb.postinst"), "", "utf8");
 
-    const result = await findInstallScript(
-      createPackageName("liba.b"),
-      "postinst",
-      root,
-    );
+    const result = await findInstallScript(createPackageName("liba.b"), "postinst", root);
     expect(result).toBeUndefined();
+  });
+
+  it("buildFileList installed paths missing on disk excludes them", async () => {
+    const root = makeTempRoot("pkg-missing-file-");
+    const presentFile = path.join(root, "present");
+    fs.writeFileSync(presentFile, "", "utf8");
+    const manager = {
+      listInstalledFiles: vi.fn().mockResolvedValue([presentFile, path.join(root, "absent")]),
+    };
+
+    const result = await buildFileList(PACKAGE_NAME, manager as any, root);
+
+    expect(result).toEqual([presentFile.slice(1)]);
+  });
+
+  it("updateAptLists lists directory with files skips update", async () => {
+    const aptListsPath = makeTempRoot("apt-lists-populated-");
+    fs.mkdirSync(path.join(aptListsPath, "partial"));
+    fs.writeFileSync(path.join(aptListsPath, "partial", "archive_Packages"), "", "utf8");
+    const packageManager = { update: vi.fn() };
+
+    await updateAptLists(packageManager as any, { info: vi.fn() } as any, aptListsPath);
+
+    expect(packageManager.update).not.toHaveBeenCalled();
+  });
+
+  it("updateAptLists files only below max search depth runs update", async () => {
+    const aptListsPath = makeTempRoot("apt-lists-deep-");
+    const deepDir = path.join(aptListsPath, "a", "b", "c", "d", "e");
+    fs.mkdirSync(deepDir, { recursive: true });
+    fs.writeFileSync(path.join(deepDir, "archive_Packages"), "", "utf8");
+    const packageManager = { update: vi.fn().mockResolvedValue(undefined) };
+
+    await updateAptLists(packageManager as any, { info: vi.fn() } as any, aptListsPath);
+
+    expect(packageManager.update).toHaveBeenCalledTimes(1);
   });
 
   it("updateAptLists calls the package manager's update method", async () => {
@@ -142,11 +149,7 @@ describe("packages", () => {
       update: mockUpdate,
     };
 
-    await updateAptLists(
-      packageManager as any,
-      mockLogger as any,
-      aptListsPath,
-    );
+    await updateAptLists(packageManager as any, mockLogger as any, aptListsPath);
 
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
@@ -159,6 +162,12 @@ describe("packages", () => {
         createPackageName("other-package", "2.0.0", "i386"),
         createPackageName("test-package", "1.0.0", "amd64"),
       ]);
+    });
+
+    it("fromInput version without package name ignores the token", () => {
+      const result = ActionPackageNames.fromInput("=1.0.0 curl");
+
+      expect(result.toArray()).toEqual([createPackageName("curl")]);
     });
 
     it("fromInput returns an empty list when input is empty", () => {
@@ -211,9 +220,7 @@ describe("packages", () => {
       ["different arch returns false", "xdot:i386", createPackageName("xdot", "1.3-1", "amd64"), false],
       ["different name returns false", "xdot", createPackageName("rolldice", "1.16"), false],
     ])("includes %s", (_case, input, installed, expected) => {
-      expect(ActionPackageNames.fromInput(input).includes(installed)).toBe(
-        expected,
-      );
+      expect(ActionPackageNames.fromInput(input).includes(installed)).toBe(expected);
     });
   });
 });

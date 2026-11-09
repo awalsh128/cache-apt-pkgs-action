@@ -48,9 +48,7 @@ function tryGit(
 export function parseActionRepoSlug(actionPath: string): string {
   const parts = actionPath.split("/").filter(Boolean);
   if (parts.length < 2) {
-    throw new Error(
-      `Action path '${actionPath}' must include at least owner/repo.`,
-    );
+    throw new Error(`Action path '${actionPath}' must include at least owner/repo.`);
   }
 
   return `${parts[0]}/${parts[1]}`;
@@ -86,10 +84,7 @@ export function formatSemVer(version: SemVer): string {
   return `v${version.major}.${version.minor}.${version.patch}`;
 }
 
-export function loadActionRepoData(
-  repoSlug: string,
-  cwd = process.cwd(),
-): ActionRepoData {
+export function loadActionRepoData(repoSlug: string, cwd = process.cwd()): ActionRepoData {
   const cached = actionRepoCache.get(repoSlug);
   if (cached) {
     return cached;

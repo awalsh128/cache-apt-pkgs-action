@@ -1,11 +1,6 @@
 import * as fs from "fs";
 import path from "path";
-import {
-  createPackageName,
-  deserializePackageName,
-  type PackageName,
-  type PackageManager,
-} from "ts-apt";
+import { createPackageName, deserializePackageName, type PackageName, type PackageManager } from "ts-apt";
 import winston from "winston";
 
 /**
@@ -21,8 +16,7 @@ export async function buildFileList(
   root: string = "/",
 ): Promise<string[]> {
   // Converts absolute paths to tar-relative paths.
-  const tarRelativePath = (filePath: string) =>
-    filePath.startsWith("/") ? filePath.slice(1) : filePath;
+  const tarRelativePath = (filePath: string) => (filePath.startsWith("/") ? filePath.slice(1) : filePath);
 
   const files = (await packageManager.listInstalledFiles(packageName))
     .filter((filePath) => {
@@ -102,7 +96,7 @@ export class ActionPackageNames {
 
     const names: PackageName[] = [];
 
-    for (let index = 0; index < tokens.length; ) {
+    for (let index = 0; index < tokens.length;) {
       const current = tokens[index]!;
       const next = tokens[index + 1];
 
@@ -123,23 +117,12 @@ export class ActionPackageNames {
           const split = splitNameArch(namePart.trim());
           let arch = split.arch;
 
-          if (
-            arch === undefined &&
-            next !== undefined &&
-            !next.includes("=") &&
-            next.trim() !== ""
-          ) {
+          if (arch === undefined && next !== undefined && !next.includes("=") && next.trim() !== "") {
             arch = next.trim();
             index += 1;
           }
 
-          names.push(
-            createPackageName(
-              split.name,
-              version === "" ? undefined : version,
-              arch,
-            ),
-          );
+          names.push(createPackageName(split.name, version === "" ? undefined : version, arch));
           index += 1;
           continue;
         }
@@ -157,15 +140,9 @@ export class ActionPackageNames {
   }
 
   static fromJSON(json: any): ActionPackageNames {
-    const sourceItems = Array.isArray(json)
-      ? json
-      : Array.isArray(json?.items)
-        ? json.items
-        : [];
+    const sourceItems = Array.isArray(json) ? json : Array.isArray(json?.items) ? json.items : [];
 
-    const items = sourceItems.map((item: any) =>
-      createPackageName(item.name, item.version, item.arch),
-    );
+    const items = sourceItems.map((item: any) => createPackageName(item.name, item.version, item.arch));
     return new ActionPackageNames(items);
   }
 
@@ -190,9 +167,7 @@ export class ActionPackageNames {
     return this.items.some(
       (requested) =>
         requested.name === installed.name &&
-        (requested.arch === undefined ||
-          installed.arch === undefined ||
-          requested.arch === installed.arch),
+        (requested.arch === undefined || installed.arch === undefined || requested.arch === installed.arch),
     );
   }
 }
@@ -210,10 +185,7 @@ export async function updateAptLists(
 ): Promise<void> {
   const maxDepth = 5;
 
-  const search = async (
-    currentPath: string,
-    currentDepth: number,
-  ): Promise<boolean> => {
+  const search = async (currentPath: string, currentDepth: number): Promise<boolean> => {
     if (currentDepth > maxDepth) {
       return false;
     }
@@ -239,14 +211,10 @@ export async function updateAptLists(
   };
 
   if (await search(aptListsPath, 0)) {
-    logger.info(
-      `Apt lists directory '${aptListsPath}' appears to contain files, skipping 'apt update'`,
-    );
+    logger.info(`Apt lists directory '${aptListsPath}' appears to contain files, skipping 'apt update'`);
     return;
   }
 
-  logger.info(
-    `Apt lists directory '${aptListsPath}' appears stale or empty, running 'apt update'...`,
-  );
+  logger.info(`Apt lists directory '${aptListsPath}' appears stale or empty, running 'apt update'...`);
   await packageManager.update();
 }

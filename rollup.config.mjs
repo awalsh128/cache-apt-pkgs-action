@@ -50,13 +50,10 @@ export default {
     // Dependencies trigger these and they are harmless and very noisy:
     // top level `this` in ES modules, misplaced /*@__PURE__*/ comments and
     // circular imports inside third-party packages.
-    const fromDependency = (warning.ids ?? [warning.id ?? ""]).every((id) =>
-      id.includes("node_modules"),
-    );
+    const fromDependency = (warning.ids ?? [warning.id ?? ""]).every((id) => id.includes("node_modules"));
     if (
       warning.code === "THIS_IS_UNDEFINED" ||
-      (fromDependency &&
-        ["INVALID_ANNOTATION", "CIRCULAR_DEPENDENCY"].includes(warning.code))
+      (fromDependency && ["INVALID_ANNOTATION", "CIRCULAR_DEPENDENCY"].includes(warning.code))
     ) {
       return;
     }
