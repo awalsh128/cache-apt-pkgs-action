@@ -68,3 +68,12 @@ func TestNormalizedList_VirtualPackagesExists_StdoutsConcretePackage(t *testing.
 	result := cmdtesting.New(t, createReplayLogs).Run("normalized-list", "libvips")
 	result.ExpectSuccessfulOut("libvips42=8.9.1-2")
 }
+
+// Regression test for https://github.com/awalsh128/cache-apt-pkgs-action/issues/218:
+// a real package (ghostscript) that apt-cache show reports as purely virtual on stale apt lists
+// must resolve to itself (ghostscript=<version>), not to a mangled section-header token such as
+// "Reverse=Provides:".
+func TestNormalizedList_RealPackageMisidentifiedAsVirtual_StdoutsCorrectPackage(t *testing.T) {
+	result := cmdtesting.New(t, createReplayLogs).Run("normalized-list", "ghostscript")
+	result.ExpectSuccessfulOut("ghostscript=10.02.1~dfsg1-0ubuntu7.8")
+}
