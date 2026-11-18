@@ -37,9 +37,6 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-    strategy:
-      matrix:
-        node-version: [24]
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -179,10 +176,11 @@ jobs:
         shell: bash
         run: npm audit --audit-level=high --omit=dev
 
-  # All other jobs should depend on build_binaries (if run) or check_distribute (if not needed)
+  # The integration jobs only need the bundle uploaded by setup-and-cache, so they start as soon as it is
+  # ready instead of waiting for tests; ci-passed still fails the run when lint or tests fail.
   list_all_versions:
     runs-on: ubuntu-24.04 # expected versions below are from Ubuntu 24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: List all package versions (including deps).
     steps:
       - name: Download Action Bundle
@@ -212,7 +210,7 @@ jobs:
 
   list_versions:
     runs-on: ubuntu-24.04 # expected versions below are from Ubuntu 24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: List package versions.
     steps:
       - name: Download Action Bundle
@@ -240,7 +238,7 @@ jobs:
 
   standard_workflow_install:
     runs-on: ubuntu-24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: Standard workflow install package and cache.
     steps:
       - name: Download Action Bundle
@@ -384,7 +382,7 @@ jobs:
 
   no_packages:
     runs-on: ubuntu-24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: No packages passed.
     steps:
       - name: Download Action Bundle
@@ -405,7 +403,7 @@ jobs:
 
   package_not_found:
     runs-on: ubuntu-24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: Package not found.
     steps:
       - name: Download Action Bundle
@@ -426,7 +424,7 @@ jobs:
 
   version_contains_spaces:
     runs-on: ubuntu-24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: Version contains spaces.
     steps:
       - name: Download Action Bundle
@@ -449,7 +447,7 @@ jobs:
 
   regression_36:
     runs-on: ubuntu-24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: "Reinstall existing package (regression issue #36)."
     steps:
       - name: Download Action Bundle
@@ -466,7 +464,7 @@ jobs:
 
   regression_37:
     runs-on: ubuntu-24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: "Install with reported package dependencies not installed (regression issue #37)."
     steps:
       - name: Download Action Bundle
@@ -483,7 +481,7 @@ jobs:
 
   debug_disabled:
     runs-on: ubuntu-24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: Debug disabled.
     steps:
       - name: Download Action Bundle
@@ -499,7 +497,7 @@ jobs:
 
   regression_72_2:
     runs-on: ubuntu-24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: "Cache Java CA certs package v2 (regression issue #72)."
     steps:
       - name: Download Action Bundle
@@ -515,7 +513,7 @@ jobs:
 
   regression_76:
     runs-on: ubuntu-24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: "Cache empty archive (regression issue #76)."
     timeout-minutes: 15
     steps:
@@ -535,7 +533,7 @@ jobs:
 
   regression_79:
     runs-on: ubuntu-24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: "Tar error with libboost-dev (regression issue #79)."
     steps:
       - name: Download Action Bundle
@@ -551,7 +549,7 @@ jobs:
 
   regression_81:
     runs-on: ubuntu-24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: "Tar error with alsa-ucm-conf (regression issue #81)."
     steps:
       - name: Download Action Bundle
@@ -567,7 +565,7 @@ jobs:
 
   regression_89:
     runs-on: ubuntu-24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: "Upload logs artifact name (regression issue #89)."
     steps:
       - name: Download Action Bundle
@@ -584,7 +582,7 @@ jobs:
 
   regression_106_install:
     runs-on: ubuntu-24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: "Stale apt repo not finding package on restore, install phase (regression issue #106)."
     steps:
       - name: Download Action Bundle
@@ -616,7 +614,7 @@ jobs:
 
   multi_arch_cache_key:
     runs-on: ubuntu-24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: "Cache packages with multi-arch cache key."
     steps:
       - name: Download Action Bundle
@@ -632,7 +630,7 @@ jobs:
 
   virtual_package:
     runs-on: ubuntu-24.04
-    needs: [testing]
+    needs: [setup-and-cache]
     name: "Cache virtual package."
     steps:
       - name: Download Action Bundle
