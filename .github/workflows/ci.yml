@@ -2,10 +2,11 @@ name: CI
 
 on:
   repository_dispatch:
-  # Only staging-2: it releases candidates. main-2 is a fast-forward of a staging-2 commit that already
-  # passed CI, and release.yml looks that run up by SHA, so a main-2 run would only repeat it.
+  # staging-2 releases candidates. main-2 re-runs once per promotion (a fast-forward of a commit that
+  # already passed), which keeps its CI and coverage badges current. Release lookups by SHA ignore it
+  # while it is in progress.
   push:
-    branches: [staging-2]
+    branches: [main-2, staging-2]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   schedule:
