@@ -1,6 +1,6 @@
 # <img src="logo.png" alt="Description" height="80" align="center"> Cache APT Packages Action v2
 
-[![License: Apache2](https://shields.io/badge/license-apache2-blue.svg)](https://github.com/awalsh128/fluentcpp/blob/master/LICENSE)
+[![License: Apache2](https://shields.io/badge/license-apache2-blue.svg)](LICENSE)
 [![CI main-2](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20main-2&branch=main-2)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Amain-2)
 [![codecov main-2](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/branch/main-2/graph/badge.svg)](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/tree/main-2)
 [![CI staging-2](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20staging-2&branch=staging-2)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Astaging-2)
