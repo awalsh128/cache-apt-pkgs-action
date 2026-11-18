@@ -131,8 +131,6 @@ async function writeLogFile(baseDir: string, relativePath: string, result: LogRe
   return outputPath;
 }
 
-const PERMISSION_DENIED_EXIT_CODE = 100;
-
 async function main(): Promise<void> {
   const testDataDir = resolve(ROOT_DIR, "test/data");
   let written = 0;

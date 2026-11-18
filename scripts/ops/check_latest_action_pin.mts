@@ -19,7 +19,6 @@ import {
   logWarn,
   runCli,
   runMain,
-  runCaptureOutput,
 } from "../devopslib.mts";
 
 type ActionPin = {

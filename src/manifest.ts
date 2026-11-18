@@ -2,6 +2,19 @@ import fs from "node:fs";
 import { CacheKey } from "./cache.js";
 import { packageNameFromJSON, PackageName } from "ts-apt";
 
+/** Parsed JSON form of a {@link ManifestEntry}. */
+interface ManifestEntryJson {
+  readonly packageName: Parameters<typeof packageNameFromJSON>[0];
+  readonly filepaths: string[];
+}
+
+/** Parsed JSON form of a {@link Manifest}. */
+interface ManifestJson {
+  readonly created: string | number;
+  readonly entries: readonly ManifestEntryJson[];
+  readonly cacheKey: string;
+}
+
 /** One installed package and the files archived for it in the cache. */
 export class ManifestEntry {
   /** Installed package, with the version and arch apt resolved. */
@@ -28,8 +41,8 @@ export class ManifestEntry {
    * @param json Parsed JSON object as written by {@link Manifest.writeToFile}.
    * @returns The deserialized entry.
    */
-  static fromJSON(json: any): ManifestEntry {
-    return new ManifestEntry(packageNameFromJSON(json.packageName), json.filepaths as string[]);
+  static fromJSON(json: ManifestEntryJson): ManifestEntry {
+    return new ManifestEntry(packageNameFromJSON(json.packageName), json.filepaths);
   }
 }
 
@@ -62,12 +75,10 @@ export class Manifest {
    *   Its `cacheKey` is the serialized string from {@link CacheKey.toJSON}.
    * @returns The deserialized manifest.
    */
-  static fromJSON(json: any): Manifest {
+  static fromJSON(json: ManifestJson): Manifest {
     return new Manifest(
       new Date(json.created),
-      json.entries.map(
-        (e: any) => new ManifestEntry(packageNameFromJSON(e.packageName), e.filepaths as string[]),
-      ),
+      json.entries.map((entry) => ManifestEntry.fromJSON(entry)),
       CacheKey.fromJSON(json.cacheKey),
     );
   }

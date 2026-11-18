@@ -56,11 +56,10 @@ const AGENTS_MD_SETTING_KEY = "chat.useAgentsMdFile";
 const AGENTS_MD_SUPPORTED_IDES: ReadonlySet<SupportedIde> = new Set(["vscode", "cursor", "windsurf"]);
 
 type JsonPrimitive = null | boolean | number | string;
-interface JsonArray extends Array<JsonLike> {}
 interface JsonRecord {
   [key: string]: JsonLike;
 }
-type JsonLike = JsonPrimitive | JsonArray | JsonRecord;
+type JsonLike = JsonPrimitive | JsonLike[] | JsonRecord;
 
 function isJsonRecord(value: unknown): value is JsonRecord {
   return value !== null && typeof value === "object" && !Array.isArray(value);

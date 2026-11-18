@@ -228,7 +228,7 @@ export function run(
     return execFileSync(command, args, options);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to execute '${command} ${args.join(" ")}'. ${message}`);
+    throw new Error(`Failed to execute '${command} ${args.join(" ")}'. ${message}`, { cause: error });
   }
 }
 
@@ -272,11 +272,16 @@ export function runCaptureOutput(
   return String(result.stdout ?? "").trim();
 }
 
+// zodline's own generic constraint on a heterogeneous command map is `CommandDefinition<any, any>`;
+// there is no narrower type that accepts every command.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyCommandDefinition = CommandDefinition<any, any>;
+
 type CliAction = (options: unknown, args: string[]) => unknown | Promise<unknown>;
 
-type CliResult = ProcessResult<CommandDefinition<any, any>>;
+type CliResult = ProcessResult<AnyCommandDefinition>;
 
-type CliCommands = Record<string, CommandDefinition<any, any>>;
+type CliCommands = Record<string, AnyCommandDefinition>;
 
 type CliConfig = DefineConfig<CliCommands>;
 
@@ -285,7 +290,7 @@ type CliConfigParams = {
   importMetaUrl?: string;
   description: string;
   commands: CliCommands;
-  defaultCommand?: CommandDefinition<any, any>;
+  defaultCommand?: AnyCommandDefinition;
 };
 
 type CliResultCommand = {
