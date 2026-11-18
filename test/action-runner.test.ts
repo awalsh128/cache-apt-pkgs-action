@@ -91,6 +91,7 @@ describe("ActionRunner", () => {
     const { runner, cache } = createRunner();
     cache.loadAndRestore.mockResolvedValue(undefined);
     vi.mocked(createPackageManager).mockResolvedValue({
+      update: vi.fn().mockResolvedValue(0),
       install: vi.fn().mockResolvedValue([{ name: installedPackage }]),
       listInstalledFiles: vi.fn().mockResolvedValue([installedFile]),
       getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
@@ -107,5 +108,48 @@ describe("ActionRunner", () => {
     expect(cache.archiveAndSave).toHaveBeenCalledTimes(1);
     const [manifest] = cache.archiveAndSave.mock.calls[0]!;
     expect(manifest.entries).toEqual([new ManifestEntry(installedPackage, [installedFile.slice(1)])]);
+  });
+
+  it("runAction cache miss refreshes the apt index before installing", async () => {
+    const { runner, cache } = createRunner();
+    cache.loadAndRestore.mockResolvedValue(undefined);
+    const update = vi.fn().mockResolvedValue(0);
+    const install = vi.fn().mockResolvedValue([]);
+    vi.mocked(createPackageManager).mockResolvedValue({
+      update,
+      install,
+      getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
+    } as never);
+
+    await runner.runAction({
+      packages: "curl",
+      version: "v1",
+      executeInstallScripts: false,
+      emptyPackagesBehavior: "error",
+      debug: false,
+    });
+
+    expect(update.mock.invocationCallOrder[0]).toBeLessThan(install.mock.invocationCallOrder[0]!);
+  });
+
+  it("runAction cache hit does not refresh the apt index", async () => {
+    const { runner, cache } = createRunner();
+    const cacheKey = new CacheKey("v1", "0", process.arch, ActionPackageNames.fromInput("curl"));
+    cache.loadAndRestore.mockResolvedValue(new Manifest(new Date(), [], cacheKey));
+    const update = vi.fn();
+    vi.mocked(createPackageManager).mockResolvedValue({
+      update,
+      getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
+    } as never);
+
+    await runner.runAction({
+      packages: "curl",
+      version: "v1",
+      executeInstallScripts: false,
+      emptyPackagesBehavior: "error",
+      debug: false,
+    });
+
+    expect(update).not.toHaveBeenCalled();
   });
 });
