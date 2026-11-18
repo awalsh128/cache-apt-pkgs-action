@@ -291,6 +291,11 @@ function validateModifiedActionRefs(baseRef: string, headRef: string): string[] 
   return errors;
 }
 
+/** Stable v2 release branch; only promote.yml updates it, by fast-forwarding it to the staging branch. */
+const PROMOTION_BRANCH = "main-2";
+/** v2 prerelease branch that pull requests target. */
+const STAGING_BRANCH = "staging-2";
+
 const PROHIBITED_PATHS = ["docs/api", "docs/api-md"];
 
 function getProhibitedPathsChanges(): string[] {
@@ -332,9 +337,11 @@ async function runChecks(options: PrCheckOptions): Promise<string[]> {
   const changedPaths = getProhibitedPathsChanges();
 
   if (baseRef.length > 0 && headRef.length > 0) {
-    if (baseRef === "main" && headRef !== "staging") {
-      errors.push(`Merge to 'main' is only allowed from 'staging'. Current source: '${headRef}'.`);
-      errors.push("To fix this, rebase your feature branch onto 'staging'.");
+    if (baseRef === PROMOTION_BRANCH && headRef !== STAGING_BRANCH) {
+      errors.push(
+        `Merge to '${PROMOTION_BRANCH}' is only allowed from '${STAGING_BRANCH}'. Current source: '${headRef}'.`,
+      );
+      errors.push(`To fix this, target '${STAGING_BRANCH}' instead and promote it with promote.yml.`);
     }
 
     errors.push(...validateModifiedActionRefs(baseRef, headRef));
@@ -366,7 +373,7 @@ const prChecksCommand = defineCommand({
   description: "Run pull request checks",
   options: defineOptions(
     z.object({
-      baseRef: z.string().default("").describe("Pull request base branch ref (for example: staging)"),
+      baseRef: z.string().default("").describe("Pull request base branch ref (for example: staging-2)"),
       headRef: z
         .string()
         .default("")

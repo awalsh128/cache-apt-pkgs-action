@@ -1,0 +1,134 @@
+name: Release
+
+# Releases are always gated by CI:
+# - staging-2: ci.yml calls this after its jobs pass, releasing a candidate (e.g. v2.1.0-rc.1).
+# - main-2: promote.yml starts this after fast-forwarding main-2 to a CI-passed staging-2 commit,
+#   releasing an official version (e.g. v2.1.0) and moving the floating major tag (v2).
+# - Manual runs first require a successful CI run for the commit.
+#
+# Releases never commit to a branch. dist/ is gitignored, so semantic-release tags a detached commit
+# (the released source plus the built dist/, see release.config.ts) that is on no branch. That is
+# the commit `uses: awalsh128/cache-apt-pkgs-action@v2` resolves to.
+#
+# No stored secrets: the tag token comes from Octo STS under .github/chainguard/release.sts.yaml,
+# which only this workflow on main-2 or staging-2 matches. The 'release' environment (main-2 and
+# staging-2) still scopes the job. The app pushes tags because the ruleset blocks every other tag
+# creation.
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Run the release without tagging or publishing anything"
+        type: boolean
+        required: false
+        default: false
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: release
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
+    permissions:
+      actions: read # Read CI results on manual runs
+      contents: write # Release assets
+      id-token: write # Sigstore signing for the attestation, and the Octo STS token
+      attestations: write # Store the attestation
+      issues: write # semantic-release comments
+      pull-requests: write # semantic-release comments
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # semantic-release needs the whole history
+          persist-credentials: false
+
+      - name: Require CI success
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: ./.github/actions/require-ci-success
+        with:
+          sha: ${{ github.sha }}
+          token: ${{ github.token }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node_ver
+          cache: npm
+
+      # Install scripts stay off: this job can mint GitHub tokens.
+      - name: Install dependencies
+        shell: bash
+        run: npm ci --ignore-scripts
+
+      # Built before the tag token exists, so no dependency code runs while a token is available.
+      - name: Build action bundle
+        shell: bash
+        run: npm run build
+
+      # GitHub rejects tag creation by GITHUB_TOKEN here (the tag ruleset), so the tag is pushed
+      # with an Octo STS token, which promote.yml also uses (with its own policy) to update main-2.
+      - name: Create tag token
+        id: octo-sts
+        uses: octo-sts/action@f603d3be9d8dd9871a265776e625a27b00effe05 # v1.1.1
+        with:
+          scope: ${{ github.repository }}
+          identity: release
+
+      - name: Publish with semantic-release
+        id: release
+        shell: bash
+        env:
+          GIT_CREDENTIALS: x-access-token:${{ steps.octo-sts.outputs.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry-run && '--dry-run' || '' }}
+        run: npx semantic-release $DRY_RUN
+
+      # release.config.ts writes tag, version and official to this step's outputs, and only when a
+      # release was made. The tag's commit holds the built dist/, so the archive is what consumers run.
+      - name: Bundle release
+        id: bundle
+        if: ${{ steps.release.outputs.tag != '' }}
+        shell: bash
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          bundle="cache-apt-pkgs-action-$TAG.tar.gz"
+          git archive --format=tar.gz -o "$bundle" "$TAG" action.yml dist LICENSE
+          echo "path=$bundle" >> "$GITHUB_OUTPUT"
+
+      - name: Attest build provenance
+        if: ${{ steps.bundle.outputs.path != '' }}
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ steps.bundle.outputs.path }}
+
+      - name: Attach bundle to the release
+        if: ${{ steps.bundle.outputs.path != '' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          BUNDLE: ${{ steps.bundle.outputs.path }}
+        run: gh release upload "$TAG" "$BUNDLE" --clobber
+
+      # Consumers use @v2, so official releases move it. Release candidates never do. Pushed with the
+      # Octo STS token because the tag ruleset blocks every other update.
+      - name: Move floating major tag
+        if: ${{ steps.release.outputs.official == 'true' }}
+        shell: bash
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          TOKEN: ${{ steps.octo-sts.outputs.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          major="${TAG%%.*}"
+          git tag --force "$major" "$TAG"
+          git push --force "https://x-access-token:${TOKEN}@github.com/${REPO}.git" "refs/tags/$major"

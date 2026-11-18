@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/octo-sts/app/refs/heads/main/pkg/octosts/octosts.TrustPolicy.json
+
+# Tokens for promote.yml to fast-forward main-2, which main-2's ruleset only lets the Octo STS app do.
+# Octo STS reads this file from the default branch, and only the promote workflow running on
+# staging-2 matches. The subject carries the owner and repository IDs, so a repository that later
+# takes this name doesn't match.
+issuer: https://token.actions.githubusercontent.com
+subject_pattern: "repo:awalsh128@2087466/cache-apt-pkgs-action@408212054:.*"
+claim_pattern:
+  ref: "refs/heads/staging-2"
+  job_workflow_ref: "awalsh128/cache-apt-pkgs-action/\\.github/workflows/promote\\.yml@refs/heads/staging-2"
+
+permissions:
+  contents: write

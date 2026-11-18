@@ -1,0 +1,75 @@
+# Promotes staging-2 to main-2 by fast-forwarding main-2 to staging-2's latest commit, then starts the
+# official release. main-2 never gets commits of its own (no merge, squash or release commits), so it
+# is always an ancestor of staging-2.
+name: Promote staging-2 to main-2
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promote
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    # Only staging-2 matches the Octo STS trust policy; fail fast when dispatched from elsewhere.
+    if: ${{ github.ref == 'refs/heads/staging-2' }}
+    permissions:
+      contents: read
+      actions: write # Read CI runs and start the release workflow
+      id-token: write # For OIDC: the Octo STS token that updates main-2
+    steps:
+      # main-2's ruleset only lets the Octo STS app update it, so main-2 is pushed with its token,
+      # issued under .github/chainguard/promote.sts.yaml to this workflow on staging-2 only. Local
+      # actions come from the repository, so the checkout below comes first.
+      - name: Create main-2 token
+        id: octo-sts
+        uses: octo-sts/action@f603d3be9d8dd9871a265776e625a27b00effe05 # v1.1.1
+        with:
+          scope: ${{ github.repository }}
+          identity: promote
+
+      - name: Checkout staging-2 with full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: staging-2
+          fetch-depth: 0
+          token: ${{ steps.octo-sts.outputs.token }}
+
+      - name: Resolve staging-2 commit
+        id: staging
+        shell: bash
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      # CI on a staging-2 push also releases the candidate, so success means it was released too.
+      - name: Require CI success on staging-2
+        uses: ./.github/actions/require-ci-success
+        with:
+          sha: ${{ steps.staging.outputs.sha }}
+          token: ${{ github.token }}
+
+      - name: Fast-forward main-2 to staging-2
+        env:
+          STAGING_SHA: ${{ steps.staging.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git merge-base --is-ancestor origin/main-2 "$STAGING_SHA"; then
+            echo "::error::main-2 has commits that are not on staging-2, so it can't be fast-forwarded."
+            echo "Get those commits onto staging-2 through a pull request, then promote again."
+            exit 1
+          fi
+          # Not a force push, so the remote rejects anything but a fast-forward.
+          git push origin "$STAGING_SHA:refs/heads/main-2"
+
+      # Starting the release on main-2 makes semantic-release cut an official release, not a candidate.
+      - name: Start official release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: gh workflow run release.yml --ref main-2

@@ -30,40 +30,25 @@ Primary CI is defined in [.github/workflows/ci.yml](.github/workflows/ci.yml).
   - Security gates: CodeQL analysis and dependency audit (`npm audit --audit-level=high --omit=dev`).
   - Coverage: Codecov upload from `coverage/lcov.info`.
 
-### Pull Request Branch Policy
+### Branches and Release Flow
 
-- Branch policy is enforced by [.github/workflows/pr.yml](.github/workflows/pr.yml) and [scripts/ops/pr_checks.mts](scripts/ops/pr_checks.mts).
-- Feature branches should target `staging`.
-- `main` only accepts merges from `staging`.
-- A release-bot role has bypass permission for the `main` and `staging` branch protections.
+`master` is frozen for v1 and is never changed. v2 uses two protected branches (rulesets in [.github/rulesets](.github/rulesets)):
 
-Pull request policy checks are defined in [.github/workflows/pr.yml](.github/workflows/pr.yml).
+- `staging-2`: pull requests target it. Squash merge only, with a Conventional Commit title. Requires the `ci-passed` and `check-branch` status checks.
+- `main-2`: nobody pushes to it. Only the Octo STS app (via `promote.yml`) fast-forwards it, so it is always an ancestor of `staging-2`.
 
-- Triggered on PR open/update/reopen/edited events.
-- Runs `npm run check:pr` to enforce branch policy and pinned action ref validation.
-- Pull requests into `main` must come from `staging`.
-- Treat short-lived task branches as disposable and prefer deleting them after merge.
+Flow:
 
-### Branch Sync and Merge Policy
+1. Open a PR to `staging-2`. [pr.yml](.github/workflows/pr.yml) and [scripts/ops/pr_checks.mts](scripts/ops/pr_checks.mts) enforce branch policy and action pinning.
+2. After the squash merge, [ci.yml](.github/workflows/ci.yml) runs on `staging-2` (it does not run on `main-2`, which only fast-forwards a commit that already passed); when every job passes, its `release-candidate` job calls [release.yml](.github/workflows/release.yml) and tags `vX.Y.Z-rc.N` (GitHub prerelease).
+3. Run [promote.yml](.github/workflows/promote.yml) (workflow dispatch on `staging-2`). It requires CI success for the `staging-2` head, fast-forwards `main-2`, and starts the official release.
+4. `release.yml` on `main-2` tags `vX.Y.Z`, creates the GitHub Release, attests the bundle, and moves the floating `v2` tag.
 
-Branch ancestry enforcement is defined in [.github/workflows/branch-sync.yml](.github/workflows/branch-sync.yml).
+Releases never commit to a branch. `dist/` is gitignored, so semantic-release tags a detached commit (released source plus built `dist/`, see [release.config.ts](release.config.ts)). That commit is what `uses: awalsh128/cache-apt-pkgs-action@v2` runs.
 
-- Triggered on pushes to `main`, on a daily schedule, and manually via `workflow_dispatch`.
-- Verifies that `staging` remains an ancestor of `main`.
-- `staging` into `main` should preserve ancestry with a merge commit; squash and rebase merges break this guardrail.
-- If `staging` ancestry is broken, repair it immediately with a merge-commit-based sync before taking further releases.
+No secrets are stored. Tags and the `main-2` update use Octo STS tokens issued under [.github/chainguard](.github/chainguard). Use `scripts/dev/setup_github_release.sh -n` to preview the one-time GitHub setup (branches, `release` environment, rulesets).
 
-### Release and Publishing
-
-Release automation is defined in [.github/workflows/release.yml](.github/workflows/release.yml) and uses semantic-release.
-
-- Triggers: push to `main` or `staging`, plus `workflow_dispatch`.
-- `staging` produces prereleases on the `next` channel with `rc` suffixes.
-- `main` produces stable releases and deploys API docs to GitHub Pages.
-- semantic-release updates package metadata as part of its own prepare/commit flow.
-- The release-bot GitHub App token is used so the release job can publish, tag, and push release commits back to the branch that triggered it.
-
-Release configuration is in [release.config.ts](release.config.ts).
+The first release from `main-2` must include a breaking change (`feat!:` title or a `BREAKING CHANGE:` footer). Otherwise semantic-release computes `v1.5.4` from the last reachable v1 tag, which already exists on `master`.
 
 ## Conventional Commits
 
@@ -82,7 +67,6 @@ git commit -m "feat!: remove deprecated API"
 Repository scripts are grouped under [scripts/dev](scripts/dev) and [scripts/ops](scripts/ops).
 
 - [check_latest_action_pin.mts](scripts/ops/check_latest_action_pin.mts): checks whether pinned GitHub Action refs are up to date against upstream releases.
-- [check_release_tag.mts](scripts/ops/check_release_tag.mts): validates release tag format and consistency with `package.json` version.
 - [create_testcase_logs.mts](scripts/dev/create_testcase_logs.mts): regenerates command execution logs used by integration/parser fixtures.
 - [hotfix_pr.mts](scripts/dev/hotfix_pr.mts): automates hotfix branch creation and PR creation/update flow.
 - [gh_sync.mts](scripts/dev/gh_sync.mts): synchronizes repository settings, rulesets, variables, and tags JSON. **These are not for source control** since they leak information.

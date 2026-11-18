@@ -1,3 +1,96 @@
+import { execFileSync } from "node:child_process";
+import { appendFileSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+/** Paths a consumer of `uses: awalsh128/cache-apt-pkgs-action@<ref>` needs at runtime (all gitignored except action.yml). */
+const DIST_PATHS = ["dist/action", "dist/scripts"];
+
+type ReleaseContext = {
+  nextRelease: { version: string; gitHead: string };
+  logger: { log: (message: string) => void };
+  cwd?: string;
+  env?: NodeJS.ProcessEnv;
+};
+
+type SuccessContext = {
+  nextRelease: { gitTag: string; version: string };
+  branch: { prerelease?: string | boolean };
+  env?: NodeJS.ProcessEnv;
+};
+
+/**
+ * Inline semantic-release plugin that makes the released tag carry the built `dist/`.
+ *
+ * `dist/` is gitignored, but a GitHub Action is run from the tagged commit, so the tag has to point at a
+ * commit that contains it. This builds a commit on top of the released commit (source + `dist/`) with a
+ * throwaway index, so the working tree, the checked-out branch and the branch history are untouched,
+ * then points `nextRelease.gitHead` at it. semantic-release tags `gitHead` and pushes only tags, so the
+ * dist commit lives on the tag alone and the release branches stay fast-forward only.
+ *
+ * Expects `npm run build` to have run first (the release workflow does).
+ *
+ * @param _pluginConfig Unused plugin options.
+ * @param context semantic-release context with the pending release.
+ * @throws If `dist/` was not built or a git command fails.
+ */
+function prepare(_pluginConfig: unknown, context: ReleaseContext): void {
+  const { nextRelease, logger } = context;
+  const cwd = context.cwd ?? process.cwd();
+  const env = { ...(context.env ?? process.env) };
+  const git = (args: string[], extraEnv: NodeJS.ProcessEnv = {}): string =>
+    execFileSync("git", args, { cwd, env: { ...env, ...extraEnv }, encoding: "utf8" }).trim();
+
+  const indexDir = mkdtempSync(path.join(tmpdir(), "release-index-"));
+  try {
+    const indexEnv = { GIT_INDEX_FILE: path.join(indexDir, "index") };
+    git(["read-tree", nextRelease.gitHead], indexEnv);
+    // -f because dist/ is gitignored.
+    git(["add", "-f", "--", ...DIST_PATHS], indexEnv);
+    const tree = git(["write-tree"], indexEnv);
+    const commit = git(
+      [
+        "commit-tree",
+        tree,
+        "-p",
+        nextRelease.gitHead,
+        "-m",
+        `chore(release): ${nextRelease.version} [skip ci]`,
+      ],
+      {
+        GIT_AUTHOR_NAME: "github-actions[bot]",
+        GIT_AUTHOR_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com",
+        GIT_COMMITTER_NAME: "github-actions[bot]",
+        GIT_COMMITTER_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com",
+      },
+    );
+    logger.log(`Created detached dist commit ${commit} for ${nextRelease.version}`);
+    nextRelease.gitHead = commit;
+  } finally {
+    rmSync(indexDir, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Inline semantic-release plugin hook that exposes the release to later workflow steps.
+ *
+ * Writes `tag`, `version` and `official` (`true` for a stable release, `false` for a release candidate)
+ * to `$GITHUB_OUTPUT`. Runs only after a real release, so dry runs and runs with nothing to release leave
+ * the outputs empty. Does nothing outside GitHub Actions.
+ *
+ * @param _pluginConfig Unused plugin options.
+ * @param context semantic-release context with the finished release.
+ */
+function success(_pluginConfig: unknown, context: SuccessContext): void {
+  const outputFile = (context.env ?? process.env).GITHUB_OUTPUT;
+  if (!outputFile) {
+    return;
+  }
+  const { gitTag, version } = context.nextRelease;
+  const official = !context.branch.prerelease;
+  appendFileSync(outputFile, `tag=${gitTag}\nversion=${version}\nofficial=${official}\n`);
+}
+
 /**
  * @type {import('semantic-release').GlobalConfig}
  */
@@ -5,49 +98,32 @@ export default {
   // The 'branches' array defines the release workflow and versioning strategy.
   // Order matters: list branches from least stable to most stable.
   branches: [
-    // Development branch is assumed to be from local development and may contain breaking changes.
-
     // Pre-release candidate, feature complete, but may contain known bugs.
     //
-    //   'staging' is for release candidates.
-    //   'channel: "next"' publishes to the '@next' tag on npm.
-    //   'prerelease: "rc"' adds the '-rc.x' suffix (e.g., v1.1.0-rc.1).
-    { name: "staging", channel: "next", prerelease: "rc" },
+    //   'staging-2' is for release candidates.
+    //   'channel: "next"' publishes the GitHub prerelease on the 'next' channel.
+    //   'prerelease: "rc"' adds the '-rc.x' suffix (e.g., v2.1.0-rc.1).
+    { name: "staging-2", channel: "next", prerelease: "rc" },
 
-    // Final and stable release.
-    //
-    // No prerelease tag and are published to the 'latest' dist-tag on npm.
-    "main",
+    // Final and stable release, with no prerelease tag.
+    "main-2",
   ],
 
-  // Actions to perform during a release.
+  // Actions to perform during a release. Releases never commit to a branch: tags and GitHub Releases
+  // are the history, so there is no changelog, version bump or release commit on staging-2 or main-2.
   plugins: [
     // Analyzes commit messages (Conventional Commits) to determine if the next version should be a major,
     // minor, or patch bump.
     "@semantic-release/commit-analyzer",
 
-    // Generates the release notes (changelog content) based on the commit history.
+    // Generates the release notes based on the commit history.
     "@semantic-release/release-notes-generator",
 
-    // Updates the 'CHANGELOG.md' file with the new release notes.
-    ["@semantic-release/changelog", { changelogFile: "CHANGELOG.md" }],
+    // Tags a detached commit that contains the built dist/ (see above), then exposes the release to the workflow.
+    { prepare, success },
 
-    // Updates 'package.json' with the new version and publishes the package to npm.
-    // 'npmPublish: true' enables publishing; 'pkgRoot' sets the directory.
-    ["@semantic-release/npm", { npmPublish: true, pkgRoot: "." }],
-
-    // Commits the updated 'CHANGELOG.md', 'package.json', and 'package-lock.json' back to the repository with
-    // a standardized commit message.
-    [
-      "@semantic-release/git",
-      {
-        assets: ["CHANGELOG.md", "package.json", "package-lock.json"],
-        message: "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}",
-      },
-    ],
-
-    // Creates a GitHub Release with the generated notes and uploads assets.
-    // Default behavior posts automatic comments on resolved issues/PRs.
+    // Creates a GitHub Release with the generated notes. Default behavior posts automatic comments on
+    // resolved issues/PRs.
     "@semantic-release/github",
   ],
 };
