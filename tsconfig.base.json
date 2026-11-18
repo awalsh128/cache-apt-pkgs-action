@@ -4,12 +4,8 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "paths": {
-      "ts-apt": [
-        "./node_modules/ts-apt/src/index.ts"
-      ],
-      "ts-apt/*": [
-        "./node_modules/ts-apt/src/*"
-      ]
+      "ts-apt": ["./node_modules/ts-apt/src/index.ts"],
+      "ts-apt/*": ["./node_modules/ts-apt/src/*"]
     },
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -18,8 +14,6 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "lib": [
-      "ES2023"
-    ],
+    "lib": ["ES2023"]
   }
 }

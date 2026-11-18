@@ -1,0 +1,2 @@
+# Formats staged files with Prettier (see .lintstagedrc.json).
+npx lint-staged

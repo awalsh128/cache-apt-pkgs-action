@@ -1,18 +1,10 @@
 {
   "extends": "./tsconfig.base.json",
-  "include": [
-    "scripts/**/*.mts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "scripts/dist"
-  ],
+  "include": ["scripts/**/*.mts"],
+  "exclude": ["node_modules", "dist", "scripts/dist"],
   "compilerOptions": {
     "noEmit": true,
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true
   }

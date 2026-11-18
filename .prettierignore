@@ -1,0 +1,10 @@
+# Generated, vendored or externally managed files Prettier must not rewrite.
+.git/
+.trunk/
+.vscode/
+coverage/
+dist/
+docs/api/
+docs/api-md/
+node_modules/
+package-lock.json
