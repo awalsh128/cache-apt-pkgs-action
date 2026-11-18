@@ -105,7 +105,11 @@ jobs:
 
 ### Cache scopes
 
-The cache is scoped to the packages given and the branch. The default branch cache is available to other branches.
+The cache is scoped to the packages given and the ref that saved it. A run can restore caches from its own branch or tag and from the default branch. Tags are not shared with each other, so a workflow that only runs on tag pushes (e.g. releases) misses every time.
+
+To share a cache across tags, run the action with the same `packages` and `version` on the default branch (e.g. on push or on a `schedule`). Other refs can restore it.
+
+GitHub evicts the oldest caches when a repository goes over its cache storage limit (10 GB by default), so a large package set (e.g. `texlive-full`) can be evicted before the next run.
 
 ### Example workflow
 
