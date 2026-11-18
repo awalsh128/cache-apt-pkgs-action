@@ -6,6 +6,10 @@ on:
     branches: [staging-2, main-2]
     types: [opened, synchronize, reopened, edited]
 
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 

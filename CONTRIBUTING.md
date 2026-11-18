@@ -40,7 +40,7 @@ Primary CI is defined in [.github/workflows/ci.yml](.github/workflows/ci.yml).
 Flow:
 
 1. Open a PR to `staging-2`. [pr.yml](.github/workflows/pr.yml) and [scripts/ops/pr_checks.mts](scripts/ops/pr_checks.mts) enforce branch policy and action pinning.
-2. After the squash merge, [ci.yml](.github/workflows/ci.yml) runs on `staging-2`; when every job passes, its `release-candidate` job calls [release.yml](.github/workflows/release.yml) and tags `vX.Y.Z-rc.N` (GitHub prerelease).
+2. After the squash merge, [ci.yml](.github/workflows/ci.yml) runs on `staging-2` (it does not run on `main-2`, which only fast-forwards a commit that already passed); when every job passes, its `release-candidate` job calls [release.yml](.github/workflows/release.yml) and tags `vX.Y.Z-rc.N` (GitHub prerelease).
 3. Run [promote.yml](.github/workflows/promote.yml) (workflow dispatch on `staging-2`). It requires CI success for the `staging-2` head, fast-forwards `main-2`, and starts the official release.
 4. `release.yml` on `main-2` tags `vX.Y.Z`, creates the GitHub Release, attests the bundle, and moves the floating `v2` tag.
 

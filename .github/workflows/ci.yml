@@ -2,8 +2,10 @@ name: CI
 
 on:
   repository_dispatch:
+  # Only staging-2: it releases candidates. main-2 is a fast-forward of a staging-2 commit that already
+  # passed CI, and release.yml looks that run up by SHA, so a main-2 run would only repeat it.
   push:
-    branches: [main-2, staging-2]
+    branches: [staging-2]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   schedule:
@@ -15,6 +17,11 @@ on:
         type: boolean
         required: false
         default: true
+
+# A newer push to a PR cancels its stale run. Other runs get their own group, so a staging-2 push (which may release) is never cancelled or dropped.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   DEBUG: ${{ github.event.inputs.debug || false }}
