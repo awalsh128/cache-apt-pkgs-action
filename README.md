@@ -32,7 +32,7 @@ There are three kinds of version labels you can use.
 
 - `@latest` - This will give you the latest release of **v1, not v2**.
 - `@v#` - Major only will give you the latest release for that major version only (e.g. `v1` or `v2`).
-- `@v#.#.#` - An exact release (e.g. `v2.0.0`). Release candidates from `staging-2` are tagged `v#.#.#-rc.#` and are possibly unstable.
+- `@v#.#.#` - An exact release (e.g. `v2.0.0`). Release candidates, when one is cut by hand from `staging-2`, are tagged `v#.#.#-rc.#` and are possibly unstable.
 
 Version 1.x is maintained on the frozen `master` branch (`@master` is the most recent tested v1 code).
 

@@ -1,9 +1,10 @@
 name: Release
 
-# Releases are always gated by CI:
-# - staging-2: ci.yml calls this after its jobs pass, releasing a candidate (e.g. v2.1.0-rc.1).
+# Changes are collected on staging-2 and released all at once, so nothing is released from a push:
 # - main-2: promote.yml starts this after fast-forwarding main-2 to a CI-passed staging-2 commit,
-#   releasing an official version (e.g. v2.1.0) and moving the floating major tag (v2).
+#   releasing one official version (e.g. v2.1.0) and moving the floating major tag (v2).
+# - staging-2: a manual run releases a candidate (e.g. v2.1.0-rc.1), which never moves v2. Use it only
+#   when a candidate is wanted; the official release is computed from the same commits either way.
 # - Manual runs first require a successful CI run for the commit.
 #
 # Releases never commit to a branch. dist/ is gitignored, so semantic-release tags a detached commit
@@ -15,7 +16,6 @@ name: Release
 # staging-2) still scopes the job. The app pushes tags because the ruleset blocks every other tag
 # creation.
 on:
-  workflow_call:
   workflow_dispatch:
     inputs:
       dry-run:

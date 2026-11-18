@@ -46,7 +46,7 @@ jobs:
         shell: bash
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      # CI on a staging-2 push also releases the candidate, so success means it was released too.
+      # Everything collected on staging-2 is released together, so its head must have passed CI.
       - name: Require CI success on staging-2
         uses: ./.github/actions/require-ci-success
         with:
