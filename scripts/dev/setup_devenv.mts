@@ -1,7 +1,7 @@
 #!/usr/bin/env -S node --experimental-strip-types
 
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { defineCommand, defineOptions } from "@robingenz/zli";
+import { defineCommand, defineOptions } from "zodline";
 import { z } from "zod";
 import {
   ROOT_DIR,

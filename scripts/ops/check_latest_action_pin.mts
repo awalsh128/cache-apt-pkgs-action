@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { defineCommand, defineOptions } from "@robingenz/zli";
+import { defineCommand, defineOptions } from "zodline";
 import { z } from "zod";
 import { loadActionRepoData, parseActionRepoSlug, resolveActionRefSha } from "./opslib.mts";
 import {

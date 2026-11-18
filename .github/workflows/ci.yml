@@ -48,8 +48,6 @@ jobs:
 
       - name: Setup
         uses: ./.github/actions/setup
-        with:
-          operation: build
 
       # The integration jobs below run this bundle as the action (uses: ./).
       - name: Upload Action Bundle

@@ -8,7 +8,7 @@ import {
   type CommandDefinition,
   type DefineConfig,
   type ProcessResult,
-} from "@robingenz/zli";
+} from "zodline";
 import path from "node:path";
 import process from "node:process";
 import readline from "node:readline/promises";

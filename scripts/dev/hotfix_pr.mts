@@ -1,7 +1,7 @@
 #!/usr/bin/env -S node --experimental-strip-types
 
 import process from "node:process";
-import { defineCommand } from "@robingenz/zli";
+import { defineCommand } from "zodline";
 import { z } from "zod";
 import {
   createCliConfig,
