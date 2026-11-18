@@ -4,12 +4,7 @@ import winston from "winston";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import {
-  CACHE_KEY_FILENAME,
-  MANIFEST_ALL_FILENAME,
-  MANIFEST_MAIN_FILENAME,
-  resolveCacheDir,
-} from "./cache.js";
+import { CACHE_KEY_FILENAME, MANIFEST_FILENAME, resolveCacheDir } from "./cache.js";
 
 const APP_LOG_FILENAME = "capa_app.log";
 const EXEC_LOG_FILENAME = "capa_exec.log";
@@ -139,8 +134,7 @@ export class Instruments {
         APP_LOG_FILENAME,
         EXEC_LOG_FILENAME,
         CACHE_KEY_FILENAME,
-        MANIFEST_MAIN_FILENAME,
-        MANIFEST_ALL_FILENAME,
+        MANIFEST_FILENAME,
       ]);
     this.appLogger = createGitHubLogger(debug, path.join(this.cacheDirPath, APP_LOG_FILENAME));
     this.execLogger = createExecLogger(debug, path.join(this.cacheDirPath, EXEC_LOG_FILENAME));

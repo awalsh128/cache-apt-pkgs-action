@@ -60,9 +60,9 @@ describe("cache", () => {
         ActionPackageNames.fromInput(SERIALIZED_INPUT_PACKAGE_NAMES),
       );
 
-      expect(key.toJSON()).toBe(CACHE_KEY_JSON);
+      expect(key.toJSON(false)).toBe(CACHE_KEY_JSON);
 
-      expect(CacheKey.fromJSON(key.toJSON())).toEqual(
+      expect(CacheKey.fromJSON(key.toJSON(false))).toEqual(
         new CacheKey(
           CACHE_VER,
           FORCE_UPDATE_INCREMENT,

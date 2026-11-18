@@ -5,13 +5,7 @@ import { createPackageName, type CommandOptions, type PackageName } from "ts-apt
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import winston from "winston";
 
-import {
-  Cache,
-  CacheKey,
-  CACHE_DEFAULT_DIRNAME,
-  MANIFEST_ALL_FILENAME,
-  MANIFEST_MAIN_FILENAME,
-} from "../src/cache.js";
+import { Cache, CacheKey, CACHE_DEFAULT_DIRNAME, MANIFEST_FILENAME } from "../src/cache.js";
 import { Manifest, ManifestEntry } from "../src/manifest.js";
 import { ActionPackageNames, findInstallScript } from "../src/packages.js";
 
@@ -58,17 +52,24 @@ const filesOf = (packageName: PackageName) => [`usr/lib/${packageName.name}.so`]
 const entryOf = (packageName: PackageName) => new ManifestEntry(packageName, filesOf(packageName));
 const MANIFEST = new Manifest(
   new Date(0),
-  [...INSTALL_ORDER.map(entryOf), new ManifestEntry(METAPACKAGE)],
+  [...INSTALL_ORDER.map(entryOf), new ManifestEntry(METAPACKAGE, [])],
   KEY,
 );
 
+/** Manifest of the requested packages only, which caches saved before the single manifest also hold. */
+const LEGACY_MAIN_MANIFEST_FILENAME = "manifest_main.json";
+
 async function writeCache(archivedPackages = INSTALL_ORDER): Promise<void> {
   fs.mkdirSync(CACHE_DIR, { recursive: true });
-  await new Manifest(MANIFEST.created, [entryOf(REQUESTED_PACKAGE)], KEY).writeToFile(
-    path.join(CACHE_DIR, MANIFEST_MAIN_FILENAME),
-  );
-  await MANIFEST.writeToFile(path.join(CACHE_DIR, MANIFEST_ALL_FILENAME));
+  await MANIFEST.writeToFile(path.join(CACHE_DIR, MANIFEST_FILENAME));
   archivedPackages.forEach((pkg) => fs.writeFileSync(archivePath(pkg), ""));
+}
+
+async function writeLegacyCache(): Promise<void> {
+  await writeCache();
+  await new Manifest(MANIFEST.created, [entryOf(REQUESTED_PACKAGE)], KEY).writeToFile(
+    path.join(CACHE_DIR, LEGACY_MAIN_MANIFEST_FILENAME),
+  );
 }
 
 /** Archive and install script operations observed through the command runner. */
@@ -107,7 +108,7 @@ function recordTar(calls: TarCalls) {
 
 function createCache(calls: TarCalls = { created: [], extracted: [] }): Cache {
   const logger = winston.createLogger({ silent: true });
-  return new Cache({ run: recordTar(calls) } as never, logger);
+  return new Cache({ run: recordTar(calls) } as never, logger, CACHE_DEFAULT_DIRNAME);
 }
 
 describe("Cache", () => {
@@ -178,7 +179,7 @@ describe("Cache", () => {
   it("archiveAndSave manifest written records package files", async () => {
     await createCache().archiveAndSave(MANIFEST);
 
-    const written = await Manifest.readFromFile(path.join(CACHE_DIR, MANIFEST_ALL_FILENAME));
+    const written = await Manifest.readFromFile(path.join(CACHE_DIR, MANIFEST_FILENAME));
     expect(written.entries.map((entry) => entry.filepaths)).toEqual(
       MANIFEST.entries.map((entry) => entry.filepaths),
     );
@@ -194,21 +195,25 @@ describe("Cache", () => {
     );
   });
 
-  it("archiveAndSave requested package without version records installed entry in main manifest", async () => {
-    const unversionedKey = new CacheKey(
-      "v1",
-      "1",
-      "x86_64",
-      ActionPackageNames.fromInput(REQUESTED_PACKAGE.name),
-    );
+  it("archiveAndSave writes a single manifest and no main manifest", async () => {
+    await createCache().archiveAndSave(MANIFEST);
 
-    await createCache().archiveAndSave(new Manifest(MANIFEST.created, MANIFEST.entries, unversionedKey));
-
-    const written = await Manifest.readFromFile(path.join(CACHE_DIR, MANIFEST_MAIN_FILENAME));
-    expect(written.entries.map((entry) => [entry.packageName.serialize(), entry.filepaths])).toEqual([
-      [REQUESTED_PACKAGE.serialize(), filesOf(REQUESTED_PACKAGE)],
-    ]);
+    expect(fs.existsSync(path.join(CACHE_DIR, MANIFEST_FILENAME))).toBe(true);
+    expect(fs.existsSync(path.join(CACHE_DIR, LEGACY_MAIN_MANIFEST_FILENAME))).toBe(false);
   });
+
+  it("loadAndRestore cache saved with a main manifest as well still restores in install order", async () => {
+    await writeLegacyCache();
+    const calls: TarCalls = { created: [], extracted: [] };
+
+    const manifest = await createCache(calls).loadAndRestore(KEY, false);
+
+    expect(manifest?.entries.map((entry) => entry.packageName.serialize())).toEqual(
+      MANIFEST.entries.map((entry) => entry.packageName.serialize()),
+    );
+    expect(calls.extracted).toEqual(INSTALL_ORDER.map(archivePath));
+  });
+
   it("loadAndRestore cache miss returns undefined without extracting", async () => {
     vi.mocked(ghcache.restoreCache).mockResolvedValue(undefined);
     const calls: TarCalls = { created: [], extracted: [] };
@@ -220,9 +225,8 @@ describe("Cache", () => {
   });
 
   it.each([
-    ["main manifest missing", MANIFEST_MAIN_FILENAME, undefined],
-    ["all manifest missing", MANIFEST_ALL_FILENAME, undefined],
-    ["all manifest empty", MANIFEST_ALL_FILENAME, new Manifest(MANIFEST.created, [], KEY)],
+    ["all manifest missing", MANIFEST_FILENAME, undefined],
+    ["all manifest empty", MANIFEST_FILENAME, new Manifest(MANIFEST.created, [], KEY)],
   ])("loadAndRestore %s returns undefined without extracting", async (_case, filename, replacement) => {
     await writeCache();
     const filePath = path.join(CACHE_DIR, filename);
@@ -239,7 +243,7 @@ describe("Cache", () => {
   it("loadAndRestore cache hit without cache directory logs it as unreadable and returns undefined", async () => {
     const logger = winston.createLogger({ silent: true });
     const errorSpy = vi.spyOn(logger, "error");
-    const cache = new Cache({ run: vi.fn() } as never, logger);
+    const cache = new Cache({ run: vi.fn() } as never, logger, CACHE_DEFAULT_DIRNAME);
 
     const manifest = await cache.loadAndRestore(KEY, false);
 
@@ -249,9 +253,8 @@ describe("Cache", () => {
 
   it("loadAndRestore only packages without files runs no extract command", async () => {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
-    const metaOnly = new Manifest(MANIFEST.created, [new ManifestEntry(METAPACKAGE)], KEY);
-    await metaOnly.writeToFile(path.join(CACHE_DIR, MANIFEST_MAIN_FILENAME));
-    await metaOnly.writeToFile(path.join(CACHE_DIR, MANIFEST_ALL_FILENAME));
+    const metaOnly = new Manifest(MANIFEST.created, [new ManifestEntry(METAPACKAGE, [])], KEY);
+    await metaOnly.writeToFile(path.join(CACHE_DIR, MANIFEST_FILENAME));
     const calls: TarCalls = { created: [], extracted: [] };
 
     const manifest = await createCache(calls).loadAndRestore(KEY, false);

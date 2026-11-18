@@ -94,9 +94,9 @@ describe("runAction", () => {
     const manifest = new Manifest(
       new Date(),
       [
-        new ManifestEntry(createPackageName(PKG2_NAME, PKG_VER, FOREIGN_ARCH)),
-        new ManifestEntry(createPackageName(PKG3_NAME, PKG_VER, NATIVE_ARCH)),
-        new ManifestEntry(createPackageName(PKG_NAME, PKG_VER, undefined)),
+        new ManifestEntry(createPackageName(PKG2_NAME, PKG_VER, FOREIGN_ARCH), []),
+        new ManifestEntry(createPackageName(PKG3_NAME, PKG_VER, NATIVE_ARCH), []),
+        new ManifestEntry(createPackageName(PKG_NAME, PKG_VER, undefined), []),
       ],
       cacheKey,
     );

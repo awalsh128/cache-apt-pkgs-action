@@ -17,7 +17,7 @@ export class ManifestEntry {
    * @param packageName Installed package.
    * @param filepaths Root-relative file paths; copied and sorted.
    */
-  constructor(packageName: PackageName, filepaths: string[] = []) {
+  constructor(packageName: PackageName, filepaths: string[]) {
     this.packageName = packageName;
     this.filepaths = [...filepaths].sort((a, b) => a.localeCompare(b));
   }
