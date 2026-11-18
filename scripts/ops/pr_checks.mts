@@ -2,7 +2,7 @@
 
 import process from "node:process";
 import path from "node:path";
-import { defineCommand, defineOptions } from "@robingenz/zli";
+import { defineCommand, defineOptions } from "zodline";
 import { z } from "zod";
 import {
   compareSemVer,

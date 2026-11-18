@@ -2,7 +2,7 @@
 
 import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { defineCommand, defineOptions } from "@robingenz/zli";
+import { defineCommand, defineOptions } from "zodline";
 import process from "node:process";
 import { z } from "zod";
 import {
