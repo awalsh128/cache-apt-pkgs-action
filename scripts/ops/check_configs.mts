@@ -12,7 +12,6 @@ type JsonRecord = Record<string, unknown>;
 const packageJson = readJsonFile(`${ROOT_DIR}/package.json`) as JsonRecord;
 const vscodeSettingsJson = readJsonFile(`${ROOT_DIR}/.vscode/settings.json`) as JsonRecord;
 const tsconfigJson = readJsonFile(`${ROOT_DIR}/tsconfig.json`) as JsonRecord;
-const typedocJson = readJsonFile(`${ROOT_DIR}/typedoc.json`) as JsonRecord;
 
 function tokenizePath(pathExpression: string): Array<string | number> {
   const tokens: Array<string | number> = [];
@@ -149,7 +148,7 @@ function validatePackageJson(json: JsonRecord): string[] {
   const { errors, add } = createErrorCollector("package.json");
   logInfo("Validating package.json...");
 
-  expectFieldValue(json, "name", "ts-apt", add);
+  expectFieldValue(json, "name", "cache-apt-pkgs-action", add);
   expectFieldValue(json, "license", "Apache-2.0", add);
   expectFieldValue(json, "repository.type", "git", add);
   expectFieldValue(json, "repository.url", `https://github.com/${REPO_SLUG}.git`, add);
@@ -163,16 +162,6 @@ function validateTsconfigJson(json: JsonRecord): string[] {
 
   expectFieldType(json, "extends", "string", add);
   expectFieldType(json, "compilerOptions", "object", add);
-
-  return errors;
-}
-
-function validateTypedocJson(json: JsonRecord): string[] {
-  logInfo("Validating typedoc.json...");
-  const { errors, add } = createErrorCollector("typedoc.json");
-
-  expectFieldType(json, "entryPoints", "array", add);
-  expectFieldType(json, "out", "string", add);
 
   return errors;
 }
@@ -203,7 +192,6 @@ function main(): void {
   const errors = [
     ...validatePackageJson(packageJson),
     ...validateTsconfigJson(tsconfigJson),
-    ...validateTypedocJson(typedocJson),
     ...validateVscodeSettingsJson(vscodeSettingsJson),
   ];
 
