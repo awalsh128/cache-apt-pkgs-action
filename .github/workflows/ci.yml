@@ -455,7 +455,8 @@ jobs:
           path: .
       - uses: ./
         with:
-          packages: libgtk-3-dev
+          # Some dependencies (libicu-dev) are already on the runner image, the rest are not.
+          packages: libxml2-dev
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_36
           debug: ${{ env.DEBUG }}
 
@@ -471,7 +472,8 @@ jobs:
           path: .
       - uses: ./
         with:
-          packages: libosmesa6-dev libgl1-mesa-dev python3-tk pandoc git-restore-mtime
+          # Python-based packages whose reported dependencies are not all installed.
+          packages: python3-tk git-restore-mtime
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_37
           debug: ${{ env.DEBUG }}
 
@@ -555,9 +557,7 @@ jobs:
           path: .
       - uses: ./
         with:
-          packages:
-            alsa-ucm-conf libasound2t64 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcups2 libdrm2 libgbm1
-            libnspr4 libnss3 libxcomposite1 libxdamage1 libxfixes3 libxkbcommon0 libxrandr2
+          packages: alsa-ucm-conf libasound2t64
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_81
           debug: ${{ env.DEBUG }}
 
@@ -573,7 +573,8 @@ jobs:
           path: .
       - uses: ./
         with:
-          packages: libgtk-3-dev:amd64
+          # An architecture-qualified name (colon) must not break the log artifact name.
+          packages: rolldice:amd64
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_89
           debug: ${{ env.DEBUG }}
 
