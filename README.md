@@ -1,8 +1,10 @@
 # <img src="logo.png" alt="Description" height="80" align="center"> Cache APT Packages Action v2
 
-[![License: Apache2](https://shields.io/badge/license-apache2-blue.svg)](https://github.com/awalsh128/fluentcpp/blob/master/LICENSE)
-![CI](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20Main&branch=main-2)
-[![codecov](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/branch/main-2/graph/badge.svg)](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action)
+[![License: Apache2](https://shields.io/badge/license-apache2-blue.svg)](LICENSE)
+[![CI main-2](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20main-2&branch=main-2)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Amain-2)
+[![codecov main-2](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/branch/main-2/graph/badge.svg)](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/tree/main-2)
+[![CI staging-2](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20staging-2&branch=staging-2)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Astaging-2)
+[![codecov staging-2](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/branch/staging-2/graph/badge.svg)](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/tree/staging-2)
 
 This action allows caching of Advanced Package Tool (APT) package dependencies to improve workflow execution time instead of installing the packages on every run.
 
@@ -29,15 +31,12 @@ Create a workflow `.yml` file in your repositories `.github/workflows` directory
 There are three kinds of version labels you can use.
 
 - `@latest` - This will give you the latest release of **v1, not v2**.
-- `@latest-v2` - This will give you the latest release of **v2**.
-- `@v#` - Major only will give you the latest release for that major version only (e.g. `v1`).
-- Branch
-  - version 1.x
-    - `@master` - Most recent manual and automated tested code. Possibly unstable since it is pre-release (publishes as `1.x.x`).
-    - `@staging` - Most recent automated tested code and can sometimes contain experimental features (no publish).
-  - version 2.x
-    - `@main-2` - Live and stable version, pre-production before action release (publishes as `2.x.x`).
-    - `@staging-2` - Possibly unstable and can sometimes contain experimental features (publishes as `2.x.x-rc#`).
+- `@v#` - Major only will give you the latest release for that major version only (e.g. `v1` or `v2`).
+- `@v#.#.#` - An exact release (e.g. `v2.0.0`). Release candidates, when one is cut by hand from `staging-2`, are tagged `v#.#.#-rc.#` and are possibly unstable.
+
+Version 1.x is maintained on the frozen `master` branch (`@master` is the most recent tested v1 code).
+
+Version 2.x is released from tags only. The `main-2` and `staging-2` branches hold source without the built `dist/`, so do not use them as `uses:` refs. A release tag points at a commit that includes the built action.
 
 ### Inputs
 
@@ -54,7 +53,7 @@ There are three kinds of version labels you can use.
 
 ### Security Compliance
 
-This action runs as a JavaScript GitHub Action on the `node24` runtime and does not require consumers to run `npm install` in their workflow in order to use it. The implementation dependency surface is limited to the action runtime packages declared in `package.json`: `@actions/cache`, `@actions/core`, `tar`, `winston`, and `ts-apt`.
+This action runs as a JavaScript GitHub Action on the `node24` runtime and does not require consumers to run `npm install` in their workflow in order to use it. The implementation dependency surface is limited to the action runtime packages declared in `package.json`: `@actions/artifact`, `@actions/cache`, `@actions/core`, `winston`, and `ts-apt`.
 
 For workflows with stricter compliance requirements, the main security characteristics are:
 

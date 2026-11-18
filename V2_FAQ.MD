@@ -11,7 +11,7 @@ idioms like:
 - robust logging, debugging, other instrumentations; and
 - avoiding cryptic shell and system environment considerations.
 
-The lack of these 
+The lack of these
 
 ### Language Choice
 
@@ -42,9 +42,9 @@ repository.
 > [!IMPORTANT]
 > This is in the early phase of development. Use at your own risk!
 
-**No change is needed and the action signatures are backwards compatible.**
+**The action inputs and outputs are backwards compatible.** The action runs on the `node24` runtime, so self-hosted runners need a runner version that supports it (GitHub-hosted runners already do).
 
-- Just change to the latest `v2.*` in your GitHub workflow.
+- Just change to `v2` (or an exact `v2.*.*`) in your GitHub workflow.
 - `v1.*` will still get patch updates but is in maintenance mode.
 
 ## Some internal changes

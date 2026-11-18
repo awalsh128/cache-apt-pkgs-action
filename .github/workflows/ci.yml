@@ -2,10 +2,12 @@ name: CI
 
 on:
   repository_dispatch:
-  # Only staging-2: it releases candidates. main-2 is a fast-forward of a staging-2 commit that already
-  # passed CI, and release.yml looks that run up by SHA, so a main-2 run would only repeat it.
+  # staging-2 collects changes; nothing is released from a push, so versions only change when a
+  # release is started on purpose (promote.yml, or release.yml by hand). main-2 re-runs once per
+  # promotion (a fast-forward of a commit that already passed), which keeps its CI and coverage
+  # badges current. Release lookups by SHA ignore it while it is in progress.
   push:
-    branches: [staging-2]
+    branches: [main-2, staging-2]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   schedule:
@@ -18,7 +20,7 @@ on:
         required: false
         default: true
 
-# A newer push to a PR cancels its stale run. Other runs get their own group, so a staging-2 push (which may release) is never cancelled or dropped.
+# A newer push to a PR cancels its stale run. Other runs get their own group, so a staging-2 push is never cancelled or dropped: promote.yml looks its result up by SHA.
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -812,16 +814,3 @@ jobs:
               exit 1
             fi
           done
-
-  # Release candidates are only cut from staging-2 commits that pass every CI job.
-  release-candidate:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/staging-2' }}
-    needs: [ci-passed]
-    permissions:
-      actions: read
-      contents: write
-      id-token: write
-      attestations: write
-      issues: write
-      pull-requests: write
-    uses: ./.github/workflows/release.yml
