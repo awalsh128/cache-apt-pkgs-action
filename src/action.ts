@@ -77,6 +77,9 @@ export class ActionRunner {
     const installManager = await createPackageManager(!cacheHit, this.logger, this.logger);
 
     if (!cacheHit) {
+      // Runner images ship an apt index that can predate the archive, so a package whose version was
+      // superseded (e.g. a security update) 404s on download. Refresh it before every fresh install.
+      await installManager.update();
       const packageInfos = await installManager.install(packageNames.toArray());
       // Collect each package's installed files so the archives have content.
       const entries = await Promise.all(
