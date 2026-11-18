@@ -130,6 +130,22 @@ describe("packages", () => {
       expect(result.toArray()).toEqual([createPackageName("curl")]);
     });
 
+    // Regression issue #84: multiline YAML block scalars (folded and literal) reach the action as
+    // newline- or backslash-separated text and must parse to the same packages as a single line.
+    it.each([
+      ["folded block with extra spaces", "xdot  rolldice distro-info-data\n"],
+      ["literal block with newlines", "xdot\nrolldice\ndistro-info-data\n"],
+      ["backslash line continuation", "xdot \\\nrolldice distro-info-data"],
+    ])("fromInput %s parses the same as one line", (_label, input) => {
+      const result = ActionPackageNames.fromInput(input);
+
+      expect(result.toArray()).toEqual([
+        createPackageName("distro-info-data"),
+        createPackageName("rolldice"),
+        createPackageName("xdot"),
+      ]);
+    });
+
     it("fromInput returns an empty list when input is empty", () => {
       const result = ActionPackageNames.fromInput("");
       expect(result.toArray()).toEqual([]);
