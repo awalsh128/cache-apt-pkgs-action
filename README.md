@@ -29,15 +29,12 @@ Create a workflow `.yml` file in your repositories `.github/workflows` directory
 There are three kinds of version labels you can use.
 
 - `@latest` - This will give you the latest release of **v1, not v2**.
-- `@latest-v2` - This will give you the latest release of **v2**.
-- `@v#` - Major only will give you the latest release for that major version only (e.g. `v1`).
-- Branch
-  - version 1.x
-    - `@master` - Most recent manual and automated tested code. Possibly unstable since it is pre-release (publishes as `1.x.x`).
-    - `@staging` - Most recent automated tested code and can sometimes contain experimental features (no publish).
-  - version 2.x
-    - `@main-2` - Live and stable version, pre-production before action release (publishes as `2.x.x`).
-    - `@staging-2` - Possibly unstable and can sometimes contain experimental features (publishes as `2.x.x-rc#`).
+- `@v#` - Major only will give you the latest release for that major version only (e.g. `v1` or `v2`).
+- `@v#.#.#` - An exact release (e.g. `v2.0.0`). Release candidates from `staging-2` are tagged `v#.#.#-rc.#` and are possibly unstable.
+
+Version 1.x is maintained on the frozen `master` branch (`@master` is the most recent tested v1 code).
+
+Version 2.x is released from tags only. The `main-2` and `staging-2` branches hold source without the built `dist/`, so do not use them as `uses:` refs. A release tag points at a commit that includes the built action.
 
 ### Inputs
 
@@ -54,7 +51,7 @@ There are three kinds of version labels you can use.
 
 ### Security Compliance
 
-This action runs as a JavaScript GitHub Action on the `node24` runtime and does not require consumers to run `npm install` in their workflow in order to use it. The implementation dependency surface is limited to the action runtime packages declared in `package.json`: `@actions/cache`, `@actions/core`, `tar`, `winston`, and `ts-apt`.
+This action runs as a JavaScript GitHub Action on the `node24` runtime and does not require consumers to run `npm install` in their workflow in order to use it. The implementation dependency surface is limited to the action runtime packages declared in `package.json`: `@actions/artifact`, `@actions/cache`, `@actions/core`, `winston`, and `ts-apt`.
 
 For workflows with stricter compliance requirements, the main security characteristics are:
 
