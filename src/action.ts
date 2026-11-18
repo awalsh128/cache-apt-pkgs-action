@@ -8,6 +8,15 @@ type EmptyPackageBehavior = "error" | "warn" | "ignore";
 
 const FORCE_UPDATE_INCREMENT = "0";
 
+/**
+ * Whether installs go through apt-fast (parallel aria2 downloads) instead of plain apt-get.
+ *
+ * Off as an experiment: CI jobs that install the same packages take 20 s on one run and 200 to 850 s on
+ * the next, which looks like an aria2 download stalling (its timeouts are 600 s). Turn it back on if plain
+ * apt-get does not remove those stalls.
+ */
+const USE_APT_FAST = false;
+
 /** Inputs accepted by the GitHub Action runtime. */
 export interface ActionInputs {
   readonly packages: string;
@@ -73,8 +82,7 @@ export class ActionRunner {
     const cacheHit = manifest !== undefined;
 
     // Needed on a cache hit too, to resolve the native arch for outputs.
-    // apt-fast only speeds up installs, so skip probing for it on a hit.
-    const installManager = await createPackageManager(!cacheHit, this.logger, this.logger);
+    const installManager = await createPackageManager(USE_APT_FAST, this.logger, this.logger);
 
     if (!cacheHit) {
       // Runner images ship an apt index that can predate the archive, so a package whose version was

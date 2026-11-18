@@ -132,6 +132,26 @@ describe("ActionRunner", () => {
     expect(update.mock.invocationCallOrder[0]).toBeLessThan(install.mock.invocationCallOrder[0]!);
   });
 
+  it("runAction cache miss creates package manager without apt-fast", async () => {
+    const { runner, cache } = createRunner();
+    cache.loadAndRestore.mockResolvedValue(undefined);
+    vi.mocked(createPackageManager).mockResolvedValue({
+      update: vi.fn().mockResolvedValue(0),
+      install: vi.fn().mockResolvedValue([]),
+      getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
+    } as never);
+
+    await runner.runAction({
+      packages: "curl",
+      version: "v1",
+      executeInstallScripts: false,
+      emptyPackagesBehavior: "error",
+      debug: false,
+    });
+
+    expect(vi.mocked(createPackageManager).mock.calls[0]?.[0]).toBe(false);
+  });
+
   it("runAction cache hit does not refresh the apt index", async () => {
     const { runner, cache } = createRunner();
     const cacheKey = new CacheKey("v1", "0", process.arch, ActionPackageNames.fromInput("curl"));
