@@ -81,6 +81,7 @@ jobs:
           identity: release
 
       - name: Publish with semantic-release
+        id: release
         shell: bash
         env:
           GIT_CREDENTIALS: x-access-token:${{ steps.octo-sts.outputs.token }}
@@ -88,32 +89,19 @@ jobs:
           DRY_RUN: ${{ inputs.dry-run && '--dry-run' || '' }}
         run: npx semantic-release $DRY_RUN
 
-      # A release tags the dist commit (not HEAD), so look for a version tag on HEAD's descendants:
-      # the tag whose commit has HEAD as its parent.
+      # release.config.ts writes tag, version and official to this step's outputs, and only when a
+      # release was made. The tag's commit holds the built dist/, so the archive is what consumers run.
       - name: Bundle release
         id: bundle
+        if: ${{ steps.release.outputs.tag != '' }}
         shell: bash
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
         run: |
           set -euo pipefail
-          head="$(git rev-parse HEAD)"
-          tag=""
-          while read -r candidate; do
-            if [[ "$(git rev-parse "$candidate^{commit}^" 2>/dev/null || true)" == "$head" ]]; then
-              tag="$candidate"
-              break
-            fi
-          done < <(git tag --list 'v[0-9]*' --sort=-creatordate)
-          if [[ -z "$tag" ]]; then
-            echo "No release in this run; nothing to attest."
-            exit 0
-          fi
-          bundle="cache-apt-pkgs-action-$tag.tar.gz"
-          git archive --format=tar.gz -o "$bundle" "$tag" action.yml dist LICENSE
-          {
-            echo "tag=$tag"
-            echo "path=$bundle"
-            echo "official=$([[ "$tag" == *-* ]] && echo false || echo true)"
-          } >> "$GITHUB_OUTPUT"
+          bundle="cache-apt-pkgs-action-$TAG.tar.gz"
+          git archive --format=tar.gz -o "$bundle" "$TAG" action.yml dist LICENSE
+          echo "path=$bundle" >> "$GITHUB_OUTPUT"
 
       - name: Attest build provenance
         if: ${{ steps.bundle.outputs.path != '' }}
@@ -126,17 +114,17 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.bundle.outputs.tag }}
+          TAG: ${{ steps.release.outputs.tag }}
           BUNDLE: ${{ steps.bundle.outputs.path }}
         run: gh release upload "$TAG" "$BUNDLE" --clobber
 
       # Consumers use @v2, so official releases move it. Release candidates never do. Pushed with the
       # Octo STS token because the tag ruleset blocks every other update.
       - name: Move floating major tag
-        if: ${{ steps.bundle.outputs.official == 'true' }}
+        if: ${{ steps.release.outputs.official == 'true' }}
         shell: bash
         env:
-          TAG: ${{ steps.bundle.outputs.tag }}
+          TAG: ${{ steps.release.outputs.tag }}
           TOKEN: ${{ steps.octo-sts.outputs.token }}
           REPO: ${{ github.repository }}
         run: |

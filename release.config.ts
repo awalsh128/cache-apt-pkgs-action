@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { appendFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -10,6 +10,12 @@ type ReleaseContext = {
   nextRelease: { version: string; gitHead: string };
   logger: { log: (message: string) => void };
   cwd?: string;
+  env?: NodeJS.ProcessEnv;
+};
+
+type SuccessContext = {
+  nextRelease: { gitTag: string; version: string };
+  branch: { prerelease?: string | boolean };
   env?: NodeJS.ProcessEnv;
 };
 
@@ -66,6 +72,26 @@ function prepare(_pluginConfig: unknown, context: ReleaseContext): void {
 }
 
 /**
+ * Inline semantic-release plugin hook that exposes the release to later workflow steps.
+ *
+ * Writes `tag`, `version` and `official` (`true` for a stable release, `false` for a release candidate)
+ * to `$GITHUB_OUTPUT`. Runs only after a real release, so dry runs and runs with nothing to release leave
+ * the outputs empty. Does nothing outside GitHub Actions.
+ *
+ * @param _pluginConfig Unused plugin options.
+ * @param context semantic-release context with the finished release.
+ */
+function success(_pluginConfig: unknown, context: SuccessContext): void {
+  const outputFile = (context.env ?? process.env).GITHUB_OUTPUT;
+  if (!outputFile) {
+    return;
+  }
+  const { gitTag, version } = context.nextRelease;
+  const official = !context.branch.prerelease;
+  appendFileSync(outputFile, `tag=${gitTag}\nversion=${version}\nofficial=${official}\n`);
+}
+
+/**
  * @type {import('semantic-release').GlobalConfig}
  */
 export default {
@@ -93,8 +119,8 @@ export default {
     // Generates the release notes based on the commit history.
     "@semantic-release/release-notes-generator",
 
-    // Tags a detached commit that contains the built dist/ (see above).
-    { prepare },
+    // Tags a detached commit that contains the built dist/ (see above), then exposes the release to the workflow.
+    { prepare, success },
 
     // Creates a GitHub Release with the generated notes. Default behavior posts automatic comments on
     // resolved issues/PRs.
