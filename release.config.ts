@@ -28,6 +28,10 @@ type SuccessContext = {
  * then points `nextRelease.gitHead` at it. semantic-release tags `gitHead` and pushes only tags, so the
  * dist commit lives on the tag alone and the release branches stay fast-forward only.
  *
+ * semantic-release resets `nextRelease.gitHead` to the checkout's `HEAD` after every prepare step, so
+ * setting `gitHead` alone is overwritten and the tag lands on the source commit without `dist/`. Moving
+ * `HEAD` onto the dist commit (detached, working tree untouched) makes the reset agree with it.
+ *
  * Expects `npm run build` to have run first (the release workflow does).
  *
  * @param _pluginConfig Unused plugin options.
@@ -65,6 +69,7 @@ function prepare(_pluginConfig: unknown, context: ReleaseContext): void {
       },
     );
     logger.log(`Created detached dist commit ${commit} for ${nextRelease.version}`);
+    git(["update-ref", "--no-deref", "HEAD", commit]);
     nextRelease.gitHead = commit;
   } finally {
     rmSync(indexDir, { recursive: true, force: true });
