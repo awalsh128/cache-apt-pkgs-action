@@ -17,7 +17,7 @@ export const CACHE_KEY_FILENAME = "cache_key.md5";
  * @param cacheDir Directory name under the user's home directory.
  * @returns Absolute path to the cache directory.
  */
-export function resolveCacheDir(cacheDir: string = CACHE_DEFAULT_DIRNAME): string {
+export function resolveCacheDir(cacheDir: string): string {
   return path.join(os.homedir(), cacheDir);
 }
 
@@ -50,8 +50,14 @@ const INSTALL_SCRIPT_ACTIONS: Readonly<Record<InstallScriptType, string>> = {
   postinst: "configure",
 };
 
-export const MANIFEST_MAIN_FILENAME = "manifest_main.json";
-export const MANIFEST_ALL_FILENAME = "manifest_all.json";
+/**
+ * File holding the manifest of every installed package, dependencies included.
+ *
+ * Caches saved before the single-manifest change also hold a `manifest_main.json` (the requested
+ * packages only). It is derivable from this file and the cache key, so restore ignores it and new
+ * caches no longer write it. The name is kept so existing caches still restore.
+ */
+export const MANIFEST_FILENAME = "manifest_all.json";
 
 /**
  * Structured representation of cache key components for the GitHub Actions cache service.
@@ -98,10 +104,10 @@ export class CacheKey {
    *
    * NOTE: Object is always stable JSON stringification for consistent hashing.
    *
-   * @param readable Whether to pretty-print the JSON output. Defaults to false.
+   * @param readable Whether to pretty-print the JSON output.
    * @returns Serialized cache key components.
    */
-  toJSON(readable: boolean = false): string {
+  toJSON(readable: boolean): string {
     // Helper to sort keys recursively
     const sortObj = (o: unknown): unknown => {
       if (o === null || typeof o !== "object") return o;
@@ -131,11 +137,7 @@ export class Cache {
   private readonly logger: winston.Logger;
   private readonly commandRunner: CommandRunner;
 
-  constructor(
-    commandRunner: CommandRunner,
-    logger: winston.Logger,
-    cacheDir: string = CACHE_DEFAULT_DIRNAME,
-  ) {
+  constructor(commandRunner: CommandRunner, logger: winston.Logger, cacheDir: string) {
     this.path = resolveCacheDir(cacheDir);
     this.commandRunner = commandRunner;
     this.logger = logger;
@@ -194,20 +196,10 @@ export class Cache {
     };
 
     this.logger.info(`Cache hit for key ${key.hash}, restoring...`);
-    const manifestPath = path.join(this.path, MANIFEST_MAIN_FILENAME);
-    if (
-      !(await fs
-        .access(manifestPath, fs.constants.R_OK)
-        .then(() => true)
-        .catch(() => false))
-    ) {
-      await logFileError(`Manifest file not found at ${manifestPath}`);
-      return undefined;
-    }
-    const manifestAllPath = path.join(this.path, MANIFEST_ALL_FILENAME);
-    const manifestAll = await Manifest.readFromFile(manifestAllPath).catch(() => undefined);
-    if (!manifestAll || manifestAll.entries.length === 0) {
-      await logFileError(`Manifest of all packages not found or empty at ${manifestAllPath}`);
+    const manifestPath = path.join(this.path, MANIFEST_FILENAME);
+    const manifest = await Manifest.readFromFile(manifestPath).catch(() => undefined);
+    if (!manifest || manifest.entries.length === 0) {
+      await logFileError(`Manifest not found or empty at ${manifestPath}`);
       return undefined;
     }
 
@@ -215,7 +207,7 @@ export class Cache {
     // manifest entries) and not by archive filename. Install scripts can depend
     // on files from packages installed before them (see issue #196).
     // Packages without files (e.g. metapackages) have no archive to restore.
-    const archivePaths = manifestAll.entries
+    const archivePaths = manifest.entries
       .filter((entry) => entry.filepaths.length > 0)
       .map((entry) => ({
         packageName: entry.packageName,
@@ -245,7 +237,7 @@ export class Cache {
     }
 
     // Return every installed package so outputs can report dependencies too.
-    return manifestAll;
+    return manifest;
   }
 
   /**
@@ -313,30 +305,17 @@ export class Cache {
     );
   }
 
-  private async writeManifests(manifest: Manifest): Promise<void> {
-    const allEntries = manifest.entries;
-    const packages = manifest.cacheKey.packageNames;
-    // Keep the installed name, which carries the resolved version and arch.
-    const mainEntries = allEntries.filter((entry) => packages.includes(entry.packageName));
-
-    const write = async (manifest: Manifest, filename: string) => {
-      this.logger.info(
-        `Writing manifest ${filename} with ${manifest.entries.length} entries to ${this.path}`,
-      );
-      await fs.mkdir(this.path, { recursive: true });
-      const filePath = path.join(this.path, filename);
-      await manifest.writeToFile(filePath);
-      this.logger.info(`Wrote manifest`);
-    };
-
-    const now = new Date();
-
-    await write(new Manifest(now, mainEntries, manifest.cacheKey), MANIFEST_MAIN_FILENAME);
-    await write(new Manifest(now, allEntries, manifest.cacheKey), MANIFEST_ALL_FILENAME);
+  private async writeManifest(manifest: Manifest): Promise<void> {
+    this.logger.info(
+      `Writing manifest ${MANIFEST_FILENAME} with ${manifest.entries.length} entries to ${this.path}`,
+    );
+    await fs.mkdir(this.path, { recursive: true });
+    await manifest.writeToFile(path.join(this.path, MANIFEST_FILENAME));
+    this.logger.info(`Wrote manifest`);
   }
 
   /**
-   * Writes the manifests and per-package archives, then saves the cache.
+   * Writes the manifest and per-package archives, then saves the cache.
    *
    * @param manifest Installed packages, in install order, with their files.
    * @returns GitHub Actions cache ID.
@@ -352,7 +331,7 @@ export class Cache {
     await fs.writeFile(path.join(this.path, CACHE_KEY_FILENAME), key.hash, "utf8");
     this.logger.info(`Wrote cache key`);
 
-    await this.writeManifests(manifest);
+    await this.writeManifest(manifest);
     for (const entry of manifest.entries) {
       await this.createArchive(entry);
     }

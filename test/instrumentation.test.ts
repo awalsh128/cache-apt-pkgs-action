@@ -10,13 +10,7 @@ describe("instrumentation", () => {
     vi.unstubAllEnvs();
   });
 
-  const ARTIFACT_FILENAMES = [
-    "capa_app.log",
-    "capa_exec.log",
-    "cache_key.json",
-    "manifest_main.json",
-    "manifest_all.json",
-  ];
+  const ARTIFACT_FILENAMES = ["capa_app.log", "capa_exec.log", "cache_key.json", "manifest_all.json"];
 
   describe("Artifacts", () => {
     it("constructor initializes properties correctly", () => {
