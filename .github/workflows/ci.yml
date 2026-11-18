@@ -106,6 +106,10 @@ jobs:
         shell: bash
         run: npm run lint
 
+      - name: Check formatting
+        shell: bash
+        run: npm run format:check
+
       - name: Typecheck
         shell: bash
         run: npm run typecheck
