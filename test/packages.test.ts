@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createPackageName } from "ts-apt";
+import { createPackageName, type PackageManager } from "ts-apt";
 import { ActionPackageNames, buildFileList, findInstallScript } from "../src/packages.js";
 import { describe, expect, it, vi } from "vitest";
 
@@ -34,7 +34,7 @@ describe("packages", () => {
     const manager = {
       listInstalledFiles: vi.fn().mockResolvedValue(packageFiles),
     };
-    const result = await buildFileList(PACKAGE_NAME, manager as any, root);
+    const result = await buildFileList(PACKAGE_NAME, manager as unknown as PackageManager, root);
 
     expect(result).toEqual(packageFiles.map((item) => item.slice(1)).sort());
   });
@@ -46,7 +46,7 @@ describe("packages", () => {
       listInstalledFiles: vi.fn().mockResolvedValue([]),
     };
 
-    const result = await buildFileList(PACKAGE_NAME, manager as any, root);
+    const result = await buildFileList(PACKAGE_NAME, manager as unknown as PackageManager, root);
     expect(result).toEqual([]);
   });
 
@@ -109,7 +109,7 @@ describe("packages", () => {
       listInstalledFiles: vi.fn().mockResolvedValue([presentFile, path.join(root, "absent")]),
     };
 
-    const result = await buildFileList(PACKAGE_NAME, manager as any, root);
+    const result = await buildFileList(PACKAGE_NAME, manager as unknown as PackageManager, root);
 
     expect(result).toEqual([presentFile.slice(1)]);
   });

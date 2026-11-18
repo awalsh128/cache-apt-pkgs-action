@@ -103,15 +103,15 @@ export class CacheKey {
    */
   toJSON(readable: boolean = false): string {
     // Helper to sort keys recursively
-    const sortObj = (o: any): any => {
+    const sortObj = (o: unknown): unknown => {
       if (o === null || typeof o !== "object") return o;
       if (Array.isArray(o)) return o.map(sortObj);
-      return Object.keys(o)
-        .sort()
-        .reduce((acc, key) => {
-          acc[key] = sortObj(o[key]);
-          return acc;
-        }, {} as any);
+      const record = o as Record<string, unknown>;
+      return Object.fromEntries(
+        Object.keys(record)
+          .sort()
+          .map((key) => [key, sortObj(record[key])]),
+      );
     };
     return JSON.stringify(sortObj(this), null, readable ? 2 : 0);
   }
@@ -185,7 +185,7 @@ export class Cache {
       const contents = await fs
         .readdir(this.path)
         .then((entries) => entries.join("\n"))
-        .catch((reason: any) => `Unable to read cache directory contents: ${reason}`);
+        .catch((reason: unknown) => `Unable to read cache directory contents: ${reason}`);
       this.logger.error(
         `${prefixMessage}, skipping cache restore.\n` +
           `This may indicate a cache corruption or an unexpected cache hit for a different package set.\n` +
@@ -371,6 +371,7 @@ export class Cache {
         error instanceof Error
           ? `Failed to save cache: ${error.message}`
           : `Failed to save cache: ${String(error)}`,
+        { cause: error },
       );
     }
   }

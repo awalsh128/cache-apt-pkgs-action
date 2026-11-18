@@ -1,7 +1,6 @@
 import * as fs from "fs";
 import path from "path";
-import { createPackageName, deserializePackageName, type PackageName, type PackageManager } from "ts-apt";
-import winston from "winston";
+import { createPackageName, type PackageName, type PackageManager } from "ts-apt";
 
 /**
  * Collects installed file and lifecycle script paths for archive creation.
@@ -78,6 +77,13 @@ export async function findInstallScript(
   return path.join(scriptsDir, candidate);
 }
 
+/** Parsed JSON form of one requested package. */
+interface PackageNameJson {
+  readonly name: string;
+  readonly version?: string;
+  readonly arch?: string;
+}
+
 export class ActionPackageNames {
   private readonly items: PackageName[];
 
@@ -139,10 +145,10 @@ export class ActionPackageNames {
     return new ActionPackageNames(names);
   }
 
-  static fromJSON(json: any): ActionPackageNames {
-    const sourceItems = Array.isArray(json) ? json : Array.isArray(json?.items) ? json.items : [];
+  static fromJSON(json: PackageNameJson[] | { items?: PackageNameJson[] }): ActionPackageNames {
+    const sourceItems = Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
 
-    const items = sourceItems.map((item: any) => createPackageName(item.name, item.version, item.arch));
+    const items = sourceItems.map((item) => createPackageName(item.name, item.version, item.arch));
     return new ActionPackageNames(items);
   }
 

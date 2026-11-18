@@ -201,13 +201,6 @@ function readJsonFile<T>(filePath: string, defaultValue: T): T {
   return { ...defaultValue, ...parsed };
 }
 
-function writeTempPayload(payload: unknown, prefix: string): string {
-  const tempDir = mkdtempSync(path.join(tmpdir(), prefix));
-  const payloadFile = path.join(tempDir, "payload.json");
-  writeFileSync(payloadFile, JSON.stringify(payload), "utf8");
-  return payloadFile;
-}
-
 function withTempPayload<T>(payload: unknown, prefix: string, fn: (payloadFile: string) => T): T {
   const tempDir = mkdtempSync(path.join(tmpdir(), prefix));
   const payloadFile = path.join(tempDir, "payload.json");

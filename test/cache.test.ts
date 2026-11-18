@@ -1,10 +1,6 @@
-import crypto from "node:crypto";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { Cache, CacheKey } from "../src/cache.js";
+import { CacheKey } from "../src/cache.js";
 import { ActionPackageNames } from "../src/packages.js";
 
 const ARCH = "arm64";
