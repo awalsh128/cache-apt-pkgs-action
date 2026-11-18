@@ -60,11 +60,13 @@ You are an expert developer focused on TypeScript, Bash, DevOps, Git, and GitHub
 
 - Follow GitHub Actions CI/CD best practices: https://github.com/github/awesome-copilot/blob/main/instructions/github-actions-ci-cd-best-practices.instructions.md
 - Abstract repeated workflow logic into reusable actions or scripts.
-- Treat `main` as the stable release branch.
-- Treat `staging` as the prerelease branch.
+- Treat `main-2` as the stable v2 release branch and `staging-2` as the v2 prerelease branch.
+- NEVER change `master`; it is frozen for v1.
+- Flow: PR to `staging-2` (squash, Conventional Commit title), `ci.yml` releases `-rc.N`, `promote.yml` fast-forwards `main-2`, `release.yml` publishes.
+- NEVER commit to `main-2` or `staging-2` directly; releases never commit to a branch.
 - Use `pr.yml` and `scripts/ops/pr_checks.mts` to enforce branch policy and workflow pinning.
-- Use `release.yml` and semantic-release for branch-based publishing.
-- Keep release automation compatible with the release-bot bypass on `main` and `staging` protections.
+- Use `release.yml` and semantic-release for publishing; the tag points at a detached commit that carries `dist/`.
+- Keep release automation compatible with the Octo STS app bypass on the `main-2` and release tag rulesets (`.github/rulesets/`).
 
 ## 4) Repo Paths And Commands
 
@@ -97,5 +99,5 @@ npx eslint src test scripts --ext .ts,.mts
 npx tsc -p tsconfig.json --noEmit
 npx tsc -p tsconfig.scripts.json --noEmit
 npx vitest run
-npm run check:pr -- --base-ref staging --head-ref feature/example
+npm run check:pr -- --base-ref staging-2 --head-ref feature/example
 ```

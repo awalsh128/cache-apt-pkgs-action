@@ -1,0 +1,8 @@
+{
+  "name": "main-2",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": { "ref_name": { "include": ["refs/heads/main-2"], "exclude": [] } },
+  "bypass_actors": [{ "actor_id": 801323, "actor_type": "Integration", "bypass_mode": "always" }],
+  "rules": [{ "type": "deletion" }, { "type": "non_fast_forward" }, { "type": "update" }]
+}

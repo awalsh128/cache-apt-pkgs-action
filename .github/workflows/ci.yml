@@ -3,6 +3,7 @@ name: CI
 on:
   repository_dispatch:
   push:
+    branches: [main-2, staging-2]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   schedule:
@@ -747,3 +748,73 @@ jobs:
           packages: libvips
           version: ${{ github.run_id }}-${{ github.run_attempt }}-virtual_package
           debug: ${{ env.DEBUG }}
+
+  # The single required status check for staging-2 and the gate for releases: it fails when any job
+  # above failed or was cancelled (skipped jobs, such as CodeQL on fork PRs, are fine).
+  ci-passed:
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    needs:
+      [
+        setup-and-cache,
+        codeql,
+        linters,
+        action-deps-pinned,
+        testing,
+        list_all_versions,
+        list_versions,
+        standard_workflow_install,
+        standard_workflow_install_with_new_version,
+        standard_workflow_restore,
+        standard_workflow_restore_with_packages_out_of_order,
+        standard_workflow_add_package,
+        standard_workflow_restore_add_package,
+        no_packages,
+        package_not_found,
+        version_contains_spaces,
+        regression_36,
+        regression_37,
+        debug_disabled,
+        regression_72_1,
+        regression_72_2,
+        regression_76,
+        regression_79,
+        regression_81,
+        regression_84_literal_block_install,
+        regression_84_literal_block_restore,
+        regression_84_folded_block_install,
+        regression_84_folded_block_restore,
+        regression_89,
+        regression_98,
+        regression_106_install,
+        regression_106_restore,
+        multi_arch_cache_key,
+        virtual_package,
+      ]
+    permissions: {}
+    steps:
+      - name: Require every job to pass
+        shell: bash
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          set -euo pipefail
+          for result in $RESULTS; do
+            if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
+              echo "::error::At least one CI job ended as '$result'."
+              exit 1
+            fi
+          done
+
+  # Release candidates are only cut from staging-2 commits that pass every CI job.
+  release-candidate:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/staging-2' }}
+    needs: [ci-passed]
+    permissions:
+      actions: read
+      contents: write
+      id-token: write
+      attestations: write
+      issues: write
+      pull-requests: write
+    uses: ./.github/workflows/release.yml
