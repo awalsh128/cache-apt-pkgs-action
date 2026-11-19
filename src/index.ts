@@ -48,7 +48,8 @@ function getInputs(): ActionInputs {
   const emptyPackagesBehaviorRaw = core.getInput("empty_packages_behavior") || "error";
 
   return {
-    packages: core.getInput("packages", { required: true }),
+    // Not required here: an empty list is handled by empty_packages_behavior, as it was in v1.
+    packages: core.getInput("packages"),
     version: core.getInput("version"),
     executeInstallScripts: core.getBooleanInput("execute_install_scripts"),
     emptyPackagesBehavior: parseEmptyPackagesBehavior(emptyPackagesBehaviorRaw),

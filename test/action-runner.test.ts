@@ -159,6 +159,69 @@ describe("ActionRunner", () => {
     ).toEqual([true, true, true, true, true]);
   });
 
+  describe("input validation", () => {
+    const INPUTS = {
+      packages: "curl",
+      version: "v1",
+      executeInstallScripts: false,
+      emptyPackagesBehavior: "error",
+      debug: false,
+    } as const;
+    const EMPTY_LISTS = [
+      ["an empty string", ""],
+      ["only whitespace", "   "],
+      ["only separators", " , \\ , "],
+    ] as const;
+
+    it.each(EMPTY_LISTS)("runAction %s with the error behavior throws", async (_case, packages) => {
+      const { runner } = createRunner();
+
+      await expect(runner.runAction({ ...INPUTS, packages })).rejects.toThrow("Packages argument is empty.");
+    });
+
+    it.each(EMPTY_LISTS)(
+      "runAction %s with the warn behavior warns and returns empty outputs",
+      async (_case, packages) => {
+        const { runner, cache, logger } = createRunner();
+        const warnSpy = vi.spyOn(logger, "warn");
+
+        const outputs = await runner.runAction({ ...INPUTS, packages, emptyPackagesBehavior: "warn" });
+
+        expect(outputs).toEqual({ cacheHit: false, packageVersionList: "", allPackageVersionList: "" });
+        expect(warnSpy).toHaveBeenCalledWith("Packages argument is empty.");
+        expect(cache.loadAndRestore).not.toHaveBeenCalled();
+        expect(createPackageManager).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(EMPTY_LISTS)(
+      "runAction %s with the ignore behavior returns empty outputs silently",
+      async (_case, packages) => {
+        const { runner, cache, logger } = createRunner();
+        const warnSpy = vi.spyOn(logger, "warn");
+
+        const outputs = await runner.runAction({ ...INPUTS, packages, emptyPackagesBehavior: "ignore" });
+
+        expect(outputs).toEqual({ cacheHit: false, packageVersionList: "", allPackageVersionList: "" });
+        expect(warnSpy).not.toHaveBeenCalled();
+        expect(cache.loadAndRestore).not.toHaveBeenCalled();
+        expect(createPackageManager).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(["123 abc", " leading", "trailing ", "a b c"])(
+      "runAction version %j with a space throws",
+      async (version) => {
+        const { runner, cache } = createRunner();
+
+        await expect(runner.runAction({ ...INPUTS, version })).rejects.toThrow(
+          `Version value '${version}' cannot contain spaces.`,
+        );
+        expect(cache.loadAndRestore).not.toHaveBeenCalled();
+      },
+    );
+  });
+
   it("runAction cache hit does not refresh the apt index", async () => {
     const { runner, cache } = createRunner();
     const cacheKey = new CacheKey("v1", "0", process.arch, ActionPackageNames.fromInput("curl"));

@@ -8,6 +8,8 @@ type EmptyPackageBehavior = "error" | "warn" | "ignore";
 
 const FORCE_UPDATE_INCREMENT = "0";
 
+const EMPTY_PACKAGES_MESSAGE = "Packages argument is empty.";
+
 /** Inputs accepted by the GitHub Action runtime. */
 export interface ActionInputs {
   readonly packages: string;
@@ -60,6 +62,24 @@ export class ActionRunner {
   }
 
   /**
+   * Applies `empty_packages_behavior` when the package list is empty, which includes a list that only had
+   * separators (e.g. commas). Nothing is restored, installed or cached.
+   *
+   * @param behavior What to do about the empty list.
+   * @returns Empty outputs, for `warn` and `ignore`.
+   * @throws Error for `error`.
+   */
+  private handleEmptyPackages(behavior: EmptyPackageBehavior): ActionOutputs {
+    if (behavior === "error") {
+      throw new Error(EMPTY_PACKAGES_MESSAGE);
+    }
+    if (behavior === "warn") {
+      this.logger.warn(EMPTY_PACKAGES_MESSAGE);
+    }
+    return { cacheHit: false, packageVersionList: "", allPackageVersionList: "" };
+  }
+
+  /**
    * Runs a step and logs how long it took, so a slow run shows which step was slow without debug logging.
    *
    * @param label Name of the step, as it should read in the log.
@@ -82,7 +102,15 @@ export class ActionRunner {
    * @returns Action outputs consumed by the workflow runtime.
    */
   async runAction(inputs: ActionInputs): Promise<ActionOutputs> {
+    if (inputs.version.includes(" ")) {
+      throw new Error(`Version value '${inputs.version}' cannot contain spaces.`);
+    }
+
     const packageNames = ActionPackageNames.fromInput(inputs.packages);
+    if (packageNames.length === 0) {
+      return this.handleEmptyPackages(inputs.emptyPackagesBehavior);
+    }
+
     const cacheKey = new CacheKey(inputs.version, FORCE_UPDATE_INCREMENT, process.arch, packageNames);
 
     let manifest = await this.timed("Cache restore", () =>
