@@ -6,6 +6,7 @@ import { ActionPackageNames } from "../src/packages.js";
 import { createPackageManager, createPackageName } from "ts-apt";
 
 import { ActionRunner } from "../src/action.js";
+import { MANIFEST_INPUTS, MANIFEST_OUTPUTS } from "./manifest-fixtures.js";
 
 vi.mock("ts-apt", async (importOriginal) => {
   const actual = await importOriginal<typeof import("ts-apt")>();
@@ -46,7 +47,7 @@ describe("ActionRunner", () => {
     const { runner, cache } = createRunner();
     const packageNames = ActionPackageNames.fromInput("curl git");
     const cacheKey = new CacheKey("v1", "0", process.arch, packageNames);
-    const restored = new Manifest(new Date(), [], cacheKey);
+    const restored = new Manifest(new Date(), [], cacheKey, MANIFEST_INPUTS, MANIFEST_OUTPUTS);
     cache.loadAndRestore.mockResolvedValue(restored);
     vi.mocked(createPackageManager).mockResolvedValue({
       getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
@@ -68,7 +69,9 @@ describe("ActionRunner", () => {
     const { runner, cache } = createRunner();
     const packageNames = ActionPackageNames.fromInput("curl");
     const cacheKey = new CacheKey("v1", "0", process.arch, packageNames);
-    cache.loadAndRestore.mockResolvedValue(new Manifest(new Date(), [], cacheKey));
+    cache.loadAndRestore.mockResolvedValue(
+      new Manifest(new Date(), [], cacheKey, MANIFEST_INPUTS, MANIFEST_OUTPUTS),
+    );
     vi.mocked(createPackageManager).mockResolvedValue({
       getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
     } as never);
@@ -109,6 +112,25 @@ describe("ActionRunner", () => {
     expect(cache.archiveAndSave).toHaveBeenCalledTimes(1);
     const [manifest] = cache.archiveAndSave.mock.calls[0]!;
     expect(manifest.entries).toEqual([new ManifestEntry(installedPackage, [installedFile.slice(1)])]);
+  });
+
+  it("runAction cache miss saves the run's inputs and outputs in the manifest", async () => {
+    const installedPackage = createPackageName("test-pkg-not-real", "1.0.0");
+    const { runner, cache } = createRunner();
+    cache.loadAndRestore.mockResolvedValue(undefined);
+    vi.mocked(createPackageManager).mockResolvedValue({
+      update: vi.fn().mockResolvedValue(0),
+      install: vi.fn().mockResolvedValue([{ name: installedPackage }]),
+      listInstalledFiles: vi.fn().mockResolvedValue([]),
+      getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
+    } as never);
+    const inputs = { ...MANIFEST_INPUTS, packages: installedPackage.serialize() };
+
+    const outputs = await runner.runAction(inputs);
+
+    const [manifest] = cache.archiveAndSave.mock.calls[0]!;
+    expect(manifest.inputs).toEqual(inputs);
+    expect(manifest.outputs).toEqual(outputs);
   });
 
   it("runAction cache miss refreshes the apt index before installing", async () => {
@@ -225,7 +247,9 @@ describe("ActionRunner", () => {
   it("runAction cache hit does not refresh the apt index", async () => {
     const { runner, cache } = createRunner();
     const cacheKey = new CacheKey("v1", "0", process.arch, ActionPackageNames.fromInput("curl"));
-    cache.loadAndRestore.mockResolvedValue(new Manifest(new Date(), [], cacheKey));
+    cache.loadAndRestore.mockResolvedValue(
+      new Manifest(new Date(), [], cacheKey, MANIFEST_INPUTS, MANIFEST_OUTPUTS),
+    );
     const update = vi.fn();
     vi.mocked(createPackageManager).mockResolvedValue({
       update,

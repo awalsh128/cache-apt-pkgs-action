@@ -8,6 +8,7 @@ import winston from "winston";
 import { Cache, CacheKey, CACHE_DEFAULT_DIRNAME, MANIFEST_FILENAME } from "../src/cache.js";
 import { Manifest, ManifestEntry } from "../src/manifest.js";
 import { ActionPackageNames, findInstallScript } from "../src/packages.js";
+import { MANIFEST_INPUTS, MANIFEST_OUTPUTS } from "./manifest-fixtures.js";
 
 // Cache resolves its directory from os.homedir(), so point it at a temp dir.
 const { HOME_DIR } = await vi.hoisted(async () => {
@@ -54,6 +55,8 @@ const MANIFEST = new Manifest(
   new Date(0),
   [...INSTALL_ORDER.map(entryOf), new ManifestEntry(METAPACKAGE, [])],
   KEY,
+  MANIFEST_INPUTS,
+  MANIFEST_OUTPUTS,
 );
 
 /** Manifest of the requested packages only, which caches saved before the single manifest also hold. */
@@ -67,9 +70,13 @@ async function writeCache(archivedPackages = INSTALL_ORDER): Promise<void> {
 
 async function writeLegacyCache(): Promise<void> {
   await writeCache();
-  await new Manifest(MANIFEST.created, [entryOf(REQUESTED_PACKAGE)], KEY).writeToFile(
-    path.join(CACHE_DIR, LEGACY_MAIN_MANIFEST_FILENAME),
-  );
+  await new Manifest(
+    MANIFEST.created,
+    [entryOf(REQUESTED_PACKAGE)],
+    KEY,
+    MANIFEST_INPUTS,
+    MANIFEST_OUTPUTS,
+  ).writeToFile(path.join(CACHE_DIR, LEGACY_MAIN_MANIFEST_FILENAME));
 }
 
 /** Archive and install script operations observed through the command runner. */
@@ -226,7 +233,11 @@ describe("Cache", () => {
 
   it.each([
     ["all manifest missing", MANIFEST_FILENAME, undefined],
-    ["all manifest empty", MANIFEST_FILENAME, new Manifest(MANIFEST.created, [], KEY)],
+    [
+      "all manifest empty",
+      MANIFEST_FILENAME,
+      new Manifest(MANIFEST.created, [], KEY, MANIFEST_INPUTS, MANIFEST_OUTPUTS),
+    ],
   ])("loadAndRestore %s returns undefined without extracting", async (_case, filename, replacement) => {
     await writeCache();
     const filePath = path.join(CACHE_DIR, filename);
@@ -253,7 +264,13 @@ describe("Cache", () => {
 
   it("loadAndRestore only packages without files runs no extract command", async () => {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
-    const metaOnly = new Manifest(MANIFEST.created, [new ManifestEntry(METAPACKAGE, [])], KEY);
+    const metaOnly = new Manifest(
+      MANIFEST.created,
+      [new ManifestEntry(METAPACKAGE, [])],
+      KEY,
+      MANIFEST_INPUTS,
+      MANIFEST_OUTPUTS,
+    );
     await metaOnly.writeToFile(path.join(CACHE_DIR, MANIFEST_FILENAME));
     const calls: TarCalls = { created: [], extracted: [] };
 

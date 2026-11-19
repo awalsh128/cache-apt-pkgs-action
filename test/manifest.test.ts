@@ -6,6 +6,7 @@ import { Manifest, ManifestEntry } from "../src/manifest.js";
 import { CacheKey } from "../src/cache.js";
 import { createPackageName } from "ts-apt";
 import { ActionPackageNames } from "../src/packages.js";
+import { MANIFEST_INPUTS, MANIFEST_OUTPUTS } from "./manifest-fixtures.js";
 
 describe("manifest", () => {
   it("serializes and deserializes manifest entries", () => {
@@ -14,12 +15,16 @@ describe("manifest", () => {
       new Date("2026-01-01T00:00:00.000Z"),
       [new ManifestEntry(createPackageName("curl", "8.1.0", "amd64"), ["/b", "/a"])],
       cacheKey,
+      MANIFEST_INPUTS,
+      MANIFEST_OUTPUTS,
     );
 
     const parsed = Manifest.fromJSON(JSON.parse(JSON.stringify(manifest)));
     expect(parsed.entries).toHaveLength(1);
     expect(parsed.entries[0]?.packageName.serialize()).toBe("curl:amd64=8.1.0");
     expect(parsed.entries[0]?.filepaths).toEqual(["/a", "/b"]);
+    expect(parsed.inputs).toEqual(MANIFEST_INPUTS);
+    expect(parsed.outputs).toEqual(MANIFEST_OUTPUTS);
   });
 
   it("writes and reads manifest files", async () => {
@@ -30,6 +35,8 @@ describe("manifest", () => {
       new Date("2026-01-01T00:00:00.000Z"),
       [new ManifestEntry(createPackageName("curl", "8.1.0", "amd64"), ["usr/bin/curl"])],
       cacheKey,
+      MANIFEST_INPUTS,
+      MANIFEST_OUTPUTS,
     );
 
     await manifest.writeToFile(filePath);

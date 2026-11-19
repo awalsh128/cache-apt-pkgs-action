@@ -113,37 +113,55 @@ export class ActionRunner {
 
     const cacheKey = new CacheKey(inputs.version, FORCE_UPDATE_INCREMENT, process.arch, packageNames);
 
-    let manifest = await this.timed("Cache restore", () =>
+    const manifest = await this.timed("Cache restore", () =>
       this.cache.loadAndRestore(cacheKey, inputs.executeInstallScripts),
     );
     const cacheHit = manifest !== undefined;
 
-    // Needed on a cache hit too, to resolve the native arch for outputs.
     // apt-fast only speeds up installs, so skip probing for it on a hit.
     const installManager = await createPackageManager(!cacheHit, this.logger, this.logger);
+    const nativeArch = await installManager.getNativeArchitecture();
 
-    if (!cacheHit) {
-      // Runner images ship an apt index that can predate the archive, so a package whose version was
-      // superseded (e.g. a security update) 404s on download. Refresh it before every fresh install.
-      await this.timed("apt update", () => installManager.update());
-      const packageInfos = await this.timed("apt install", () =>
-        installManager.install(packageNames.toArray()),
-      );
-      // Collect each package's installed files so the archives have content.
-      const entries = await this.timed("Listing installed files", () =>
-        Promise.all(
-          packageInfos.map(
-            async (info) => new ManifestEntry(info.name, await buildFileList(info.name, installManager)),
-          ),
-        ),
-      );
-      manifest = new Manifest(new Date(), entries, cacheKey);
-      const savedManifest = manifest;
-      await this.timed("Archive and cache save", () => this.cache.archiveAndSave(savedManifest));
+    if (manifest !== undefined) {
+      return this.toOutputs(true, manifest.entries, packageNames, nativeArch);
     }
 
-    const nativeArch = await installManager.getNativeArchitecture();
-    const installed = manifest!.entries.map((entry) => entry.packageName);
+    // Runner images ship an apt index that can predate the archive, so a package whose version was
+    // superseded (e.g. a security update) 404s on download. Refresh it before every fresh install.
+    await this.timed("apt update", () => installManager.update());
+    const packageInfos = await this.timed("apt install", () =>
+      installManager.install(packageNames.toArray()),
+    );
+    // Collect each package's installed files so the archives have content.
+    const entries = await this.timed("Listing installed files", () =>
+      Promise.all(
+        packageInfos.map(
+          async (info) => new ManifestEntry(info.name, await buildFileList(info.name, installManager)),
+        ),
+      ),
+    );
+    const outputs = this.toOutputs(false, entries, packageNames, nativeArch);
+    const savedManifest = new Manifest(new Date(), entries, cacheKey, inputs, outputs);
+    await this.timed("Archive and cache save", () => this.cache.archiveAndSave(savedManifest));
+    return outputs;
+  }
+
+  /**
+   * Builds the action outputs from the installed packages.
+   *
+   * @param cacheHit Whether the packages came from the cache.
+   * @param entries Installed packages, from the manifest.
+   * @param packageNames Packages the workflow requested.
+   * @param nativeArch Runner architecture as reported by dpkg (e.g. amd64).
+   * @returns Action outputs consumed by the workflow runtime.
+   */
+  private toOutputs(
+    cacheHit: boolean,
+    entries: readonly ManifestEntry[],
+    packageNames: ActionPackageNames,
+    nativeArch: string,
+  ): ActionOutputs {
+    const installed = entries.map((entry) => entry.packageName);
     return {
       cacheHit,
       packageVersionList: this.toCsv(
