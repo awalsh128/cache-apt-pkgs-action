@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import winston from "winston";
 import { runAction, type ActionInputs, type ActionOutputs } from "../src/action.js";
 import { Manifest, ManifestEntry } from "../src/manifest.js";
 import { CacheKey } from "../src/cache.js";
@@ -102,7 +103,12 @@ describe("runAction", () => {
     );
     const mockCache = { loadAndRestore: async () => manifest };
 
-    const outputs = await runAction(inputs, {} as never, mockCache as never, {} as never);
+    const outputs = await runAction(
+      inputs,
+      {} as never,
+      mockCache as never,
+      winston.createLogger({ silent: true }),
+    );
 
     expect(outputs.packageVersionList).toBe(`${PKG_NAME}=${PKG_VER},${PKG2_NAME}:${FOREIGN_ARCH}=${PKG_VER}`);
     expect(outputs.allPackageVersionList).toBe(

@@ -2,7 +2,15 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { Artifacts, Instruments } from "../src/instrumentation.ts";
+import * as core from "@actions/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@actions/core", () => ({
+  debug: vi.fn(),
+  info: vi.fn(),
+  warning: vi.fn(),
+  error: vi.fn(),
+}));
 
 describe("instrumentation", () => {
   afterEach(() => {
@@ -66,6 +74,56 @@ describe("instrumentation", () => {
         expect(fs.readFileSync(path.join(expectedDir, "capa_app.log"), "utf8")).toContain("app message"),
       );
       fs.rmSync(home, { recursive: true, force: true });
+    });
+
+    /** Runs `work` against fresh instruments, then closes their log files before removing them. */
+    async function withInstruments(
+      work: (instruments: Instruments) => void,
+      debug: boolean = false,
+    ): Promise<void> {
+      const home = fs.mkdtempSync(path.join(os.tmpdir(), "instruments-test-"));
+      vi.stubEnv("HOME", home);
+      const instruments = new Instruments(CACHE_DIRNAME, debug);
+      work(instruments);
+      // The log files open asynchronously; removing the directory first makes the open fail.
+      await vi.waitFor(() => {
+        expect(fs.existsSync(path.join(instruments.cacheDirPath, "capa_app.log"))).toBe(true);
+        expect(fs.existsSync(path.join(instruments.cacheDirPath, "capa_exec.log"))).toBe(true);
+      });
+      await Promise.all(
+        [instruments.appLogger, instruments.execLogger].map(
+          (logger) => new Promise((resolve) => logger.end(resolve)),
+        ),
+      );
+      fs.rmSync(home, { recursive: true, force: true });
+    }
+
+    it.each([
+      ["info", core.info],
+      ["warn", core.warning],
+      ["error", core.error],
+    ] as const)("appLogger %s message reaches the workflow log", async (level, workflowLogFn) => {
+      await withInstruments((instruments) => instruments.appLogger.log(level, "to the workflow log"));
+
+      expect(workflowLogFn).toHaveBeenCalledWith("to the workflow log");
+    });
+
+    it("appLogger debug message with debug on is written to the workflow log as debug", async () => {
+      await withInstruments((instruments) => instruments.appLogger.debug("shown in step debug"), true);
+
+      expect(core.debug).toHaveBeenCalledWith("shown in step debug");
+    });
+
+    it("appLogger message at a level without a workflow log equivalent is written as an error", async () => {
+      await withInstruments((instruments) => instruments.appLogger.log("http", "odd level"), true);
+
+      expect(core.error).toHaveBeenCalledWith("[UNKNOWN LEVEL]: http, message: odd level");
+    });
+
+    it("appLogger debug message with debug off is not written to the workflow log", async () => {
+      await withInstruments((instruments) => instruments.appLogger.debug("hidden"));
+
+      expect(core.debug).not.toHaveBeenCalledWith("hidden");
     });
   });
 
