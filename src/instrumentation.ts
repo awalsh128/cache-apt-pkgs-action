@@ -1,6 +1,7 @@
 import * as core from "@actions/core";
 import { DefaultArtifactClient } from "@actions/artifact";
 import winston from "winston";
+import Transport from "winston-transport";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
@@ -94,34 +95,46 @@ function createExecLogger(debug: boolean, filepath: string): winston.Logger {
   return logger;
 }
 
+/**
+ * Writes each log line to the workflow log through `@actions/core`, at the matching level.
+ *
+ * A logger's own `logged` event is not emitted by winston (only a transport emits it), so a listener on the
+ * logger never ran and none of the action's messages reached the workflow log. A transport receives every
+ * line the logger accepts, after the level filter.
+ */
+class ActionsCoreTransport extends Transport {
+  log(info: { level: string; message: unknown }, callback: () => void): void {
+    const message = String(info.message);
+    switch (info.level) {
+      case "debug":
+        core.debug(message);
+        break;
+      case "info":
+        core.info(message);
+        break;
+      case "warn":
+        core.warning(message);
+        break;
+      case "error":
+        core.error(message);
+        break;
+      default:
+        core.error(`[UNKNOWN LEVEL]: ${info.level}, message: ${message}`);
+        break;
+    }
+    callback();
+  }
+}
+
 /** Create the logger used for GitHub Actions integration. */
 function createGitHubLogger(debug: boolean, filepath: string): winston.Logger {
-  const logger = winston.createLogger({
+  return winston.createLogger({
     level: debug ? "debug" : "info",
     transports: [
       createStream(filepath, winston.format.combine(winston.format.timestamp(), winston.format.json())),
+      new ActionsCoreTransport(),
     ],
   });
-  logger.on("logged", (info) => {
-    switch (info.level) {
-      case "debug":
-        if (debug) core.debug(info.message);
-        break;
-      case "info":
-        core.info(info.message);
-        break;
-      case "warn":
-        core.warning(info.message);
-        break;
-      case "error":
-        core.error(info.message);
-        break;
-      default:
-        core.error(`[UNKNOWN LEVEL]: ${info.level}, message: ${info.message}`);
-        break;
-    }
-  });
-  return logger;
 }
 
 /** Container for all instrumentation: telemetry, logging, and artifacts generated */

@@ -2,7 +2,15 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { Artifacts, Instruments } from "../src/instrumentation.ts";
+import * as core from "@actions/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@actions/core", () => ({
+  debug: vi.fn(),
+  info: vi.fn(),
+  warning: vi.fn(),
+  error: vi.fn(),
+}));
 
 describe("instrumentation", () => {
   afterEach(() => {
@@ -66,6 +74,36 @@ describe("instrumentation", () => {
         expect(fs.readFileSync(path.join(expectedDir, "capa_app.log"), "utf8")).toContain("app message"),
       );
       fs.rmSync(home, { recursive: true, force: true });
+    });
+
+    /** Runs `work` against fresh instruments, then closes their log files before removing them. */
+    async function withInstruments(work: (instruments: Instruments) => void): Promise<void> {
+      const home = fs.mkdtempSync(path.join(os.tmpdir(), "instruments-test-"));
+      vi.stubEnv("HOME", home);
+      const instruments = new Instruments(CACHE_DIRNAME, false);
+      work(instruments);
+      await Promise.all(
+        [instruments.appLogger, instruments.execLogger].map(
+          (logger) => new Promise((resolve) => logger.end(resolve)),
+        ),
+      );
+      fs.rmSync(home, { recursive: true, force: true });
+    }
+
+    it.each([
+      ["info", core.info],
+      ["warn", core.warning],
+      ["error", core.error],
+    ] as const)("appLogger %s message reaches the workflow log", async (level, workflowLogFn) => {
+      await withInstruments((instruments) => instruments.appLogger.log(level, "to the workflow log"));
+
+      expect(workflowLogFn).toHaveBeenCalledWith("to the workflow log");
+    });
+
+    it("appLogger debug message with debug off is not written to the workflow log", async () => {
+      await withInstruments((instruments) => instruments.appLogger.debug("hidden"));
+
+      expect(core.debug).not.toHaveBeenCalledWith("hidden");
     });
   });
 
