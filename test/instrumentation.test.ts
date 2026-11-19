@@ -77,11 +77,19 @@ describe("instrumentation", () => {
     });
 
     /** Runs `work` against fresh instruments, then closes their log files before removing them. */
-    async function withInstruments(work: (instruments: Instruments) => void): Promise<void> {
+    async function withInstruments(
+      work: (instruments: Instruments) => void,
+      debug: boolean = false,
+    ): Promise<void> {
       const home = fs.mkdtempSync(path.join(os.tmpdir(), "instruments-test-"));
       vi.stubEnv("HOME", home);
-      const instruments = new Instruments(CACHE_DIRNAME, false);
+      const instruments = new Instruments(CACHE_DIRNAME, debug);
       work(instruments);
+      // The log files open asynchronously; removing the directory first makes the open fail.
+      await vi.waitFor(() => {
+        expect(fs.existsSync(path.join(instruments.cacheDirPath, "capa_app.log"))).toBe(true);
+        expect(fs.existsSync(path.join(instruments.cacheDirPath, "capa_exec.log"))).toBe(true);
+      });
       await Promise.all(
         [instruments.appLogger, instruments.execLogger].map(
           (logger) => new Promise((resolve) => logger.end(resolve)),
@@ -98,6 +106,18 @@ describe("instrumentation", () => {
       await withInstruments((instruments) => instruments.appLogger.log(level, "to the workflow log"));
 
       expect(workflowLogFn).toHaveBeenCalledWith("to the workflow log");
+    });
+
+    it("appLogger debug message with debug on is written to the workflow log as debug", async () => {
+      await withInstruments((instruments) => instruments.appLogger.debug("shown in step debug"), true);
+
+      expect(core.debug).toHaveBeenCalledWith("shown in step debug");
+    });
+
+    it("appLogger message at a level without a workflow log equivalent is written as an error", async () => {
+      await withInstruments((instruments) => instruments.appLogger.log("http", "odd level"), true);
+
+      expect(core.error).toHaveBeenCalledWith("[UNKNOWN LEVEL]: http, message: odd level");
     });
 
     it("appLogger debug message with debug off is not written to the workflow log", async () => {
