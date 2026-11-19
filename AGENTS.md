@@ -10,6 +10,7 @@ You are an expert developer focused on TypeScript, Bash, DevOps, Git, and GitHub
 4. `Section 3` for CI/CD and release work.
 5. `Section 4` for repo-specific paths and commands.
 6. `Section 5` before touching APT, dpkg, or package-name logic.
+7. `Section 6` before a dependency bump, a breaking change, or a Node, `@actions/core` or `winston` upgrade.
 
 ## Instruction Efficiency
 
@@ -91,6 +92,27 @@ You are an expert developer focused on TypeScript, Bash, DevOps, Git, and GitHub
 - NEVER push action code that depends on an unpushed ts-apt change.
 - `npm run check:deps-pin` enforces the pin; it runs in CI and in the husky `.husky/pre-push` hook installed by `npm install`.
 - NEVER bypass the pre-push hook with `--no-verify`; unlink ts-apt instead.
+
+## 6) Owned Dependency Chain
+
+These `awalsh128` repos depend on each other. Check this chain before a breaking change, a major release, or a Node, `@actions/core` or `winston` upgrade.
+
+| Repo                                                 | Ships                                                                                            | Depends on (owned)                                                          |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `winston-host-adapters`                              | npm: `@awalsh128/winston-host`, `@awalsh128/winston-github-actions`, `@awalsh128/winston-vscode` | `winston-host` (same workspace); the `npm-publish-strict` action to publish |
+| `npm-publish-strict`                                 | GitHub Action                                                                                    | `@awalsh128/winston-github-actions` (caret range, bundled into `dist/`)     |
+| `ts-apt`                                             | npm: `ts-apt`                                                                                    | the `npm-publish-strict` action to publish                                  |
+| `cache-apt-pkgs-action` (v2 on `staging-2`/`main-2`) | GitHub Action                                                                                    | `ts-apt` (exact version, or a full commit SHA while unreleased)             |
+
+- Code flows `winston-host` → `winston-github-actions` → `npm-publish-strict`, and `ts-apt` → `cache-apt-pkgs-action`.
+- Planned: `cache-apt-pkgs-action` switches its logger to `@awalsh128/winston-github-actions` (3.x, exact pin).
+- MUST release the upstream change first, then bump the downstream pin in the change that uses it.
+- MUST open a follow-up PR in each downstream repo for an upstream major release, and list them in the release PR.
+- MUST keep these aligned across the chain: ESM, `@actions/core` 3.x (`winston-github-actions` declares it as a `^3` peer), `winston` 3.x and `winston-transport` 4.x.
+- Node: the GitHub Actions side (`npm-publish-strict`, `ts-apt`, `cache-apt-pkgs-action`, `winston-github-actions`) targets Node `>=24` (`node24`). `winston-vscode` runs on the Node that VS Code bundles, so keep `winston-host` free of Node 24-only APIs.
+- `npm-publish-strict` and `winston-host-adapters` form a loop, which the pins break: a `winston-github-actions` release reaches the action only after `npm-publish-strict` bumps and releases, and `winston-host-adapters` keeps its pinned action SHA until it bumps it. Bump one side at a time.
+- Pin `npm-publish-strict` to a full commit SHA that a release tag points at, and make the `# vX.Y.Z` comment match (`git tag --points-at <sha>`).
+- This repo is the end of the chain: before bumping `ts-apt`, check its release notes for changes to the `PackageManager` API and the Node, `@actions/core` and `winston` ranges above.
 
 ## Quick Commands
 
