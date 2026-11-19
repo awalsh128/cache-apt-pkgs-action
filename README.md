@@ -47,9 +47,9 @@ A Linux runner with APT (e.g. GitHub-hosted `ubuntu-latest`). The action runs on
 | Name                      | Description                                                                                                                       | Required | Default |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
 | `packages`                | Space delimited list of packages to install. Pin a version with APT syntax (e.g. `xdot=1.2-2`).                                   | Yes      |         |
-| `version`                 | Cache version label. Each label has its own cache, so change it to start a fresh one.                                             | No       | `""`    |
+| `version`                 | Cache version label. Each label has its own cache, so change it to start a fresh one. It can't contain spaces.                    | No       | `""`    |
 | `execute_install_scripts` | Run each package's `preinst` and `postinst` script after a restore. See [Non-file dependencies](#non-file-dependencies).          | No       | `false` |
-| `empty_packages_behavior` | `error`, `warn` or `ignore`. Only `error` applies so far: an empty `packages` always fails the action.                            | No       | `error` |
+| `empty_packages_behavior` | What to do when `packages` is empty: `error` fails the action, `warn` logs a warning and skips, `ignore` skips quietly.           | No       | `error` |
 | `debug`                   | Log more detail and upload the logs and manifests as a workflow artifact (a failed run uploads them anyway). Costs a little time. | No       | `false` |
 
 ### Outputs
