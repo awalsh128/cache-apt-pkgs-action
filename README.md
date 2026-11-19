@@ -183,6 +183,24 @@ Please reach out if you have found a workaround for your scenario and it can be 
 
 For more context and information see [issue #57](https://github.com/awalsh128/cache-apt-pkgs-action/issues/57#issuecomment-1321024283) which contains the investigation and conclusion.
 
+### Stalled Mirrors
+
+On a cache miss the action installs the packages with `apt`, so it is as fast as the mirror `apt` uses. GitHub-hosted Ubuntu runners list `azure.archive.ubuntu.com` as the first choice, and that mirror sometimes stalls a package download for several minutes (we have seen 2 to 4 minutes, and a few runs of 15 minutes or more). It happens on some days and to some jobs only, whatever the package or the tool running `apt`: the same stalls showed up in plain `apt-get` runs and in the v1 action's own CI. A cache hit does not use the network for packages, so it is not affected.
+
+In a controlled run of 36 identical jobs, 4 of 12 stalled on the default mirror and none of 12 stalled on `archive.ubuntu.com`. Retrying the download or shortening `apt`'s timeouts did not help, since a stalled job stays stalled. If your cache misses stall, point `apt` at `archive.ubuntu.com` in a step before this action:
+
+```yaml
+- name: Use archive.ubuntu.com
+  run: sudo sed -i 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#' /etc/apt/sources.list.d/ubuntu.sources
+  shell: bash
+- uses: awalsh128/cache-apt-pkgs-action@latest
+  with:
+    packages: mypackage
+    version: 1.0
+```
+
+This rewrites the runner's `apt` sources for the rest of the job, and it only matches the layout of the current `ubuntu-24.04` runner image (check with `grep URIs /etc/apt/sources.list.d/ubuntu.sources` if it does not apply to yours). The action does not change your sources itself.
+
 ### Cache Limits
 
 A repository can have up to 5GB of caches. Once the 5GB limit is reached, older caches will be evicted based on when the cache was last accessed. Caches that are not accessed within the last week will also be evicted. To get more information on how to access and manage your actions's caches, see [GitHub Actions / Using workflows / Cache dependencies](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#viewing-cache-entries).

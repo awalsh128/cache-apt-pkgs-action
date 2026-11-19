@@ -58,6 +58,7 @@ jobs:
             action.yml
             dist/action/
             dist/scripts/
+            .github/actions/use-archive-mirror/
           if-no-files-found: error
           retention-days: 1
 
@@ -190,6 +191,11 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      # Every integration job below runs this step first. GitHub-hosted runners try azure.archive.ubuntu.com
+      # first, and it sometimes stalls a package download for minutes, which has nothing to do with what the
+      # action does. See the action for the measurements, and the README for the user-facing caveat.
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - name: Execute
         id: execute
         uses: ./
@@ -220,6 +226,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - name: Execute
         id: execute
         uses: ./
@@ -248,6 +256,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - name: Execute
         id: execute
         uses: ./
@@ -272,6 +282,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - name: Execute
         id: execute
         uses: ./
@@ -296,6 +308,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - name: Execute
         id: execute
         uses: ./
@@ -320,6 +334,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - name: Execute
         id: execute
         uses: ./
@@ -344,6 +360,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - name: Execute
         id: execute
         uses: ./
@@ -368,6 +386,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - name: Execute
         id: execute
         uses: ./
@@ -392,6 +412,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - name: Execute
         id: execute
         uses: ./
@@ -413,6 +435,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - name: Execute
         id: execute
         uses: ./
@@ -434,6 +458,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - name: Execute
         id: execute
         uses: ./
@@ -457,6 +483,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - uses: ./
         with:
           # Some dependencies (libicu-dev) are already on the runner image, the rest are not.
@@ -474,6 +502,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - uses: ./
         with:
           # Python-based packages whose reported dependencies are not all installed.
@@ -491,6 +521,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - uses: ./
         with:
           packages: xdot
@@ -507,6 +539,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - uses: ./
         with:
           packages: default-jre
@@ -524,6 +558,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       # The original report was an Intel oneAPI package whose files have spaces in their
       # paths. libopenal-data ships "/usr/share/openal/hrtf/Default HRTF.mhr" and comes
       # from the Ubuntu archive, so no third-party repo or extra installs are needed.
@@ -543,6 +579,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - uses: ./
         with:
           packages: libboost-dev
@@ -559,6 +597,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - uses: ./
         with:
           packages: alsa-ucm-conf libasound2t64
@@ -575,6 +615,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - uses: ./
         with:
           # An architecture-qualified name (colon) must not break the log artifact name.
@@ -592,6 +634,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - uses: ./
         with:
           packages: libtk8.6
@@ -608,6 +652,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - uses: ./
         with:
           packages: libtk8.6
@@ -624,6 +670,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - uses: ./
         with:
           packages: libfuse2
@@ -640,6 +688,8 @@ jobs:
         with:
           name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
           path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
       - uses: ./
         with:
           packages: libvips

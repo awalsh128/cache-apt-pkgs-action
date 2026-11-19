@@ -1,0 +1,22 @@
+name: "Use archive.ubuntu.com"
+description: "Points apt at archive.ubuntu.com instead of the azure.archive.ubuntu.com mirror that GitHub-hosted runners try first."
+
+# Why: on GitHub-hosted Ubuntu runners apt reads /etc/apt/apt-mirrors.txt, which lists
+# azure.archive.ubuntu.com as the first choice. That mirror sometimes stalls for 2 to 4 minutes on a package
+# download (and 15 minutes or more in the worst runs we saw), on some days and for some jobs only, whatever
+# the package or the tool that runs apt. In a controlled run of 36 identical plain-apt jobs, 4 of 12 stalled
+# on the default mirror and none of 12 stalled on archive.ubuntu.com; retrying the download or shortening
+# apt's timeouts did not help. Our integration jobs only test the action, so they use the steady mirror.
+# Users hit the same stalls; see the README caveat on stalled mirrors.
+runs:
+  using: composite
+  steps:
+    - name: Rewrite the apt mirror
+      shell: bash
+      run: |
+        set -euo pipefail
+        sources=/etc/apt/sources.list.d/ubuntu.sources
+        # Fail loudly if the runner image changes its apt layout instead of silently using the stalling mirror.
+        grep -q 'mirror+file:/etc/apt/apt-mirrors.txt' "$sources"
+        sudo sed -i 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#' "$sources"
+        grep -h '^URIs' "$sources" | sort -u
