@@ -69,6 +69,22 @@ export class ActionRunner {
   }
 
   /**
+   * Runs a step and logs how long it took, so a slow run shows which step was slow without debug logging.
+   *
+   * @param label Name of the step, as it should read in the log.
+   * @param work The step to run.
+   * @returns What the step returns.
+   */
+  private async timed<T>(label: string, work: () => Promise<T>): Promise<T> {
+    const start = performance.now();
+    try {
+      return await work();
+    } finally {
+      this.logger.info(`${label} took ${((performance.now() - start) / 1000).toFixed(1)}s`);
+    }
+  }
+
+  /**
    * Executes the end-to-end action flow and returns action outputs.
    *
    * @param inputs Validated action inputs.
@@ -78,7 +94,9 @@ export class ActionRunner {
     const packageNames = ActionPackageNames.fromInput(inputs.packages);
     const cacheKey = new CacheKey(inputs.version, FORCE_UPDATE_INCREMENT, process.arch, packageNames);
 
-    let manifest = await this.cache.loadAndRestore(cacheKey, inputs.executeInstallScripts);
+    let manifest = await this.timed("Cache restore", () =>
+      this.cache.loadAndRestore(cacheKey, inputs.executeInstallScripts),
+    );
     const cacheHit = manifest !== undefined;
 
     // Needed on a cache hit too, to resolve the native arch for outputs.
@@ -87,16 +105,21 @@ export class ActionRunner {
     if (!cacheHit) {
       // Runner images ship an apt index that can predate the archive, so a package whose version was
       // superseded (e.g. a security update) 404s on download. Refresh it before every fresh install.
-      await installManager.update();
-      const packageInfos = await installManager.install(packageNames.toArray());
+      await this.timed("apt update", () => installManager.update());
+      const packageInfos = await this.timed("apt install", () =>
+        installManager.install(packageNames.toArray()),
+      );
       // Collect each package's installed files so the archives have content.
-      const entries = await Promise.all(
-        packageInfos.map(
-          async (info) => new ManifestEntry(info.name, await buildFileList(info.name, installManager)),
+      const entries = await this.timed("Listing installed files", () =>
+        Promise.all(
+          packageInfos.map(
+            async (info) => new ManifestEntry(info.name, await buildFileList(info.name, installManager)),
+          ),
         ),
       );
       manifest = new Manifest(new Date(), entries, cacheKey);
-      await this.cache.archiveAndSave(manifest);
+      const savedManifest = manifest;
+      await this.timed("Archive and cache save", () => this.cache.archiveAndSave(savedManifest));
     }
 
     const nativeArch = await installManager.getNativeArchitecture();

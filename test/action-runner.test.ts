@@ -38,6 +38,7 @@ describe("ActionRunner", () => {
       runner: new ActionRunner(cache as never, commandRunner as never, logger),
       cache,
       commandRunner,
+      logger,
     };
   }
 
@@ -150,6 +151,32 @@ describe("ActionRunner", () => {
     });
 
     expect(vi.mocked(createPackageManager).mock.calls[0]?.[0]).toBe(false);
+  });
+
+  it("runAction cache miss logs how long each install step took", async () => {
+    const { runner, cache, logger } = createRunner();
+    cache.loadAndRestore.mockResolvedValue(undefined);
+    const infoSpy = vi.spyOn(logger, "info");
+    vi.mocked(createPackageManager).mockResolvedValue({
+      update: vi.fn().mockResolvedValue(0),
+      install: vi.fn().mockResolvedValue([]),
+      getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
+    } as never);
+
+    await runner.runAction({
+      packages: "curl",
+      version: "v1",
+      executeInstallScripts: false,
+      emptyPackagesBehavior: "error",
+      debug: false,
+    });
+
+    const messages = infoSpy.mock.calls.map(([message]) => String(message));
+    expect(
+      ["Cache restore", "apt update", "apt install", "Listing installed files", "Archive and cache save"].map(
+        (step) => messages.some((message) => new RegExp(`^${step} took \\d+\\.\\ds$`).test(message)),
+      ),
+    ).toEqual([true, true, true, true, true]);
   });
 
   it("runAction cache hit does not refresh the apt index", async () => {

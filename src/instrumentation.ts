@@ -9,11 +9,16 @@ import { CACHE_KEY_FILENAME, MANIFEST_FILENAME, resolveCacheDir } from "./cache.
 const APP_LOG_FILENAME = "capa_app.log";
 const EXEC_LOG_FILENAME = "capa_exec.log";
 
-function createStream(filepath: string): winston.transports.StreamTransportInstance {
+/** File transport whose lines carry a timestamp, so a slow step can be found in the uploaded logs. */
+function createStream(
+  filepath: string,
+  format: ReturnType<typeof winston.format.combine>,
+): winston.transports.StreamTransportInstance {
   return new winston.transports.Stream({
     stream: fs.createWriteStream(filepath, {
       flags: "a",
     }),
+    format,
   });
 }
 
@@ -73,7 +78,18 @@ function createExecLogger(debug: boolean, filepath: string): winston.Logger {
       winston.format.colorize(),
       winston.format.printf(({ level, message }) => `${level}: ${message}`),
     ),
-    transports: [new winston.transports.Console(), createStream(filepath)],
+    transports: [
+      new winston.transports.Console(),
+      createStream(
+        filepath,
+        winston.format.combine(
+          winston.format.timestamp(),
+          winston.format.printf(
+            ({ timestamp, level, message }) => `${String(timestamp)} ${level}: ${message}`,
+          ),
+        ),
+      ),
+    ],
   });
   return logger;
 }
@@ -82,7 +98,9 @@ function createExecLogger(debug: boolean, filepath: string): winston.Logger {
 function createGitHubLogger(debug: boolean, filepath: string): winston.Logger {
   const logger = winston.createLogger({
     level: debug ? "debug" : "info",
-    transports: [createStream(filepath)],
+    transports: [
+      createStream(filepath, winston.format.combine(winston.format.timestamp(), winston.format.json())),
+    ],
   });
   logger.on("logged", (info) => {
     switch (info.level) {
