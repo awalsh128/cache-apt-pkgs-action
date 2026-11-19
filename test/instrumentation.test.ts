@@ -82,6 +82,11 @@ describe("instrumentation", () => {
       vi.stubEnv("HOME", home);
       const instruments = new Instruments(CACHE_DIRNAME, false);
       work(instruments);
+      // The log files open asynchronously; removing the directory first makes the open fail.
+      await vi.waitFor(() => {
+        expect(fs.existsSync(path.join(instruments.cacheDirPath, "capa_app.log"))).toBe(true);
+        expect(fs.existsSync(path.join(instruments.cacheDirPath, "capa_exec.log"))).toBe(true);
+      });
       await Promise.all(
         [instruments.appLogger, instruments.execLogger].map(
           (logger) => new Promise((resolve) => logger.end(resolve)),
