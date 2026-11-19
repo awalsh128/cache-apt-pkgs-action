@@ -5,6 +5,7 @@ import { Manifest, ManifestEntry } from "../src/manifest.js";
 import { CacheKey } from "../src/cache.js";
 import { createPackageName } from "ts-apt";
 import { ActionPackageNames } from "../src/packages.js";
+import { MANIFEST_INPUTS, MANIFEST_OUTPUTS } from "./manifest-fixtures.js";
 
 const NATIVE_ARCH = "amd64";
 const FOREIGN_ARCH = "i386";
@@ -44,6 +45,8 @@ describe("runAction", () => {
         new ManifestEntry(createPackageName(PKG3_NAME, PKG_VER, undefined), []),
       ],
       cacheKey,
+      MANIFEST_INPUTS,
+      MANIFEST_OUTPUTS,
     );
 
     const mockCache = {
@@ -100,6 +103,8 @@ describe("runAction", () => {
         new ManifestEntry(createPackageName(PKG_NAME, PKG_VER, undefined), []),
       ],
       cacheKey,
+      MANIFEST_INPUTS,
+      MANIFEST_OUTPUTS,
     );
     const mockCache = { loadAndRestore: async () => manifest };
 

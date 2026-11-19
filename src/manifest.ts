@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import type { ActionInputs, ActionOutputs } from "./action.js";
 import { CacheKey } from "./cache.js";
 import { packageNameFromJSON, PackageName } from "ts-apt";
 
@@ -13,6 +14,8 @@ interface ManifestJson {
   readonly created: string | number;
   readonly entries: readonly ManifestEntryJson[];
   readonly cacheKey: string;
+  readonly inputs: ActionInputs;
+  readonly outputs: ActionOutputs;
 }
 
 /** One installed package and the files archived for it in the cache. */
@@ -58,6 +61,9 @@ export class Manifest {
    *   this order because install scripts can depend on earlier packages
    *   (see issue #196).
    * @param cacheKey Key the cache was saved under.
+   * @param inputs Inputs of the run that saved the cache. Restore doesn't use them; they are for
+   *   debugging a cache whose contents don't match what was expected.
+   * @param outputs Outputs of the run that saved the cache, for the same reason.
    */
   constructor(
     /** When the manifest was created. */
@@ -66,6 +72,10 @@ export class Manifest {
     public readonly entries: ManifestEntry[],
     /** Key the cache was saved under. */
     public readonly cacheKey: CacheKey,
+    /** Inputs of the run that saved the cache. */
+    public readonly inputs: ActionInputs,
+    /** Outputs of the run that saved the cache. */
+    public readonly outputs: ActionOutputs,
   ) {}
 
   /**
@@ -80,6 +90,8 @@ export class Manifest {
       new Date(json.created),
       json.entries.map((entry) => ManifestEntry.fromJSON(entry)),
       CacheKey.fromJSON(json.cacheKey),
+      json.inputs,
+      json.outputs,
     );
   }
 
