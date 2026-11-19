@@ -2,14 +2,17 @@ name: Release
 
 # Changes are collected on staging-2 and released all at once, so nothing is released from a push:
 # - main-2: promote.yml starts this after fast-forwarding main-2 to a CI-passed staging-2 commit,
-#   releasing one official version (e.g. v2.1.0) and moving the floating major tag (v2).
-# - staging-2: a manual run releases a candidate (e.g. v2.1.0-rc.1), which never moves v2. Use it only
-#   when a candidate is wanted; the official release is computed from the same commits either way.
+#   releasing one official version (e.g. v2.1.0).
+# - staging-2: a manual run releases a candidate (e.g. v2.1.0-rc.1). Use it only when a candidate is
+#   wanted; the official release is computed from the same commits either way.
+#
+# There is no floating major tag (v2) on purpose: a tag that moves lets a compromised release change what
+# consumers run, so they pin an exact release or a commit SHA.
 # - Manual runs first require a successful CI run for the commit.
 #
 # Releases never commit to a branch. dist/ is gitignored, so semantic-release tags a detached commit
 # (the released source plus the built dist/, see release.config.ts) that is on no branch. That is
-# the commit `uses: awalsh128/cache-apt-pkgs-action@v2` resolves to.
+# the commit `uses: awalsh128/cache-apt-pkgs-action@v2.1.0` resolves to.
 #
 # No stored secrets: the tag token comes from Octo STS under .github/chainguard/release.sts.yaml,
 # which only this workflow on main-2 or staging-2 matches. The 'release' environment (main-2 and
@@ -117,18 +120,3 @@ jobs:
           TAG: ${{ steps.release.outputs.tag }}
           BUNDLE: ${{ steps.bundle.outputs.path }}
         run: gh release upload "$TAG" "$BUNDLE" --clobber
-
-      # Consumers use @v2, so official releases move it. Release candidates never do. Pushed with the
-      # Octo STS token because the tag ruleset blocks every other update.
-      - name: Move floating major tag
-        if: ${{ steps.release.outputs.official == 'true' }}
-        shell: bash
-        env:
-          TAG: ${{ steps.release.outputs.tag }}
-          TOKEN: ${{ steps.octo-sts.outputs.token }}
-          REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          major="${TAG%%.*}"
-          git tag --force "$major" "$TAG"
-          git push --force "https://x-access-token:${TOKEN}@github.com/${REPO}.git" "refs/tags/$major"
