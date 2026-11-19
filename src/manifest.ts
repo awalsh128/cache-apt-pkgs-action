@@ -15,6 +15,19 @@ interface ManifestJson {
   readonly cacheKey: string;
 }
 
+/**
+ * Throws when a field a manifest needs is missing or has the wrong type.
+ *
+ * @param ok Whether the field is valid.
+ * @param field Name of the field, for the error message.
+ * @param where What was being parsed (e.g. `manifest`).
+ */
+function requireField(ok: boolean, field: string, where: string): void {
+  if (!ok) {
+    throw new Error(`Invalid ${where}: '${field}' is required and has the wrong type or is missing.`);
+  }
+}
+
 /** One installed package and the files archived for it in the cache. */
 export class ManifestEntry {
   /** Installed package, with the version and arch apt resolved. */
@@ -40,8 +53,11 @@ export class ManifestEntry {
    *
    * @param json Parsed JSON object as written by {@link Manifest.writeToFile}.
    * @returns The deserialized entry.
+   * @throws Error when `packageName` or `filepaths` is missing.
    */
   static fromJSON(json: ManifestEntryJson): ManifestEntry {
+    requireField(json?.packageName != null, "packageName", "manifest entry");
+    requireField(Array.isArray(json.filepaths), "filepaths", "manifest entry");
     return new ManifestEntry(packageNameFromJSON(json.packageName), json.filepaths);
   }
 }
@@ -74,8 +90,12 @@ export class Manifest {
    * @param json Parsed JSON object as written by {@link Manifest.writeToFile}.
    *   Its `cacheKey` is the serialized string from {@link CacheKey.toJSON}.
    * @returns The deserialized manifest.
+   * @throws Error when `created`, `entries` or `cacheKey` is missing.
    */
   static fromJSON(json: ManifestJson): Manifest {
+    requireField(json?.created != null, "created", "manifest");
+    requireField(Array.isArray(json.entries), "entries", "manifest");
+    requireField(typeof json.cacheKey === "string", "cacheKey", "manifest");
     return new Manifest(
       new Date(json.created),
       json.entries.map((entry) => ManifestEntry.fromJSON(entry)),

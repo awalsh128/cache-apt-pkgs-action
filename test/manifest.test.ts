@@ -48,4 +48,20 @@ describe("manifest", () => {
 
     expect(parsed).toEqual(entry);
   });
+
+  const validManifest = { created: 1, entries: [], cacheKey: "{}" };
+
+  it.each(["created", "entries", "cacheKey"])("Manifest fromJSON missing %s throws naming it", (field) => {
+    const json: Record<string, unknown> = { ...validManifest };
+    delete json[field];
+
+    expect(() => Manifest.fromJSON(json as never)).toThrow(`'${field}'`);
+  });
+
+  it.each(["packageName", "filepaths"])("ManifestEntry fromJSON missing %s throws naming it", (field) => {
+    const json: Record<string, unknown> = { packageName: "curl=8.5.0", filepaths: [] };
+    delete json[field];
+
+    expect(() => ManifestEntry.fromJSON(json as never)).toThrow(`'${field}'`);
+  });
 });
