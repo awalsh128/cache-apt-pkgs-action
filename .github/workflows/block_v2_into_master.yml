@@ -1,0 +1,26 @@
+name: Block v2 into master
+# v1 lives on master; v2 lives on staging-2 and main-2. Fail any pull request
+# into master that comes from a v2 branch. Make this check required on master.
+on:
+  pull_request:
+    branches: [master]
+    types: [opened, reopened, synchronize, edited]
+
+permissions: {}
+
+jobs:
+  block-v2-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject v2 head branches
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          case "$HEAD_REF" in
+            main-2 | staging-2)
+              echo "::error::'$HEAD_REF' is a v2 branch and must never be merged into master."
+              exit 1
+              ;;
+          esac
+          echo "Head branch '$HEAD_REF' is allowed."
