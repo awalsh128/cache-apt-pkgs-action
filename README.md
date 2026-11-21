@@ -1,29 +1,43 @@
 # <img src="https://raw.githubusercontent.com/awalsh128/cache-apt-pkgs-action/main-2/logo.png" align="center" alt="Cache APT Packages logo" height="60"> Cache APT Packages Action
 
-[![License: Apache2](https://shields.io/badge/license-apache2-blue.svg)](https://github.com/awalsh128/cache-apt-pkgs-action/blob/master/LICENSE)
+[![License](https://img.shields.io/github/license/awalsh128/cache-apt-pkgs-action)](https://github.com/awalsh128/cache-apt-pkgs-action/blob/master/LICENSE)
 [![Master tests](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/action-tests.yml?label=Tests%20Master&branch=master)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/action-tests.yml?query=branch%3Amaster)
 [![Latest release](https://img.shields.io/github/v/release/awalsh128/cache-apt-pkgs-action?label=Release)](https://github.com/awalsh128/cache-apt-pkgs-action/releases)
 
-This action allows caching of Advanced Package Tool (APT) package dependencies to improve workflow execution time instead of installing the packages on every run.
+Cache Advanced Package Tool (APT) packages between workflow runs, so a run restores them from the GitHub Actions cache instead of installing them again. It is a composition of [actions/cache](https://github.com/actions/cache/) and the `apt` utility.
+
+- ⚡ Skips the install on a cache hit and restores the packages from the cache
+- 📦 Caches the dependencies too, so the whole installed set comes back
+- 🔑 Keeps one cache for each package list, `version` label and CPU architecture
+- 🧾 Reports the exact installed versions as outputs, for audit logs
+- ➕ Adds third-party repositories such as PPAs before installing
+
+[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-db61a2?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/awalsh128)
+
+If you find this project useful, please consider [sponsoring it](https://github.com/sponsors/awalsh128) and show some ❤️ for open source maintainers.
 
 > [!IMPORTANT]
 > Version 1 is in maintenance mode. Recent releases have been unstable, so v1 is locked to bug fixes and reliability work. Version 2 is in development on the [`main-2`](https://github.com/awalsh128/cache-apt-pkgs-action/tree/main-2) branch. It is written in TypeScript, has better test coverage and relies much less on Bash scripts, which have caused more than one major break.
 
-> [!TIP]
-> If you find this project useful, please consider supporting it [as a sponsor and show some ❤️ for open source maintainers](https://github.com/sponsors/awalsh128).
-
 > [!NOTE]
 > Looking for co-maintainers to help review changes and investigate issues. I haven't had as much time to stay on top of this action as I would like, and I want to make sure it stays responsive and reliable for the community. If you are interested, please reach out.
 
-## Documentation
+## Quick Start
 
-This action is a composition of [actions/cache](https://github.com/actions/cache/) and the `apt` utility. Some actions require additional APT based packages to be installed in order for other steps to be executed. Packages can be installed when ran but can consume much of the execution workflow time.
+Requires a Debian-based runner, since the action runs `apt` and uses `sudo`.
 
-## Usage
+```yaml
+steps:
+  - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+  - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+    with:
+      packages: graphviz doxygen
+      version: 1.0
+```
 
-### Pre-requisites
+Create the workflow `.yml` file in your repository's `.github/workflows` directory. See GitHub's [Creating a workflow file](https://help.github.com/en/articles/configuring-a-workflow#creating-a-workflow-file) for more.
 
-Create a workflow `.yml` file in your repositories `.github/workflows` directory. An [example workflow](#example-workflow) is available below. For more information, reference the GitHub Help Documentation for [Creating a workflow file](https://help.github.com/en/articles/configuring-a-workflow#creating-a-workflow-file).
+## Configuration
 
 ### Versions
 
@@ -39,19 +53,23 @@ The `latest` tag is deprecated and will no longer be updated. Pin to a major ver
 
 ### Inputs
 
-- `packages` - Space delimited list of packages to install. A version can optionally be given using APT syntax `<name>=<version>` (e.g. `xdot=1.2-2`).
-- `version` - Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
-- `execute_install_scripts` - Execute Debian package pre and post install script upon restore. See [Caveats / Non-file Dependencies](#non-file-dependencies) for more information.
-- `empty_packages_behavior` - Desired behavior when the given `packages` is empty. `'error'` (default), `'warn'` or `'ignore'`.
-- `add-repository` - Space delimited list of repositories to add via `apt-add-repository` before installing packages. Supports PPA (e.g., `ppa:user/repo`) and other repository formats.
-- `debug` - Enable debug logging and upload the action logs as a workflow artifact. Minor performance penalty. Default `false`.
-- `refresh` - **Obsolete.** Not used by the action; use `version` instead.
+| Input | Description | Required | Default |
+| ----- | ----------- | -------- | ------- |
+| `packages` | Space delimited list of packages to install. A version can optionally be given using APT syntax `<name>=<version>` (e.g. `xdot=1.2-2`). | Yes | |
+| `version` | Version of cache to load. Each version will have its own cache. All characters except spaces are allowed. | No | |
+| `execute_install_scripts` | Execute Debian package pre and post install scripts upon restore. See [Non-file Dependencies](#non-file-dependencies). | No | `false` |
+| `empty_packages_behavior` | Behavior when `packages` is empty: `error`, `warn` or `ignore`. | No | `error` |
+| `add-repository` | Space delimited list of repositories to add via `apt-add-repository` before installing. Supports PPAs (e.g. `ppa:user/repo`) and other repository formats. | No | |
+| `debug` | Enable debug logging and upload the action logs as a workflow artifact. Minor performance penalty. | No | `false` |
+| `refresh` | **Obsolete.** Not used by the action; use `version` instead. | No | |
 
 ### Outputs
 
-- `cache-hit` - A boolean value to indicate a cache was found for the packages requested.
-- `package-version-list` - The main requested packages and versions that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. \<package1>=<version1\>,\<package2>=\<version2>,...).
-- `all-package-version-list` - All the pulled in packages and versions, including dependencies, that are installed. Represented as a comma delimited list with equals delimit on the package version (i.e. \<package1>=<version1\>,\<package2>=\<version2>,...).
+| Output | Description |
+| ------ | ----------- |
+| `cache-hit` | `true` if a cache was found for the requested packages. |
+| `package-version-list` | The main requested packages and versions that are installed, as a comma delimited list of `<package>=<version>`. |
+| `all-package-version-list` | All the packages and versions installed, including pulled-in dependencies, in the same format. |
 
 ### Errors
 
@@ -68,59 +86,11 @@ The action checks its inputs before doing anything else, and fails the step with
 > [!NOTE]
 > v1 doesn't catch every package resolution or install failure, so the action can report success after an incomplete install. Failing on these errors is planned for v2 (see [#230](https://github.com/awalsh128/cache-apt-pkgs-action/issues/230)).
 
-### Security Compliance
+## Security
 
-This is a composite action. It runs Bash scripts and a small Go helper (`apt_query`), committed as prebuilt binaries for x86 and arm64, on the runner. It uses `sudo` to install packages. Consumers don't need to install anything else.
+The action runs Bash scripts and a prebuilt Go helper on the runner and uses `sudo`. For hardening guidance, security characteristics and a hardened example, see [Security Compliance](docs/security-compliance.md).
 
-For workflows with stricter compliance requirements, the main security characteristics are:
-
-- `packages` should be treated as an allowlisted input in your workflow. Prefer explicit package names and versions where reproducibility matters.
-- `version` can be used as a cache namespace so you can intentionally rotate caches when package policy or runner baselines change.
-- `empty_packages_behavior` can be left at the default `error` to fail closed when an expected package list is missing.
-- `execute_install_scripts` is disabled by default. Enable it only when required, because Debian maintainer scripts run arbitrary package-provided shell logic during restore.
-- `debug` is disabled by default. When enabled, logs are uploaded as a workflow artifact. Review them before sharing outside your organization.
-- `add-repository` adds third-party APT sources to the runner. Only add repositories you trust.
-- On a cache miss, if `apt-fast` isn't already on the runner, the action downloads and runs its install script from the [apt-fast](https://github.com/ilikenwf/apt-fast) repository.
-
-#### Features
-
-Security-relevant action features:
-
-- Package inputs are normalized and sorted before cache lookup, which reduces accidental cache divergence from ordering or duplicate whitespace in the package list.
-- Unpinned package names are resolved to concrete package versions before the cache key is generated, which improves traceability of what was actually cached for a run.
-- Cache keys are derived from the normalized package set, the user-provided `version`, the added repositories and the runner architecture, which helps isolate caches across package changes and incompatible platforms.
-- The action rejects invalid boolean inputs, `version` values containing spaces and repository values with invalid characters.
-- Actions that this action depends on (`actions/cache`, `actions/upload-artifact`) are pinned to full commit SHAs.
-- The `package-version-list` and `all-package-version-list` outputs can be captured by downstream workflow steps for audit logs, attestation inputs, or compliance reporting.
-
-#### Usage Recommendations
-
-For GitHub Actions workflow hardening, prefer the following controls around this action:
-
-- Pin this action to a release tag you trust, or to a full commit SHA for stricter supply chain control.
-- Use the minimum required workflow `permissions` instead of broad defaults.
-- Run on GitHub-hosted or otherwise trusted runners with controlled APT sources.
-- Limit who can modify workflow files and package lists through branch protection and pull request review.
-- Review whether cached APT contents are acceptable for your repository's cache retention policy and data handling requirements.
-
-Example hardened usage:
-
-```yaml
-permissions:
-  contents: read
-
-jobs:
-  build:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
-        with:
-          packages: curl=8.5.0-2ubuntu10.6 jq=1.7.1-3build1
-          version: ubuntu-24.04-v1
-          empty_packages_behavior: error
-          execute_install_scripts: false
-```
+## Usage Guide
 
 ### Cache scopes
 
