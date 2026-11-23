@@ -86,6 +86,12 @@ jobs:
           scope: ${{ github.repository }}
           identity: release
 
+      # Each release is a detached commit that is on no branch, so semantic-release can't see it and would
+      # compute a version that already exists. This makes the earlier releases reachable, locally only.
+      - name: Attach earlier releases
+        shell: bash
+        run: ./scripts/ops/attach_release_tags.sh
+
       - name: Publish with semantic-release
         id: release
         shell: bash
