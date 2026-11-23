@@ -1,0 +1,38 @@
+# Starts a release candidate (e.g. v2.1.0-rc.1) after CI passes on a staging-2 push, so every
+# releasable change has a candidate people can pin and test. Only feat, fix and breaking commits
+# release anything; semantic-release makes no release for docs, ci, chore or test commits.
+#
+# This workflow only starts release.yml on its own (the same way promote.yml does) and never calls it:
+# the Octo STS tag token is issued only to release.yml started directly (.github/chainguard/release.sts.yaml).
+# release.yml checks CI for the exact commit it runs on, so a staging-2 head that moved on after this
+# run started fails there instead of releasing an unchecked commit.
+name: Release candidate
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [staging-2]
+
+permissions: {}
+
+# Queue runs; never cancel one that is starting a release.
+concurrency:
+  group: release-candidate
+  cancel-in-progress: false
+
+jobs:
+  start:
+    # CI also runs nightly and on pull requests whose branch is named staging-2; only a push counts.
+    if: ${{ github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write # Start the release workflow
+    steps:
+      - name: Start release candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: gh workflow run release.yml --repo "$REPO" --ref staging-2

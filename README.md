@@ -80,7 +80,7 @@ A Linux runner with APT (e.g. GitHub-hosted `ubuntu-latest`). The action runs on
 ## Versions
 
 - `@v2` is the latest stable v2 release. It moves on each stable release, and it is the only tag that ever moves.
-- `@v#.#.#` is an exact release (e.g. `v2.0.0`). It never changes once published. Release candidates, cut by hand from `staging-2`, are tagged `v#.#.#-rc.#` and may be unstable. `@v2` never points at one.
+- `@v#.#.#` is an exact release (e.g. `v2.0.0`). It never changes once published. Release candidates, cut from `staging-2` after CI passes, are tagged `v#.#.#-rc.#` and may be unstable. `@v2` never points at one.
 - A full commit SHA pins the exact code and is the safest choice.
 
 A tag that moves lets a compromised release change what your workflow runs. If that matters to you, pin an exact release or a commit SHA instead of `@v2`. `@latest` and `@v1` are moving tags too, and they only point at v1.
