@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if git diff --quiet && git diff --cached --quiet; then git switch staging-2 >&2 && git pull --ff-only origin staging-2 >&2 && echo \"Session started on staging-2 (up to date).\"; else echo \"WARNING: uncommitted changes, did not switch to staging-2. Current branch: $(git branch --show-current). AGENTS.md requires staging-2.\"; fi || echo \"WARNING: could not switch to or update staging-2. Current branch: $(git branch --show-current).\""
+          }
+        ]
+      }
+    ]
+  }
+}
