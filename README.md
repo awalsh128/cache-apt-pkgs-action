@@ -134,6 +134,28 @@ If that doesn't fix it, install that package in its own step:
 
 This action can't reverse engineer the Debian package manager. That would be out of scope and brittle, and at that point it is better to contribute to Debian packaging. If you find a workaround that generalizes, please reach out. [Issue #57](https://github.com/awalsh128/cache-apt-pkgs-action/issues/57#issuecomment-1321024283) has the original investigation.
 
+### Runner image changes
+
+The cache key doesn't include the runner image. Only the packages you request are archived, so a pre-installed dependency of one of them (e.g. `libwayland-server0` for GTK and WebKit packages) is in neither the cache nor the manifest. If a later image drops that dependency, a hit on the old cache restores files that need a library the runner no longer has. The job then fails with an error like `error while loading shared libraries: libwayland-server.so.0: cannot open shared object file`, and it can look intermittent because it follows the image the job lands on. Issue [#187](https://github.com/awalsh128/cache-apt-pkgs-action/issues/187) tracks this.
+
+Keying on the image version directly isn't the fix. It invalidates every cache on each image rotation, and `ImageOS` and `ImageVersion` can be unset on self-hosted runners and in job containers.
+
+Until the action fingerprints the image itself, put the image into `version` so a new image is a cache miss. The variables come from the runner environment, not the workflow `env` context, so `${{ env.ImageVersion }}` is empty unless you export it first:
+
+```yaml
+- name: Export runner image version
+  run: |
+    echo "ImageOS=${ImageOS}" >> "$GITHUB_ENV"
+    echo "ImageVersion=${ImageVersion}" >> "$GITHUB_ENV"
+  shell: bash
+- uses: awalsh128/cache-apt-pkgs-action@v2.0.0
+  with:
+    packages: mypackage
+    version: 1.0-${{ env.ImageOS }}-${{ env.ImageVersion }}
+```
+
+The trade-off is a cold cache on every image rotation. `ImageOS` alone isn't enough, because pre-installed packages can change between image versions of the same OS. Only GitHub-hosted runners set these variables.
+
 ### Stalled mirrors
 
 On a cache miss the action installs with `apt`, so it is as fast as the mirror `apt` uses. GitHub-hosted Ubuntu runners try `azure.archive.ubuntu.com` first, and it sometimes stalls a package download for minutes (we saw 2 to 4 minutes, and 15 or more in a few runs). It hits some jobs on some days, whatever the package or the tool running `apt`. Plain `apt-get` runs and the v1 action's own CI showed the same stalls. A cache hit doesn't download packages, so it is not affected.
