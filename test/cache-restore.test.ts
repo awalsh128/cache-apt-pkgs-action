@@ -105,6 +105,9 @@ function recordTar(calls: TarCalls) {
       calls.extractCommands = (calls.extractCommands ?? 0) + 1;
       calls.events?.push(...args.slice(4).map((archive) => `extract ${path.basename(archive)}`));
     }
+    if (args[0] === "ldconfig") {
+      calls.events?.push("ldconfig");
+    }
     // Install scripts run as `sh -x <script> <action>`.
     if (args[0] === "sh" && args[1] === "-x") {
       calls.events?.push(`script ${path.basename(args[2] ?? "")} ${args[3]}`);
@@ -161,6 +164,28 @@ describe("Cache", () => {
 
     expect(calls.extracted).toEqual(INSTALL_ORDER.map(archivePath));
     expect(calls.extractCommands).toBe(INSTALL_ORDER.length);
+  });
+
+  it.each([false, true])(
+    "loadAndRestore with install scripts %s runs ldconfig once after the last archive",
+    async (executeInstallScripts) => {
+      await writeCache();
+      const calls: TarCalls = { created: [], extracted: [], events: [] };
+
+      await createCache(calls).loadAndRestore(KEY, executeInstallScripts);
+
+      expect(calls.events?.filter((event) => event === "ldconfig")).toHaveLength(1);
+      expect(calls.events?.at(-1)).toBe("ldconfig");
+    },
+  );
+
+  it("loadAndRestore archive missing returns undefined without running ldconfig", async () => {
+    await writeCache(INSTALL_ORDER.slice(1));
+    const calls: TarCalls = { created: [], extracted: [], events: [] };
+
+    await createCache(calls).loadAndRestore(KEY, false);
+
+    expect(calls.events).not.toContain("ldconfig");
   });
 
   it("loadAndRestore archive missing returns undefined without extracting", async () => {
@@ -272,12 +297,13 @@ describe("Cache", () => {
       MANIFEST_OUTPUTS,
     );
     await metaOnly.writeToFile(path.join(CACHE_DIR, MANIFEST_FILENAME));
-    const calls: TarCalls = { created: [], extracted: [] };
+    const calls: TarCalls = { created: [], extracted: [], events: [] };
 
     const manifest = await createCache(calls).loadAndRestore(KEY, false);
 
     expect(manifest?.entries).toHaveLength(1);
     expect(calls.extractCommands).toBeUndefined();
+    expect(calls.events).not.toContain("ldconfig");
   });
 
   it("loadAndRestore with install scripts runs each found script after its archive with the dpkg action", async () => {

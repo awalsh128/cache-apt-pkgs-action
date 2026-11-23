@@ -236,6 +236,13 @@ export class Cache {
       await this.extractArchives(archivePaths.map((item) => item.archivePath));
     }
 
+    // Restore never fires dpkg triggers, so rebuild the linker cache for libraries in directories
+    // registered through /etc/ld.so.conf.d (see issue #260).
+    if (archivePaths.length > 0) {
+      this.logger.info("Updating the shared library cache...");
+      await this.commandRunner.run("sudo", ["ldconfig"]);
+    }
+
     // Return every installed package so outputs can report dependencies too.
     return manifest;
   }
