@@ -777,6 +777,69 @@ jobs:
           ldconfig -p | grep -F "libblas.so.3 ("
         shell: bash
 
+  regression_167_install:
+    runs-on: ubuntu-24.04
+    needs: [setup-and-cache]
+    name: "Cache pdftk, provided by pdftk-java through update-alternatives, install phase (regression issue #167)."
+    steps:
+      - name: Download Action Bundle
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
+          path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
+      - uses: ./
+        with:
+          packages: pdftk
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_167
+          debug: ${{ env.DEBUG }}
+
+  # `pdftk` resolves to pdftk-java, whose postinst registers /usr/bin/pdftk through update-alternatives.
+  # That link is not in `dpkg -L`, so a restore that only extracts files leaves `pdftk` off the PATH.
+  regression_167_restore:
+    runs-on: ubuntu-24.04
+    needs: [regression_167_install]
+    name: "Cache pdftk, provided by pdftk-java through update-alternatives, restore phase (regression issue #167)."
+    steps:
+      - name: Download Action Bundle
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
+          path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
+      # If the runner image ships pdftk-java, the link exists before the action runs and this job proves nothing.
+      - name: Require that the runner image doesn't already have the package
+        run: |
+          if dpkg -s pdftk-java >/dev/null 2>&1 || command -v pdftk >/dev/null 2>&1; then
+            echo "::error::pdftk is already installed on this runner image, so this job can't tell a restore from the image."
+            exit 1
+          fi
+        shell: bash
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: pdftk
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_167
+          debug: ${{ env.DEBUG }}
+      - name: Verify cache hit
+        if: steps.execute.outputs.cache-hit != 'true'
+        run: |
+          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
+          exit 1
+        shell: bash
+      - name: Verify pdftk is on the PATH
+        run: |
+          set -euo pipefail
+          # readlink -e fails when a link is missing or dangling.
+          readlink -e /etc/alternatives/pdftk
+          readlink -e /usr/bin/pdftk
+          command -v pdftk
+          pdftk --version
+        shell: bash
+
   multi_arch_cache_key:
     runs-on: ubuntu-24.04
     needs: [setup-and-cache]
@@ -850,6 +913,8 @@ jobs:
         regression_106_restore,
         regression_260_install,
         regression_260_restore,
+        regression_167_install,
+        regression_167_restore,
         multi_arch_cache_key,
         virtual_package,
       ]
