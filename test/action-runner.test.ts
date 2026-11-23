@@ -97,6 +97,7 @@ describe("ActionRunner", () => {
     vi.mocked(createPackageManager).mockResolvedValue({
       update: vi.fn().mockResolvedValue(0),
       install: vi.fn().mockResolvedValue([{ name: installedPackage }]),
+      listAlternatives: vi.fn().mockResolvedValue([]),
       listInstalledFiles: vi.fn().mockResolvedValue([installedFile]),
       getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
     } as never);
@@ -114,6 +115,49 @@ describe("ActionRunner", () => {
     expect(manifest.entries).toEqual([new ManifestEntry(installedPackage, [installedFile.slice(1)])]);
   });
 
+  it("runAction cache miss records the alternatives a package registered, and no others", async () => {
+    const installedPackage = createPackageName("test-pkg-not-real", "1.0.0");
+    // buildFileList keeps only files that exist, so use this test file.
+    const installedFile = import.meta.filename;
+    const ownAlternative = {
+      name: "test-alternative",
+      link: "/usr/bin/test-alternative",
+      path: installedFile,
+      priority: 10,
+      slaves: [],
+    };
+    const otherAlternative = { ...ownAlternative, name: "other", path: "/usr/bin/not-this-package" };
+    const { runner, cache } = createRunner();
+    cache.loadAndRestore.mockResolvedValue(undefined);
+    vi.mocked(createPackageManager).mockResolvedValue({
+      update: vi.fn().mockResolvedValue(0),
+      install: vi.fn().mockResolvedValue([{ name: installedPackage }]),
+      listAlternatives: vi.fn().mockResolvedValue([ownAlternative, otherAlternative]),
+      listInstalledFiles: vi.fn().mockResolvedValue([installedFile]),
+      getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
+    } as never);
+
+    await runner.runAction({ ...MANIFEST_INPUTS, packages: installedPackage.serialize() });
+
+    const [manifest] = cache.archiveAndSave.mock.calls[0]!;
+    expect(manifest.entries[0]?.alternatives).toEqual([ownAlternative]);
+  });
+
+  it("runAction cache hit restores with a package manager that has no apt-fast", async () => {
+    const { runner, cache } = createRunner();
+    const packageNames = ActionPackageNames.fromInput("curl");
+    const cacheKey = new CacheKey("v1", "1", process.arch, packageNames);
+    cache.loadAndRestore.mockResolvedValue(
+      new Manifest(new Date(), [], cacheKey, MANIFEST_INPUTS, MANIFEST_OUTPUTS),
+    );
+    const restoreManager = { getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH) };
+    vi.mocked(createPackageManager).mockResolvedValue(restoreManager as never);
+
+    await runner.runAction({ ...MANIFEST_INPUTS, packages: "curl" });
+
+    expect(cache.loadAndRestore.mock.calls[0]?.[2]).toBe(restoreManager);
+  });
+
   it("runAction cache miss saves the run's inputs and outputs in the manifest", async () => {
     const installedPackage = createPackageName("test-pkg-not-real", "1.0.0");
     const { runner, cache } = createRunner();
@@ -121,6 +165,7 @@ describe("ActionRunner", () => {
     vi.mocked(createPackageManager).mockResolvedValue({
       update: vi.fn().mockResolvedValue(0),
       install: vi.fn().mockResolvedValue([{ name: installedPackage }]),
+      listAlternatives: vi.fn().mockResolvedValue([]),
       listInstalledFiles: vi.fn().mockResolvedValue([]),
       getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
     } as never);
@@ -141,6 +186,7 @@ describe("ActionRunner", () => {
     vi.mocked(createPackageManager).mockResolvedValue({
       update,
       install,
+      listAlternatives: vi.fn().mockResolvedValue([]),
       getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
     } as never);
 
@@ -162,6 +208,7 @@ describe("ActionRunner", () => {
     vi.mocked(createPackageManager).mockResolvedValue({
       update: vi.fn().mockResolvedValue(0),
       install: vi.fn().mockResolvedValue([]),
+      listAlternatives: vi.fn().mockResolvedValue([]),
       getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
     } as never);
 
@@ -175,10 +222,15 @@ describe("ActionRunner", () => {
 
     const messages = infoSpy.mock.calls.map(([message]) => String(message));
     expect(
-      ["Cache restore", "apt update", "apt install", "Listing installed files", "Archive and cache save"].map(
-        (step) => messages.some((message) => new RegExp(`^${step} took \\d+\\.\\ds$`).test(message)),
-      ),
-    ).toEqual([true, true, true, true, true]);
+      [
+        "Cache restore",
+        "apt update",
+        "apt install",
+        "Listing alternatives",
+        "Listing installed files",
+        "Archive and cache save",
+      ].map((step) => messages.some((message) => new RegExp(`^${step} took \\d+\\.\\ds$`).test(message))),
+    ).toEqual([true, true, true, true, true, true]);
   });
 
   describe("input validation", () => {

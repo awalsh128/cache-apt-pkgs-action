@@ -1,12 +1,12 @@
 import { createPackageManager, type CommandRunner, type PackageName } from "ts-apt";
 import { Cache, CacheKey } from "./cache.js";
 import { Manifest, ManifestEntry } from "./manifest.js";
-import { ActionPackageNames, buildFileList } from "./packages.js";
+import { ActionPackageNames, buildFileList, ownedAlternatives } from "./packages.js";
 import winston from "winston";
 
 type EmptyPackageBehavior = "error" | "warn" | "ignore";
 
-const FORCE_UPDATE_INCREMENT = "0";
+const FORCE_UPDATE_INCREMENT = "1";
 
 const EMPTY_PACKAGES_MESSAGE = "Packages argument is empty.";
 
@@ -113,18 +113,20 @@ export class ActionRunner {
 
     const cacheKey = new CacheKey(inputs.version, FORCE_UPDATE_INCREMENT, process.arch, packageNames);
 
+    // apt-fast only speeds up installs, so a restore doesn't probe for it.
+    const restoreManager = await createPackageManager(false, this.logger, this.logger);
     const manifest = await this.timed("Cache restore", () =>
-      this.cache.loadAndRestore(cacheKey, inputs.executeInstallScripts),
+      this.cache.loadAndRestore(cacheKey, inputs.executeInstallScripts, restoreManager),
     );
-    const cacheHit = manifest !== undefined;
-
-    // apt-fast only speeds up installs, so skip probing for it on a hit.
-    const installManager = await createPackageManager(!cacheHit, this.logger, this.logger);
-    const nativeArch = await installManager.getNativeArchitecture();
 
     if (manifest !== undefined) {
+      const nativeArch = await restoreManager.getNativeArchitecture();
       return this.toOutputs(true, manifest.entries, packageNames, nativeArch);
     }
+
+    // Only a fresh install gains from apt-fast, so the miss path gets its own manager.
+    const installManager = await createPackageManager(true, this.logger, this.logger);
+    const nativeArch = await installManager.getNativeArchitecture();
 
     // Runner images ship an apt index that can predate the archive, so a package whose version was
     // superseded (e.g. a security update) 404s on download. Refresh it before every fresh install.
@@ -132,12 +134,15 @@ export class ActionRunner {
     const packageInfos = await this.timed("apt install", () =>
       installManager.install(packageNames.toArray()),
     );
-    // Collect each package's installed files so the archives have content.
+    // Collect each package's installed files so the archives have content, and the alternatives it
+    // registered, since their links aren't in the file list.
+    const alternatives = await this.timed("Listing alternatives", () => installManager.listAlternatives());
     const entries = await this.timed("Listing installed files", () =>
       Promise.all(
-        packageInfos.map(
-          async (info) => new ManifestEntry(info.name, await buildFileList(info.name, installManager)),
-        ),
+        packageInfos.map(async (info) => {
+          const files = await buildFileList(info.name, installManager);
+          return new ManifestEntry(info.name, files, ownedAlternatives(files, alternatives));
+        }),
       ),
     );
     const outputs = this.toOutputs(false, entries, packageNames, nativeArch);

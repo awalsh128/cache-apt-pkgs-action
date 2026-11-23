@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createPackageName, type PackageManager } from "ts-apt";
-import { ActionPackageNames, buildFileList, findInstallScript } from "../src/packages.js";
+import { createPackageName, type Alternative, type PackageManager } from "ts-apt";
+import { ActionPackageNames, buildFileList, findInstallScript, ownedAlternatives } from "../src/packages.js";
 import { describe, expect, it, vi } from "vitest";
 
 const PACKAGE_NAME = createPackageName("test-package", "1.0.0", "amd64");
@@ -197,6 +197,59 @@ describe("packages", () => {
       ["different name returns false", "xdot", createPackageName("rolldice", "1.16"), false],
     ])("includes %s", (_case, input, installed, expected) => {
       expect(ActionPackageNames.fromInput(input).includes(installed)).toBe(expected);
+    });
+  });
+
+  describe("ownedAlternatives", () => {
+    const alternativeAt = (path: string): Alternative => ({
+      name: "group",
+      link: "/usr/bin/group",
+      path,
+      priority: 10,
+      slaves: [],
+    });
+
+    it("ownedAlternatives alternative path in the package files returns it", () => {
+      const own = alternativeAt("/usr/bin/identify-im6.q16");
+
+      expect(ownedAlternatives(["usr/bin/identify-im6.q16"], [own])).toEqual([own]);
+    });
+
+    it("ownedAlternatives alternative path under a merged-usr symlink returns it", () => {
+      const root = makeTempRoot("pkg-alternatives-");
+      fs.mkdirSync(path.join(root, "usr", "bin"), { recursive: true });
+      fs.symlinkSync("usr/bin", path.join(root, "bin"));
+      const own = alternativeAt("/bin/nano");
+
+      expect(ownedAlternatives(["usr/bin/nano"], [own], root)).toEqual([own]);
+    });
+
+    it("ownedAlternatives package file under a merged-usr symlink returns the alternative", () => {
+      const root = makeTempRoot("pkg-alternatives-");
+      fs.mkdirSync(path.join(root, "usr", "bin"), { recursive: true });
+      fs.symlinkSync("usr/bin", path.join(root, "bin"));
+      const own = alternativeAt("/usr/bin/nano");
+
+      expect(ownedAlternatives(["bin/nano"], [own], root)).toEqual([own]);
+    });
+
+    it("ownedAlternatives alternative in a directory that doesn't exist returns it when the path matches", () => {
+      const root = makeTempRoot("pkg-alternatives-");
+      const own = alternativeAt("/opt/missing/tool");
+
+      expect(ownedAlternatives(["opt/missing/tool"], [own], root)).toEqual([own]);
+    });
+
+    it("ownedAlternatives directory can't be resolved for another reason throws", () => {
+      expect(() => ownedAlternatives(["usr/bin/nano"], [alternativeAt("/bin/nano")], "bad\0root")).toThrow();
+    });
+
+    it("ownedAlternatives alternative path not in the package files returns none", () => {
+      expect(ownedAlternatives(["usr/bin/other"], [alternativeAt("/usr/bin/identify-im6.q16")])).toEqual([]);
+    });
+
+    it("ownedAlternatives no alternatives returns none", () => {
+      expect(ownedAlternatives(["usr/bin/other"], [])).toEqual([]);
     });
   });
 });

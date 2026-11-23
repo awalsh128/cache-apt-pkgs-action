@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import path from "path";
-import { createPackageName, type PackageName, type PackageManager } from "ts-apt";
+import { createPackageName, type Alternative, type PackageName, type PackageManager } from "ts-apt";
 
 /**
  * Collects installed file and lifecycle script paths for archive creation.
@@ -39,6 +39,76 @@ export async function buildFileList(
   }
 
   return [...new Set(files)].sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Creates a function that resolves the directory symlinks in a path, so `/bin/nano` and `/usr/bin/nano`
+ * compare equal on a merged-/usr system, where `/bin` is a link to `usr/bin`.
+ *
+ * Only the directory is resolved. The file itself can be a symlink and the path should name it, not its
+ * target. Each directory is resolved once, since a package's files share a few directories.
+ *
+ * @param root Root filesystem path the paths are relative to.
+ * @returns A function from an absolute or root-relative path to a root-relative path with no leading slash.
+ *   A directory that doesn't exist is left as given.
+ * @throws Error from the filesystem other than a missing directory (e.g. permission denied), so an
+ *   unreadable path isn't treated as unowned.
+ */
+function createPathCanonicalizer(root: string): (filePath: string) => string {
+  const resolvedDirs = new Map<string, string>();
+
+  const resolveDir = (dir: string): string => {
+    try {
+      const realRoot = fs.realpathSync(root);
+      const realDir = fs.realpathSync(path.join(root, dir));
+      return path.relative(realRoot, realDir).split(path.sep).join("/");
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ENOENT" || code === "ENOTDIR") {
+        return dir;
+      }
+      throw error;
+    }
+  };
+
+  return (filePath) => {
+    const relative = filePath.replace(/^\//, "");
+    const dir = path.dirname(relative);
+    let resolvedDir = resolvedDirs.get(dir);
+    if (resolvedDir === undefined) {
+      resolvedDir = resolveDir(dir);
+      resolvedDirs.set(dir, resolvedDir);
+    }
+    return path.posix.join(resolvedDir, path.basename(relative));
+  };
+}
+
+/**
+ * Picks the alternatives a package registered.
+ *
+ * `dpkg -L` doesn't list the links `update-alternatives` creates, but it does list the file each
+ * alternative points to, so an alternative belongs to the package that owns its `path`. Paths are compared
+ * after resolving directory symlinks, because a package can list `/usr/bin/nano` while its `postinst`
+ * registers `/bin/nano`.
+ *
+ * @param files Root-relative file paths of the package, as returned by {@link buildFileList}.
+ * @param alternatives Every alternative registered on the system.
+ * @param root Root filesystem path used to resolve directory symlinks.
+ * @returns The alternatives whose path is one of the package's files.
+ * @throws Error when a directory can't be resolved for a reason other than not existing.
+ */
+export function ownedAlternatives(
+  files: readonly string[],
+  alternatives: readonly Alternative[],
+  root: string = "/",
+): Alternative[] {
+  // Most packages register nothing, so skip resolving thousands of file paths for them.
+  if (alternatives.length === 0) {
+    return [];
+  }
+  const canonicalize = createPathCanonicalizer(root);
+  const owned = new Set(files.map(canonicalize));
+  return alternatives.filter((alternative) => owned.has(canonicalize(alternative.path)));
 }
 
 /**
