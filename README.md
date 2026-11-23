@@ -39,11 +39,15 @@ installing them again. It is built on
   helps.
 </p>
 
-> [!IMPORTANT] v2 has a release candidate (`v2.0.0-rc.1`) and no stable release yet, so the examples use
+<!-- prettier-ignore -->
+> [!IMPORTANT]
+> v2 has a release candidate (`v2.0.0-rc.1`) and no stable release yet, so the examples use
 > `v2.0.0`, the first stable one. Use `@v1` for the released version. The [Version 2 FAQ](V2_FAQ.MD) covers
 > what changes.
 
-> [!NOTE] I'm looking for co-maintainers to help review changes and investigate issues. I haven't had as much
+<!-- prettier-ignore -->
+> [!NOTE]
+> I'm looking for co-maintainers to help review changes and investigate issues. I haven't had as much
 > time for this action as I would like, and I want it to stay responsive for the community. Reach out if you
 > are interested.
 
