@@ -115,6 +115,32 @@ describe("ActionRunner", () => {
     expect(manifest.entries).toEqual([new ManifestEntry(installedPackage, [installedFile.slice(1)])]);
   });
 
+  it("runAction cache miss with a requested package apt did not report archives every requested package", async () => {
+    // apt prints no Inst or Setting up line for a package that is already installed at the requested
+    // version, so install() leaves it out. It must still end up in the cache (see issue #230).
+    const reportedPackage = createPackageName("test-pkg-reported", "1.0.0");
+    const unreportedPackage = createPackageName("test-pkg-already-installed", "1.0.0");
+    const { runner, cache } = createRunner();
+    cache.loadAndRestore.mockResolvedValue(undefined);
+    vi.mocked(createPackageManager).mockResolvedValue({
+      update: vi.fn().mockResolvedValue(0),
+      install: vi.fn().mockResolvedValue([{ name: reportedPackage }]),
+      listInstalled: vi.fn().mockResolvedValue([{ name: reportedPackage }, { name: unreportedPackage }]),
+      listAlternatives: vi.fn().mockResolvedValue([]),
+      listInstalledFiles: vi.fn().mockResolvedValue([]),
+      getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
+    } as never);
+    const packages = `${reportedPackage.serialize()} ${unreportedPackage.serialize()}`;
+
+    await runner.runAction({ ...MANIFEST_INPUTS, packages });
+
+    const [manifest] = cache.archiveAndSave.mock.calls[0]!;
+    expect(manifest.entries.map((entry: ManifestEntry) => entry.packageName)).toEqual([
+      reportedPackage,
+      unreportedPackage,
+    ]);
+  });
+
   it("runAction cache miss records the alternatives a package registered, and no others", async () => {
     const installedPackage = createPackageName("test-pkg-not-real", "1.0.0");
     // buildFileList keeps only files that exist, so use this test file.
@@ -186,6 +212,7 @@ describe("ActionRunner", () => {
     vi.mocked(createPackageManager).mockResolvedValue({
       update,
       install,
+      listInstalled: vi.fn().mockResolvedValue([]),
       listAlternatives: vi.fn().mockResolvedValue([]),
       getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
     } as never);
@@ -208,6 +235,7 @@ describe("ActionRunner", () => {
     vi.mocked(createPackageManager).mockResolvedValue({
       update: vi.fn().mockResolvedValue(0),
       install: vi.fn().mockResolvedValue([]),
+      listInstalled: vi.fn().mockResolvedValue([]),
       listAlternatives: vi.fn().mockResolvedValue([]),
       getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
     } as never);

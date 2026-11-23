@@ -240,10 +240,30 @@ export class ActionPackageNames {
    * @returns True when the package was requested.
    */
   includes(installed: PackageName): boolean {
-    return this.items.some(
-      (requested) =>
-        requested.name === installed.name &&
-        (requested.arch === undefined || installed.arch === undefined || requested.arch === installed.arch),
-    );
+    return this.items.some((requested) => isRequestedPackage(requested, installed));
   }
+
+  /**
+   * Lists the requested packages that none of the given packages satisfies, using the match of
+   * {@link ActionPackageNames.includes}.
+   *
+   * @param reported Packages to look through, e.g. the ones apt reported installing.
+   * @returns The requested packages with no match in `reported`.
+   */
+  missingFrom(reported: readonly PackageName[]): PackageName[] {
+    return this.items.filter((requested) => !reported.some((name) => isRequestedPackage(requested, name)));
+  }
+}
+
+/**
+ * Checks whether an installed package satisfies a requested one.
+ *
+ * Matches on name, and on arch only when both sides specify one. Version is ignored because requests
+ * usually omit it and apt resolves the installed one.
+ */
+function isRequestedPackage(requested: PackageName, installed: PackageName): boolean {
+  return (
+    requested.name === installed.name &&
+    (requested.arch === undefined || installed.arch === undefined || requested.arch === installed.arch)
+  );
 }

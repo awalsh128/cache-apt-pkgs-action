@@ -1,4 +1,10 @@
-import { createPackageManager, type CommandRunner, type PackageName } from "ts-apt";
+import {
+  createPackageManager,
+  type CommandRunner,
+  type PackageInfo,
+  type PackageManager,
+  type PackageName,
+} from "ts-apt";
 import { Cache, CacheKey } from "./cache.js";
 import { Manifest, ManifestEntry } from "./manifest.js";
 import { ActionPackageNames, buildFileList, ownedAlternatives } from "./packages.js";
@@ -131,9 +137,10 @@ export class ActionRunner {
     // Runner images ship an apt index that can predate the archive, so a package whose version was
     // superseded (e.g. a security update) 404s on download. Refresh it before every fresh install.
     await this.timed("apt update", () => installManager.update());
-    const packageInfos = await this.timed("apt install", () =>
+    const reportedInfos = await this.timed("apt install", () =>
       installManager.install(packageNames.toArray()),
     );
+    const packageInfos = await this.addAlreadyInstalled(installManager, packageNames, reportedInfos);
     // Collect each package's installed files so the archives have content, and the alternatives it
     // registered, since their links aren't in the file list.
     const alternatives = await this.timed("Listing alternatives", () => installManager.listAlternatives());
@@ -149,6 +156,35 @@ export class ActionRunner {
     const savedManifest = new Manifest(new Date(), entries, cacheKey, inputs, outputs);
     await this.timed("Archive and cache save", () => this.cache.archiveAndSave(savedManifest));
     return outputs;
+  }
+
+  /**
+   * Adds the requested packages apt didn't report, because they were already installed.
+   *
+   * apt prints no `Inst` or `Setting up` line for a package that is already installed at the requested
+   * version (e.g. one the runner image ships), so the install output alone would leave it out of the
+   * cache. A requested package that isn't installed under its own name is left out, since apt can satisfy
+   * it with a provider (e.g. a virtual package).
+   *
+   * @param installManager Package manager used for the install.
+   * @param packageNames Packages the workflow requested.
+   * @param reported Packages apt reported installing.
+   * @returns `reported`, followed by each already-installed requested package.
+   */
+  private async addAlreadyInstalled(
+    installManager: PackageManager,
+    packageNames: ActionPackageNames,
+    reported: readonly PackageInfo[],
+  ): Promise<PackageInfo[]> {
+    const unreported = packageNames.missingFrom(reported.map((info) => info.name));
+    if (unreported.length === 0) {
+      return [...reported];
+    }
+    const installed = await installManager.listInstalled();
+    const alreadyInstalled = installed.filter(
+      (info) => packageNames.includes(info.name) && unreported.some((name) => name.name === info.name.name),
+    );
+    return [...reported, ...alreadyInstalled];
   }
 
   /**
