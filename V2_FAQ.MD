@@ -1,4 +1,5 @@
-<img src="logo.png" alt="Description" height="80" align="center" style="padding-right: 1em;"> <span style="font-size: 2em; font-weight: bold;">Cache APT Packages Action v2 :: FAQ</span>
+<img src="logo.png" alt="Description" height="80" align="center" style="padding-right: 1em;">
+<span style="font-size: 2em; font-weight: bold;">Cache APT Packages Action v2 :: FAQ</span>
 
 ## Why did you create a new version?
 
@@ -33,18 +34,19 @@ Since this has been a complex part of the codebase, I decided to separate the co
 can now be found at [`npm/ts-apt`](https://www.npmjs.com/package/ts-apt) with the sourcecode in the
 [`awalsh128/ts-apt`](http://github.com/awalsh128/ts-apt) repository.
 
-For ease of use there is an option to bring in the workspace for inline source via `npm run dev:tsapt:[un]link`
-so it can be debugged and then PR'd to the [awalsh128/ts-apt](http://github.com/awalsh128/ts-apt)
-repository.
+For ease of use there is an option to bring in the workspace for inline source via
+`npm run dev:tsapt:[un]link` so it can be debugged and then PR'd to the
+[awalsh128/ts-apt](http://github.com/awalsh128/ts-apt) repository.
 
 ## How do I start using this?
 
-> [!IMPORTANT]
-> This is in the early phase of development. Use at your own risk!
+> [!IMPORTANT] This is in the early phase of development. Use at your own risk!
 
-**The action inputs and outputs are backwards compatible.** The action runs on the `node24` runtime, so self-hosted runners need a runner version that supports it (GitHub-hosted runners already do).
+**The action inputs and outputs are backwards compatible.** The action runs on the `node24` runtime, so
+self-hosted runners need a runner version that supports it (GitHub-hosted runners already do).
 
-- Change to `@v2` (latest stable v2), an exact `v2.*.*` release or a commit SHA in your GitHub workflow. `v2` is the only tag that moves.
+- Change to `@v2` (latest stable v2), an exact `v2.*.*` release or a commit SHA in your GitHub workflow. `v2`
+  is the only tag that moves.
 - `v1.*` will still get patch updates but is in maintenance mode.
 
 ## Some internal changes
@@ -52,4 +54,5 @@ repository.
 - Logging uses native GitHub calls that will result in run annotations.
 - Output will tend to be more verbose but this will be tuned as this version matures.
 - All the metadata generated like manifests, the cache key, and logs are now stored as artifacts.
-- Debug mode can either be specified via an input parameter `debug` or [as part of the repository settings](https://docs.github.com/en/actions/how-tos/monitor-workflows/enable-debug-logging).
+- Debug mode can either be specified via an input parameter `debug` or
+  [as part of the repository settings](https://docs.github.com/en/actions/how-tos/monitor-workflows/enable-debug-logging).
