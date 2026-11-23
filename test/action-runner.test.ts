@@ -259,6 +259,7 @@ describe("ActionRunner", () => {
     } as never);
 
     await expect(runner.runAction({ ...MANIFEST_INPUTS, packages: "curl" })).rejects.toBe(failure);
+    expect(cache.archiveAndSave).not.toHaveBeenCalled();
   });
 
   it("runAction cache miss refreshes the apt index before installing", async () => {
