@@ -8,6 +8,7 @@ const CACHE_VER = "v1";
 const FORCE_UPDATE_INCREMENT = "4";
 const INPUT_PACKAGE_NAMES = ["curl=1", "git=2"];
 const SERIALIZED_INPUT_PACKAGE_NAMES = INPUT_PACKAGE_NAMES.join(" ");
+const IMAGE_STATE = { source: "install-plan", digest: "0123456789abcdef" } as const;
 const HASH = "6753d4609b4f220748c84ac0893bd97d";
 const CACHE_KEY_JSON =
   '{"arch":"arm64","forceUpdateIncrement":"4","hash":"6753d4609b4f220748c84ac0893bd97d","packageNames":{"items":[{"name":"curl","version":"1"},{"name":"git","version":"2"}]},"version":"v1"}';
@@ -48,15 +49,15 @@ describe("cache", () => {
       expect(key.hash).toBe(HASH);
     });
 
-    it("creates a cache key with an image fingerprint with a different hash", () => {
+    it("creates a cache key with an image state with a different hash", () => {
       const names = ActionPackageNames.fromInput(SERIALIZED_INPUT_PACKAGE_NAMES);
-      const key = new CacheKey(CACHE_VER, FORCE_UPDATE_INCREMENT, ARCH, names, "apt:0123456789abcdef");
+      const key = new CacheKey(CACHE_VER, FORCE_UPDATE_INCREMENT, ARCH, names, IMAGE_STATE);
       expect(key.hash).not.toBe(HASH);
     });
 
-    it("JSON roundtrips cache keys with an image fingerprint", () => {
+    it("JSON roundtrips cache keys with an image state", () => {
       const names = ActionPackageNames.fromInput(SERIALIZED_INPUT_PACKAGE_NAMES);
-      const key = new CacheKey(CACHE_VER, FORCE_UPDATE_INCREMENT, ARCH, names, "apt:0123456789abcdef");
+      const key = new CacheKey(CACHE_VER, FORCE_UPDATE_INCREMENT, ARCH, names, IMAGE_STATE);
       expect(CacheKey.fromJSON(key.toJSON(false))).toEqual(key);
     });
 

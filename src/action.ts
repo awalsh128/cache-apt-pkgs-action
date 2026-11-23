@@ -8,7 +8,7 @@ import {
   type PackageName,
 } from "ts-apt";
 import { Cache, CacheKey } from "./cache.js";
-import { fingerprintImage } from "./fingerprint.js";
+import { digestImageState } from "./imageState.js";
 import { Manifest, ManifestEntry } from "./manifest.js";
 import { ActionPackageNames, buildFileList, ownedAlternatives } from "./packages.js";
 import winston from "winston";
@@ -145,15 +145,15 @@ export class ActionRunner {
     const restoreManager = await createPackageManager(false, this.logger, this.logger);
     // A simulated install changes nothing, so it can run before the lookup to key the cache on the image.
     const simulator = await createPackageManager(false, this.logger, this.logger, true);
-    const imageFingerprint = await this.timed("Image fingerprint", () =>
-      fingerprintImage(simulator, packageNames.toArray(), process.env, this.logger),
+    const imageState = await this.timed("Image state", () =>
+      digestImageState(simulator, packageNames.toArray(), process.env, this.logger),
     );
     const cacheKey = new CacheKey(
       inputs.version,
       FORCE_UPDATE_INCREMENT,
       process.arch,
       packageNames,
-      imageFingerprint,
+      imageState,
     );
     const manifest = await this.timed("Cache restore", () =>
       this.cache.loadAndRestore(cacheKey, inputs.executeInstallScripts, restoreManager),

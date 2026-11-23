@@ -159,11 +159,11 @@ This action can't reverse engineer the Debian package manager. That would be out
 
 Only the packages you request are archived, so a pre-installed dependency of one of them (e.g. `libwayland-server0` for GTK and WebKit packages) is in neither the cache nor the manifest. If a later image drops that dependency, a hit on the old cache would restore files that need a library the runner no longer has. The job then fails with an error like `error while loading shared libraries: libwayland-server.so.0: cannot open shared object file`, and it can look intermittent because it follows the image the job lands on. Issue [#187](https://github.com/awalsh128/cache-apt-pkgs-action/issues/187) tracks this.
 
-The action avoids this by adding a fingerprint of the image to the cache key. Before the cache lookup it runs `apt-get --simulate install` for your packages and hashes the names of the packages apt would unpack. A dependency that disappears from the image changes the fingerprint, so the job misses the old cache and installs fresh. Versions aren't part of the fingerprint, so a routine update on the image doesn't invalidate your caches. If the simulation fails, the fingerprint falls back to `ImageOS` and `ImageVersion` (set on GitHub-hosted runners), and without those the key doesn't depend on the image.
+The action avoids this by adding a digest of the image state to the cache key. Before the cache lookup it runs `apt-get --simulate install` for your packages and hashes the names of the packages apt would unpack. A dependency that disappears from the image changes the digest, so the job misses the old cache and installs fresh. Versions aren't part of the digest, so a routine update on the image doesn't invalidate your caches. If the simulation fails, the digest falls back to `ImageOS` and `ImageVersion` (set on GitHub-hosted runners), and without those the key doesn't depend on the image.
 
 The simulation costs a few seconds per job.
 
-On v1, which has no fingerprint, put the image into `version` so a new image is a cache miss. The variables come from the runner environment, not the workflow `env` context, so `${{ env.ImageVersion }}` is empty unless you export it first:
+On v1, which has no image state in the key, put the image into `version` so a new image is a cache miss. The variables come from the runner environment, not the workflow `env` context, so `${{ env.ImageVersion }}` is empty unless you export it first:
 
 ```yaml
 - name: Export runner image version

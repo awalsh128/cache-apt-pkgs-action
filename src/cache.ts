@@ -6,6 +6,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { ActionPackageNames, findInstallScript } from "./packages.js";
 import { Manifest, ManifestEntry } from "./manifest.js";
+import type { ImageState } from "./imageState.js";
 import { CommandRunner, PackageManager, PackageName } from "ts-apt";
 
 export const CACHE_DEFAULT_DIRNAME = "cache-apt-pkgs";
@@ -72,10 +73,10 @@ export class CacheKey {
   /** Normalized package names included in the cache so future unordered list comparisons are consistent. */
   readonly packageNames: ActionPackageNames;
   /**
-   * Fingerprint of what the runner image already has (see `fingerprintImage`), so a cache built on one
-   * image state misses on another. Empty when none could be derived, and then left out of the key.
+   * Digest of what the runner image already has (see `digestImageState`), so a cache built on one image
+   * state misses on another. Absent when none could be derived, and then left out of the key.
    */
-  readonly imageFingerprint: string;
+  readonly imageState?: ImageState;
   /** MD5 hash of the serialized cache key. Not considered sensitive in the GitHub Cache action. */
   readonly hash: string;
 
@@ -84,10 +85,12 @@ export class CacheKey {
     forceUpdateIncrement: string,
     arch: string,
     packageNames: ActionPackageNames,
-    imageFingerprint = "",
+    imageState?: ImageState,
   ) {
     this.version = version;
-    this.imageFingerprint = imageFingerprint;
+    if (imageState !== undefined) {
+      this.imageState = imageState;
+    }
     this.forceUpdateIncrement = forceUpdateIncrement;
     this.arch = arch;
     this.packageNames = packageNames;
@@ -108,8 +111,8 @@ export class CacheKey {
       obj.forceUpdateIncrement!,
       obj.arch!,
       ActionPackageNames.fromJSON(obj.packageNames!),
-      // Keys saved before the fingerprint existed have none.
-      obj.imageFingerprint ?? "",
+      // Keys saved before the image state existed have none.
+      obj.imageState,
     );
   }
 
@@ -133,9 +136,7 @@ export class CacheKey {
           .map((key) => [key, sortObj(record[key])]),
       );
     };
-    // An absent fingerprint is left out so keys without one hash as they did before it existed.
-    const { imageFingerprint, ...rest } = this;
-    return JSON.stringify(sortObj(imageFingerprint === "" ? rest : this), null, readable ? 2 : 0);
+    return JSON.stringify(sortObj(this), null, readable ? 2 : 0);
   }
 
   toString(): string {

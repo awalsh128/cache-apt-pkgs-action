@@ -11,11 +11,11 @@ import {
 } from "ts-apt";
 
 import { ActionRunner } from "../src/action.js";
-import { fingerprintImage } from "../src/fingerprint.js";
+import { digestImageState } from "../src/imageState.js";
 import { MANIFEST_INPUTS, MANIFEST_OUTPUTS } from "./manifest-fixtures.js";
 
-// The fingerprint has its own tests; here it only has to reach the cache key.
-vi.mock("../src/fingerprint.js", () => ({ fingerprintImage: vi.fn().mockResolvedValue("") }));
+// The image state has its own tests; here it only has to reach the cache key.
+vi.mock("../src/imageState.js", () => ({ digestImageState: vi.fn().mockResolvedValue(undefined) }));
 
 vi.mock("ts-apt", async (importOriginal) => {
   const actual = await importOriginal<typeof import("ts-apt")>();
@@ -26,6 +26,7 @@ vi.mock("ts-apt", async (importOriginal) => {
 });
 
 const NATIVE_ARCH = "amd64";
+const IMAGE_STATE = { source: "install-plan", digest: "0123456789abcdef" } as const;
 
 describe("ActionRunner", () => {
   afterEach(() => {
@@ -193,10 +194,10 @@ describe("ActionRunner", () => {
     expect(cache.loadAndRestore.mock.calls[0]?.[2]).toBe(restoreManager);
   });
 
-  it("runAction looks the cache up with a key that holds the image fingerprint", async () => {
+  it("runAction looks the cache up with a key that holds the image state", async () => {
     const { runner, cache } = createRunner();
     cache.loadAndRestore.mockResolvedValue(undefined);
-    vi.mocked(fingerprintImage).mockResolvedValueOnce("apt:0123456789abcdef");
+    vi.mocked(digestImageState).mockResolvedValueOnce(IMAGE_STATE);
     vi.mocked(createPackageManager).mockResolvedValue({
       update: vi.fn().mockResolvedValue(0),
       install: vi.fn().mockResolvedValue([]),
@@ -208,10 +209,10 @@ describe("ActionRunner", () => {
 
     await runner.runAction({ ...MANIFEST_INPUTS, packages: "curl" });
 
-    expect(cache.loadAndRestore.mock.calls[0]?.[0].imageFingerprint).toBe("apt:0123456789abcdef");
+    expect(cache.loadAndRestore.mock.calls[0]?.[0].imageState).toEqual(IMAGE_STATE);
   });
 
-  it("runAction fingerprints with a simulating package manager", async () => {
+  it("runAction digests the image state with a simulating package manager", async () => {
     const { runner, cache } = createRunner();
     const packageNames = ActionPackageNames.fromInput("curl");
     cache.loadAndRestore.mockResolvedValue(
