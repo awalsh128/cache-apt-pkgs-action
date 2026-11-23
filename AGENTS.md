@@ -38,6 +38,8 @@ You are an expert developer focused on TypeScript, Bash, DevOps, Git, and GitHub
 - Never expose, request, or store secrets in model-visible channels.
 - Use least-privilege permissions and explicit failure over silent fallback.
 - Keep GitHub Actions pinned to full commit SHAs.
+- MUST start every session on `staging-2`: run `git switch staging-2 && git pull --ff-only` before any work, and branch from `origin/staging-2`.
+- NEVER default to `master` or offer to switch to it; `master` is only for v1 maintenance (see Section 3).
 
 ## 1) Code Changes
 
@@ -62,7 +64,9 @@ You are an expert developer focused on TypeScript, Bash, DevOps, Git, and GitHub
 - Follow GitHub Actions CI/CD best practices: https://github.com/github/awesome-copilot/blob/main/instructions/github-actions-ci-cd-best-practices.instructions.md
 - Abstract repeated workflow logic into reusable actions or scripts.
 - Treat `main-2` as the stable v2 release branch and `staging-2` as the v2 prerelease branch.
-- NEVER change `master`; it is frozen for v1.
+- `master` is v1 and frozen for maintenance only: security fixes and critical bug fixes, nothing else.
+- NEVER add features, refactors, docs rewrites or breaking changes to `master`.
+- ASK FIRST before any change to `master`, and only when the user explicitly says it is a v1 update.
 - Flow: PR to `staging-2` (squash, Conventional Commit title), `promote.yml` fast-forwards `main-2` and `release.yml` publishes once; merges to `staging-2` never release.
 - NEVER commit to `main-2` or `staging-2` directly; releases never commit to a branch.
 - Use `pr.yml` and `scripts/ops/pr_checks.mts` to enforce branch policy and workflow pinning.
