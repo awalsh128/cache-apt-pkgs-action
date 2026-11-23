@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { appendFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { generateNotes as generateDefaultNotes } from "@semantic-release/release-notes-generator";
 
 /** Paths a consumer of `uses: awalsh128/cache-apt-pkgs-action@<ref>` needs at runtime (all gitignored except action.yml). */
 const DIST_PATHS = ["dist/action", "dist/scripts"];
@@ -76,6 +77,77 @@ function prepare(_pluginConfig: unknown, context: ReleaseContext): void {
   }
 }
 
+/** Looks up the GitHub login of a pull request's author, or `undefined` when `number` is not a pull request. */
+export type PullRequestAuthorLookup = (number: number) => Promise<string | undefined>;
+
+/**
+ * Appends ` by [@login](https://github.com/login)` to every release note bullet that links a pull request.
+ *
+ * Pull requests are squash-merged with the number in the subject, which the notes link as `[#123](...)`.
+ * Bullets without a pull request link, and numbers the lookup does not resolve, are left as they are.
+ *
+ * @param notes Markdown release notes from the default generator.
+ * @param lookup Resolves a pull request number to its author's login.
+ * @returns The notes with the author credited on each pull request bullet.
+ */
+export async function creditPullRequestAuthors(
+  notes: string,
+  lookup: PullRequestAuthorLookup,
+): Promise<string> {
+  const lines = await Promise.all(
+    notes.split("\n").map(async (line) => {
+      const match = /^\* .*?\[#(\d+)\]\([^)]*\/issues\/\d+\)/.exec(line);
+      if (!match) {
+        return line;
+      }
+      const login = await lookup(Number(match[1]));
+      return login ? `${line} by [@${login}](https://github.com/${login})` : line;
+    }),
+  );
+  return lines.join("\n");
+}
+
+/**
+ * Inline semantic-release plugin that generates the release notes with the default generator, then
+ * credits each pull request's author.
+ *
+ * The commit author is not used because it is an email address, not a GitHub login. The login comes from
+ * the pull request itself. A failed lookup is logged and that bullet is left uncredited, so a credit
+ * problem never blocks a release.
+ *
+ * @param _pluginConfig Unused plugin options.
+ * @param context semantic-release context for the pending release.
+ * @returns The release notes.
+ */
+async function generateNotes(
+  _pluginConfig: unknown,
+  context: Parameters<typeof generateDefaultNotes>[1] & {
+    logger: { warn: (message: string) => void };
+    env?: NodeJS.ProcessEnv;
+  },
+): Promise<string> {
+  const notes = await generateDefaultNotes({}, context);
+  const env = context.env ?? process.env;
+  const repository = /github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?$/.exec(context.options.repositoryUrl)?.[1];
+  if (!repository || !env.GITHUB_TOKEN) {
+    context.logger.warn("Skipping PR author credit: no GitHub repository or GITHUB_TOKEN");
+    return notes;
+  }
+  return creditPullRequestAuthors(notes, async (number) => {
+    const response = await fetch(`https://api.github.com/repos/${repository}/pulls/${number}`, {
+      headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}`, Accept: "application/vnd.github+json" },
+    });
+    if (response.status === 404) {
+      return undefined; // An issue reference, not a pull request.
+    }
+    if (!response.ok) {
+      context.logger.warn(`Could not read the author of #${number}: HTTP ${response.status}`);
+      return undefined;
+    }
+    return ((await response.json()) as { user?: { login?: string } }).user?.login;
+  });
+}
+
 /**
  * Inline semantic-release plugin hook that exposes the release to later workflow steps.
  *
@@ -121,8 +193,8 @@ export default {
     // minor, or patch bump.
     "@semantic-release/commit-analyzer",
 
-    // Generates the release notes based on the commit history.
-    "@semantic-release/release-notes-generator",
+    // Generates the release notes from the commit history (the default generator) and credits each PR author.
+    { generateNotes },
 
     // Tags a detached commit that contains the built dist/ (see above), then exposes the release to the workflow.
     { prepare, success },
