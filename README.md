@@ -138,9 +138,7 @@ This action can't reverse engineer the Debian package manager. That would be out
 
 The cache key doesn't include the runner image. Only the packages you request are archived, so a pre-installed dependency of one of them (e.g. `libwayland-server0` for GTK and WebKit packages) is in neither the cache nor the manifest. If a later image drops that dependency, a hit on the old cache restores files that need a library the runner no longer has. The job then fails with an error like `error while loading shared libraries: libwayland-server.so.0: cannot open shared object file`, and it can look intermittent because it follows the image the job lands on. Issue [#187](https://github.com/awalsh128/cache-apt-pkgs-action/issues/187) tracks this.
 
-Keying on the image version directly isn't the fix. It invalidates every cache on each image rotation, and `ImageOS` and `ImageVersion` can be unset on self-hosted runners and in job containers.
-
-Until the action fingerprints the image itself, put the image into `version` so a new image is a cache miss. The variables come from the runner environment, not the workflow `env` context, so `${{ env.ImageVersion }}` is empty unless you export it first:
+To avoid this, put the image into `version` so a new image is a cache miss. The variables come from the runner environment, not the workflow `env` context, so `${{ env.ImageVersion }}` is empty unless you export it first:
 
 ```yaml
 - name: Export runner image version
