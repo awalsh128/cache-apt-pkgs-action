@@ -40,7 +40,9 @@ For ease of use there is an option to bring in the workspace for inline source v
 
 ## How do I start using this?
 
-> [!IMPORTANT] This is in the early phase of development. Use at your own risk!
+<!-- prettier-ignore -->
+> [!IMPORTANT]
+> This is in the early phase of development. Use at your own risk!
 
 **The action inputs and outputs are backwards compatible.** The action runs on the `node24` runtime, so
 self-hosted runners need a runner version that supports it (GitHub-hosted runners already do).
