@@ -3,7 +3,12 @@ import winston from "winston";
 import { Manifest, ManifestEntry } from "../src/manifest.js";
 import { CacheKey } from "../src/cache.js";
 import { ActionPackageNames } from "../src/packages.js";
-import { createPackageManager, createPackageName } from "ts-apt";
+import {
+  CommandExecutionError,
+  PackageNotInstallableError,
+  createPackageManager,
+  createPackageName,
+} from "ts-apt";
 
 import { ActionRunner } from "../src/action.js";
 import { MANIFEST_INPUTS, MANIFEST_OUTPUTS } from "./manifest-fixtures.js";
@@ -202,6 +207,58 @@ describe("ActionRunner", () => {
     const [manifest] = cache.archiveAndSave.mock.calls[0]!;
     expect(manifest.inputs).toEqual(inputs);
     expect(manifest.outputs).toEqual(outputs);
+  });
+
+  const COMMAND_FAILURE = { command: "apt-get", args: [], exitCode: 100, stdout: "", stderr: "" };
+
+  it.each([
+    [
+      "has no installation candidate and apt offers replacements",
+      { name: "python", reason: "no-installation-candidate", alternatives: ["python2", "python-is-python3"] },
+      "'python' has no installation candidate. Use one of these instead: python2, python-is-python3.",
+    ],
+    [
+      "has no installation candidate and nothing provides it",
+      { name: "python", reason: "no-installation-candidate", alternatives: [] },
+      "'python' has no installation candidate. It is virtual or obsolete and nothing provides it.",
+    ],
+    [
+      "was not found",
+      { name: "nonexistent", reason: "not-found", alternatives: [] },
+      "'nonexistent' was not found. Check the name for a typo",
+    ],
+  ] as const)(
+    "runAction cache miss with a package that %s fails with a clear message",
+    async (_, failed, expected) => {
+      const { runner, cache } = createRunner();
+      cache.loadAndRestore.mockResolvedValue(undefined);
+      const cause = new PackageNotInstallableError(COMMAND_FAILURE, [failed]);
+      vi.mocked(createPackageManager).mockResolvedValue({
+        update: vi.fn().mockResolvedValue(0),
+        install: vi.fn().mockRejectedValue(cause),
+        getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
+      } as never);
+
+      const failure = runner.runAction({ ...MANIFEST_INPUTS, packages: failed.name });
+
+      await expect(failure).rejects.toThrow(expected);
+      await expect(failure).rejects.toThrow("Fix the packages input.");
+      await expect(failure).rejects.toHaveProperty("cause", cause);
+      expect(cache.archiveAndSave).not.toHaveBeenCalled();
+    },
+  );
+
+  it("runAction cache miss with an install failure that is not a package problem rethrows it", async () => {
+    const { runner, cache } = createRunner();
+    cache.loadAndRestore.mockResolvedValue(undefined);
+    const failure = new CommandExecutionError(COMMAND_FAILURE);
+    vi.mocked(createPackageManager).mockResolvedValue({
+      update: vi.fn().mockResolvedValue(0),
+      install: vi.fn().mockRejectedValue(failure),
+      getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
+    } as never);
+
+    await expect(runner.runAction({ ...MANIFEST_INPUTS, packages: "curl" })).rejects.toBe(failure);
   });
 
   it("runAction cache miss refreshes the apt index before installing", async () => {
