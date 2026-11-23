@@ -159,8 +159,10 @@ The action caches a package as a set of files. Some packages need more than that
   - It runs `ldconfig` once after extracting, so libraries in directories registered through
     `/etc/ld.so.conf.d` are found.
 - The Debian package database is not updated, so `dpkg -s` reports a restored package as not installed. Other
-  triggers do not run either. A command or library that depends on those can be missing. Issue
-  [#259](https://github.com/awalsh128/cache-apt-pkgs-action/issues/259) tracks this.
+  triggers do not run either. A command or library that depends on those can be missing. I don't plan to
+  change this unless it breaks something for someone. If it does for you, please comment on
+  [#259](https://github.com/awalsh128/cache-apt-pkgs-action/issues/259) with the package and a link to the
+  run.
 - Pre and post install scripts live in `/var/lib/dpkg/info/<package>.preinst` and `.postinst`.
 
 Set `execute_install_scripts` to run those scripts after each package is extracted. It covers the cases where
@@ -194,7 +196,8 @@ the manifest. If a later image drops that dependency, a hit on the old cache res
 library the runner no longer has. The job then fails with an error like
 `error while loading shared libraries: libwayland-server.so.0: cannot open shared object file`, and it can
 look intermittent because it follows the image the job lands on. Issue
-[#187](https://github.com/awalsh128/cache-apt-pkgs-action/issues/187) tracks this.
+[#187](https://github.com/awalsh128/cache-apt-pkgs-action/issues/187) has the background, and why v2 doesn't
+key the cache on the image.
 
 To avoid this, put the image into `version` so a new image is a cache miss. The variables come from the runner
 environment, not the workflow `env` context, so `${{ env.ImageVersion }}` is empty unless you export it first:
