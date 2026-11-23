@@ -712,6 +712,71 @@ jobs:
           version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_106
           debug: ${{ env.DEBUG }}
 
+  regression_260_install:
+    runs-on: ubuntu-24.04
+    needs: [setup-and-cache]
+    name: "Cache package with update-alternatives links, install phase (regression issue #260)."
+    steps:
+      - name: Download Action Bundle
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
+          path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
+      - uses: ./
+        with:
+          packages: libblas3
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_260
+          debug: ${{ env.DEBUG }}
+
+  # libblas3's postinst creates /etc/alternatives/libblas.so.3-x86_64-linux-gnu and the
+  # /usr/lib/x86_64-linux-gnu/libblas.so.3 link to it. Neither is in `dpkg -L`, so a restore that only
+  # extracts files misses them.
+  regression_260_restore:
+    runs-on: ubuntu-24.04
+    needs: [regression_260_install]
+    name: "Cache package with update-alternatives links, restore phase (regression issue #260)."
+    steps:
+      - name: Download Action Bundle
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: action-bundle-${{ github.event.pull_request.head.sha || github.sha }}
+          path: .
+      - name: Use archive.ubuntu.com instead of the stalling Azure mirror
+        uses: ./.github/actions/use-archive-mirror
+      # If the runner image ships libblas3, the links exist before the action runs and this job proves nothing.
+      - name: Require that the runner image doesn't already have the package
+        run: |
+          if dpkg -s libblas3 >/dev/null 2>&1; then
+            echo "::error::libblas3 is already installed on this runner image, so this job can't tell a restore from the image."
+            exit 1
+          fi
+        shell: bash
+      - name: Execute
+        id: execute
+        uses: ./
+        with:
+          packages: libblas3
+          version: ${{ github.run_id }}-${{ github.run_attempt }}-regression_260
+          debug: ${{ env.DEBUG }}
+      - name: Verify cache hit
+        if: steps.execute.outputs.cache-hit != 'true'
+        run: |
+          echo "cache-hit = ${{ steps.execute.outputs.cache-hit }}"
+          exit 1
+        shell: bash
+      - name: Verify the alternatives links were restored
+        run: |
+          set -euo pipefail
+          # readlink -e fails when a link is missing or dangling.
+          readlink -e /etc/alternatives/libblas.so.3-x86_64-linux-gnu
+          readlink -e /usr/lib/x86_64-linux-gnu/libblas.so.3
+          update-alternatives --query libblas.so.3-x86_64-linux-gnu
+          # The linker cache lists the soname only if ldconfig ran after the link existed.
+          ldconfig -p | grep -F "libblas.so.3 ("
+        shell: bash
+
   multi_arch_cache_key:
     runs-on: ubuntu-24.04
     needs: [setup-and-cache]
@@ -783,6 +848,8 @@ jobs:
         regression_89,
         regression_106_install,
         regression_106_restore,
+        regression_260_install,
+        regression_260_restore,
         multi_arch_cache_key,
         virtual_package,
       ]
