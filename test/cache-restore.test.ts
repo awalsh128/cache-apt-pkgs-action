@@ -1,7 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import * as ghcache from "@actions/cache";
-import { createPackageName, type CommandOptions, type PackageName } from "ts-apt";
+import {
+  createPackageName,
+  type Alternative,
+  type CommandOptions,
+  type PackageManager,
+  type PackageName,
+} from "ts-apt";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import winston from "winston";
 
@@ -85,8 +91,10 @@ interface TarCalls {
   extracted: string[];
   /** Number of commands run that extracted archives. */
   extractCommands?: number;
-  /** Extractions and script runs, in the order they ran. */
+  /** Extractions, script runs and alternatives registrations, in the order they ran. */
   events?: string[];
+  /** Alternatives registered through the package manager. */
+  registered?: Alternative[];
 }
 
 const argValue = (args: string[], flag: string) =>
@@ -116,6 +124,16 @@ function recordTar(calls: TarCalls) {
   });
 }
 
+/** Package manager whose alternatives registration is recorded in `calls`. */
+function packageManager(calls?: TarCalls): PackageManager {
+  return {
+    installAlternatives: vi.fn(async (alternatives: readonly Alternative[]) => {
+      calls?.registered?.push(...alternatives);
+      calls?.events?.push("alternatives");
+    }),
+  } as never;
+}
+
 function createCache(calls: TarCalls = { created: [], extracted: [] }): Cache {
   const logger = winston.createLogger({ silent: true });
   return new Cache({ run: recordTar(calls) } as never, logger, CACHE_DEFAULT_DIRNAME);
@@ -139,7 +157,7 @@ describe("Cache", () => {
 
     const calls: TarCalls = { created: [], extracted: [] };
 
-    const manifest = await createCache(calls).loadAndRestore(KEY, false);
+    const manifest = await createCache(calls).loadAndRestore(KEY, false, packageManager(calls));
 
     expect(manifest).toBeDefined();
     expect(calls.extracted).toEqual(INSTALL_ORDER.map(archivePath));
@@ -150,7 +168,7 @@ describe("Cache", () => {
 
     const calls: TarCalls = { created: [], extracted: [] };
 
-    await createCache(calls).loadAndRestore(KEY, false);
+    await createCache(calls).loadAndRestore(KEY, false, packageManager(calls));
 
     expect(calls.extractCommands).toBe(1);
   });
@@ -160,7 +178,7 @@ describe("Cache", () => {
 
     const calls: TarCalls = { created: [], extracted: [] };
 
-    await createCache(calls).loadAndRestore(KEY, true);
+    await createCache(calls).loadAndRestore(KEY, true, packageManager(calls));
 
     expect(calls.extracted).toEqual(INSTALL_ORDER.map(archivePath));
     expect(calls.extractCommands).toBe(INSTALL_ORDER.length);
@@ -172,18 +190,80 @@ describe("Cache", () => {
       await writeCache();
       const calls: TarCalls = { created: [], extracted: [], events: [] };
 
-      await createCache(calls).loadAndRestore(KEY, executeInstallScripts);
+      await createCache(calls).loadAndRestore(KEY, executeInstallScripts, packageManager(calls));
 
       expect(calls.events?.filter((event) => event === "ldconfig")).toHaveLength(1);
       expect(calls.events?.at(-1)).toBe("ldconfig");
     },
   );
 
+  describe("alternatives", () => {
+    const ALTERNATIVE: Alternative = {
+      name: "libblas.so.3-x86_64-linux-gnu",
+      link: "/usr/lib/x86_64-linux-gnu/libblas.so.3",
+      path: "/usr/lib/x86_64-linux-gnu/blas/libblas.so.3",
+      priority: 10,
+      slaves: [],
+    };
+
+    async function writeCacheWithAlternatives(alternatives: Alternative[]): Promise<void> {
+      fs.mkdirSync(CACHE_DIR, { recursive: true });
+      const withAlternatives = new Manifest(
+        MANIFEST.created,
+        [new ManifestEntry(REQUESTED_PACKAGE, filesOf(REQUESTED_PACKAGE), alternatives)],
+        KEY,
+        MANIFEST_INPUTS,
+        MANIFEST_OUTPUTS,
+      );
+      await withAlternatives.writeToFile(path.join(CACHE_DIR, MANIFEST_FILENAME));
+      fs.writeFileSync(archivePath(REQUESTED_PACKAGE), "");
+    }
+
+    it.each([false, true])(
+      "loadAndRestore with install scripts %s registers the alternatives after extracting and before ldconfig",
+      async (executeInstallScripts) => {
+        await writeCacheWithAlternatives([ALTERNATIVE]);
+        const calls: TarCalls = { created: [], extracted: [], events: [], registered: [] };
+
+        await createCache(calls).loadAndRestore(KEY, executeInstallScripts, packageManager(calls));
+
+        expect(calls.registered).toEqual([ALTERNATIVE]);
+        expect(calls.events).toEqual([
+          `extract ${path.basename(archivePath(REQUESTED_PACKAGE))}`,
+          "alternatives",
+          "ldconfig",
+        ]);
+      },
+    );
+
+    it("loadAndRestore manifest without alternatives registers none", async () => {
+      await writeCache();
+      const calls: TarCalls = { created: [], extracted: [], events: [], registered: [] };
+
+      await createCache(calls).loadAndRestore(KEY, false, packageManager(calls));
+
+      expect(calls.events).not.toContain("alternatives");
+    });
+
+    it("loadAndRestore registration fails throws without running ldconfig", async () => {
+      await writeCacheWithAlternatives([ALTERNATIVE]);
+      const calls: TarCalls = { created: [], extracted: [], events: [] };
+      const failing = {
+        installAlternatives: vi.fn().mockRejectedValue(new Error("alternative path missing")),
+      } as never;
+
+      await expect(createCache(calls).loadAndRestore(KEY, false, failing)).rejects.toThrow(
+        "alternative path missing",
+      );
+      expect(calls.events).not.toContain("ldconfig");
+    });
+  });
+
   it("loadAndRestore archive missing returns undefined without running ldconfig", async () => {
     await writeCache(INSTALL_ORDER.slice(1));
     const calls: TarCalls = { created: [], extracted: [], events: [] };
 
-    await createCache(calls).loadAndRestore(KEY, false);
+    await createCache(calls).loadAndRestore(KEY, false, packageManager(calls));
 
     expect(calls.events).not.toContain("ldconfig");
   });
@@ -193,7 +273,7 @@ describe("Cache", () => {
 
     const calls: TarCalls = { created: [], extracted: [] };
 
-    const manifest = await createCache(calls).loadAndRestore(KEY, false);
+    const manifest = await createCache(calls).loadAndRestore(KEY, false, packageManager(calls));
 
     expect(manifest).toBeUndefined();
     expect(calls.extracted).toEqual([]);
@@ -220,7 +300,7 @@ describe("Cache", () => {
   it("loadAndRestore cache hit returns all installed packages", async () => {
     await writeCache();
 
-    const manifest = await createCache().loadAndRestore(KEY, false);
+    const manifest = await createCache().loadAndRestore(KEY, false, packageManager());
 
     expect(manifest?.entries.map((entry) => entry.packageName.serialize())).toEqual(
       MANIFEST.entries.map((entry) => entry.packageName.serialize()),
@@ -238,7 +318,7 @@ describe("Cache", () => {
     await writeLegacyCache();
     const calls: TarCalls = { created: [], extracted: [] };
 
-    const manifest = await createCache(calls).loadAndRestore(KEY, false);
+    const manifest = await createCache(calls).loadAndRestore(KEY, false, packageManager(calls));
 
     expect(manifest?.entries.map((entry) => entry.packageName.serialize())).toEqual(
       MANIFEST.entries.map((entry) => entry.packageName.serialize()),
@@ -250,7 +330,7 @@ describe("Cache", () => {
     vi.mocked(ghcache.restoreCache).mockResolvedValue(undefined);
     const calls: TarCalls = { created: [], extracted: [] };
 
-    const manifest = await createCache(calls).loadAndRestore(KEY, false);
+    const manifest = await createCache(calls).loadAndRestore(KEY, false, packageManager(calls));
 
     expect(manifest).toBeUndefined();
     expect(calls.extracted).toEqual([]);
@@ -270,7 +350,7 @@ describe("Cache", () => {
     await replacement?.writeToFile(filePath);
     const calls: TarCalls = { created: [], extracted: [] };
 
-    const manifest = await createCache(calls).loadAndRestore(KEY, false);
+    const manifest = await createCache(calls).loadAndRestore(KEY, false, packageManager(calls));
 
     expect(manifest).toBeUndefined();
     expect(calls.extracted).toEqual([]);
@@ -281,7 +361,7 @@ describe("Cache", () => {
     const errorSpy = vi.spyOn(logger, "error");
     const cache = new Cache({ run: vi.fn() } as never, logger, CACHE_DEFAULT_DIRNAME);
 
-    const manifest = await cache.loadAndRestore(KEY, false);
+    const manifest = await cache.loadAndRestore(KEY, false, packageManager());
 
     expect(manifest).toBeUndefined();
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Unable to read cache directory contents"));
@@ -299,7 +379,7 @@ describe("Cache", () => {
     await metaOnly.writeToFile(path.join(CACHE_DIR, MANIFEST_FILENAME));
     const calls: TarCalls = { created: [], extracted: [], events: [] };
 
-    const manifest = await createCache(calls).loadAndRestore(KEY, false);
+    const manifest = await createCache(calls).loadAndRestore(KEY, false, packageManager(calls));
 
     expect(manifest?.entries).toHaveLength(1);
     expect(calls.extractCommands).toBeUndefined();
@@ -314,7 +394,7 @@ describe("Cache", () => {
     );
     const calls: TarCalls = { created: [], extracted: [], events: [] };
 
-    await createCache(calls).loadAndRestore(KEY, true);
+    await createCache(calls).loadAndRestore(KEY, true, packageManager(calls));
 
     expect(calls.events?.slice(0, 4)).toEqual([
       `extract ${path.basename(archivePath(first!))}`,

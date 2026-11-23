@@ -1,12 +1,14 @@
 import fs from "node:fs";
 import type { ActionInputs, ActionOutputs } from "./action.js";
 import { CacheKey } from "./cache.js";
-import { packageNameFromJSON, PackageName } from "ts-apt";
+import { packageNameFromJSON, type Alternative, type PackageName } from "ts-apt";
 
 /** Parsed JSON form of a {@link ManifestEntry}. */
 interface ManifestEntryJson {
   readonly packageName: Parameters<typeof packageNameFromJSON>[0];
   readonly filepaths: string[];
+  /** Missing in caches saved before alternatives were recorded. */
+  readonly alternatives?: Alternative[];
 }
 
 /** Parsed JSON form of a {@link Manifest}. */
@@ -28,14 +30,22 @@ export class ManifestEntry {
    * packages without files (e.g. metapackages), which get no archive.
    */
   readonly filepaths: string[];
+  /**
+   * Alternatives (`update-alternatives`) the package registered, whose links `dpkg -L` does not list.
+   * Restore registers them again after extracting the archives. Empty when the package has none, or
+   * for a cache saved before they were recorded.
+   */
+  readonly alternatives: Alternative[];
 
   /**
    * @param packageName Installed package.
    * @param filepaths Root-relative file paths; copied and sorted.
+   * @param alternatives Alternatives the package registered; copied.
    */
-  constructor(packageName: PackageName, filepaths: string[]) {
+  constructor(packageName: PackageName, filepaths: string[], alternatives: readonly Alternative[] = []) {
     this.packageName = packageName;
     this.filepaths = [...filepaths].sort((a, b) => a.localeCompare(b));
+    this.alternatives = [...alternatives];
   }
 
   /**
@@ -45,7 +55,7 @@ export class ManifestEntry {
    * @returns The deserialized entry.
    */
   static fromJSON(json: ManifestEntryJson): ManifestEntry {
-    return new ManifestEntry(packageNameFromJSON(json.packageName), json.filepaths);
+    return new ManifestEntry(packageNameFromJSON(json.packageName), json.filepaths, json.alternatives ?? []);
   }
 }
 

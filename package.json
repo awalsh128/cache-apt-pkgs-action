@@ -86,7 +86,7 @@
     "@actions/artifact": "^6.2.1",
     "@actions/cache": "^6.1.0",
     "@actions/core": "^3.0.1",
-    "ts-apt": "1.1.5",
+    "ts-apt": "1.2.0",
     "winston": "^3.19.0",
     "winston-transport": "^4.9.0"
   },

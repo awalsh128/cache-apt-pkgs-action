@@ -6,7 +6,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { ActionPackageNames, findInstallScript } from "./packages.js";
 import { Manifest, ManifestEntry } from "./manifest.js";
-import { CommandRunner, PackageName } from "ts-apt";
+import { CommandRunner, PackageManager, PackageName } from "ts-apt";
 
 export const CACHE_DEFAULT_DIRNAME = "cache-apt-pkgs";
 export const CACHE_KEY_FILENAME = "cache_key.md5";
@@ -175,7 +175,11 @@ export class Cache {
     this.logger.info(`Ran ${scriptType} script for ${packageName.name}`);
   }
 
-  async loadAndRestore(key: CacheKey, executeInstallScripts: boolean): Promise<Manifest | undefined> {
+  async loadAndRestore(
+    key: CacheKey,
+    executeInstallScripts: boolean,
+    packageManager: PackageManager,
+  ): Promise<Manifest | undefined> {
     const cacheHit = await ghcache.restoreCache([this.path], key.hash);
 
     if (!cacheHit) {
@@ -236,15 +240,41 @@ export class Cache {
       await this.extractArchives(archivePaths.map((item) => item.archivePath));
     }
 
-    // Restore never fires dpkg triggers, so rebuild the linker cache for libraries in directories
-    // registered through /etc/ld.so.conf.d (see issue #260).
-    if (archivePaths.length > 0) {
-      this.logger.info("Updating the shared library cache...");
-      await this.commandRunner.run("sudo", ["ldconfig"]);
-    }
+    await this.finishRestore(manifest, archivePaths.length > 0, packageManager);
 
     // Return every installed package so outputs can report dependencies too.
     return manifest;
+  }
+
+  /**
+   * Runs what dpkg's triggers and `postinst` scripts would have done, which an extract alone doesn't.
+   *
+   * Alternatives go first so the linker cache that `ldconfig` rebuilds sees their links (see issue #260).
+   *
+   * @param manifest Manifest of the restored cache.
+   * @param extracted Whether any archive was extracted.
+   * @param packageManager Registers the alternatives.
+   */
+  private async finishRestore(
+    manifest: Manifest,
+    extracted: boolean,
+    packageManager: PackageManager,
+  ): Promise<void> {
+    // Restore never runs postinst unless asked to, so register the alternatives each package created
+    // (e.g. /etc/alternatives/libblas.so.3-x86_64-linux-gnu). Registering again is safe when a postinst
+    // already did it.
+    const alternatives = manifest.entries.flatMap((entry) => entry.alternatives);
+    if (alternatives.length > 0) {
+      this.logger.info(`Registering ${alternatives.length} alternatives...`);
+      await packageManager.installAlternatives(alternatives);
+    }
+
+    // Restore never fires dpkg triggers, so rebuild the linker cache for libraries in directories
+    // registered through /etc/ld.so.conf.d.
+    if (extracted) {
+      this.logger.info("Updating the shared library cache...");
+      await this.commandRunner.run("sudo", ["ldconfig"]);
+    }
   }
 
   /**

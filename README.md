@@ -131,7 +131,7 @@ For stricter setups (e.g. pinned package versions or minimal permissions), see [
 
 The action caches a package as a set of files. Some packages need more than that after the files are back.
 
-- A restore only extracts files. It does not update the Debian package database (e.g. `dpkg -s` reports the package as not installed), and it does not run triggers (e.g. `update-alternatives`). A command or library that depends on those can be missing. Issues [#259](https://github.com/awalsh128/cache-apt-pkgs-action/issues/259) and [#260](https://github.com/awalsh128/cache-apt-pkgs-action/issues/260) track this. The one exception is `ldconfig`, which the action runs once after extracting so libraries in directories registered through `/etc/ld.so.conf.d` are found.
+- A restore only extracts files. It does not update the Debian package database (e.g. `dpkg -s` reports the package as not installed), and it does not run triggers. A command or library that depends on those can be missing. Issues [#259](https://github.com/awalsh128/cache-apt-pkgs-action/issues/259) and [#260](https://github.com/awalsh128/cache-apt-pkgs-action/issues/260) track this. Two things are handled for you: the action registers again the `update-alternatives` entries each package created (e.g. `/usr/bin/identify`), and it runs `ldconfig` once after extracting so libraries in directories registered through `/etc/ld.so.conf.d` are found.
 - Pre and post install scripts live in `/var/lib/dpkg/info/<package>.preinst` and `.postinst`.
 
 Set `execute_install_scripts` to run those scripts after each package is extracted. It covers the cases where a maintainer script creates what is missing, but it can't promise a fix.

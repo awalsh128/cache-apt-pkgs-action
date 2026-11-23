@@ -55,4 +55,34 @@ describe("manifest", () => {
 
     expect(parsed).toEqual(entry);
   });
+
+  it("ManifestEntry fromJSON entry with alternatives returns them", () => {
+    const alternative = {
+      name: "editor",
+      link: "/usr/bin/editor",
+      path: "/bin/nano",
+      priority: 40,
+      slaves: [
+        {
+          name: "editor.1.gz",
+          link: "/usr/share/man/man1/editor.1.gz",
+          path: "/usr/share/man/man1/nano.1.gz",
+        },
+      ],
+    };
+    const entry = new ManifestEntry(createPackageName("nano", "7.2", "amd64"), ["bin/nano"], [alternative]);
+
+    const parsed = ManifestEntry.fromJSON(JSON.parse(JSON.stringify(entry)));
+
+    expect(parsed.alternatives).toEqual([alternative]);
+  });
+
+  it("ManifestEntry fromJSON entry saved before alternatives were recorded returns none", () => {
+    const parsed = ManifestEntry.fromJSON({
+      packageName: JSON.parse(JSON.stringify(createPackageName("curl", "8.1.0", "amd64"))),
+      filepaths: ["usr/bin/curl"],
+    });
+
+    expect(parsed.alternatives).toEqual([]);
+  });
 });
