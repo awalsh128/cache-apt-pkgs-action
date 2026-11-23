@@ -157,9 +157,13 @@ This action can't reverse engineer the Debian package manager. That would be out
 
 ### Runner image changes
 
-The cache key doesn't include the runner image. Only the packages you request are archived, so a pre-installed dependency of one of them (e.g. `libwayland-server0` for GTK and WebKit packages) is in neither the cache nor the manifest. If a later image drops that dependency, a hit on the old cache restores files that need a library the runner no longer has. The job then fails with an error like `error while loading shared libraries: libwayland-server.so.0: cannot open shared object file`, and it can look intermittent because it follows the image the job lands on. Issue [#187](https://github.com/awalsh128/cache-apt-pkgs-action/issues/187) tracks this.
+Only the packages you request are archived, so a pre-installed dependency of one of them (e.g. `libwayland-server0` for GTK and WebKit packages) is in neither the cache nor the manifest. If a later image drops that dependency, a hit on the old cache would restore files that need a library the runner no longer has. The job then fails with an error like `error while loading shared libraries: libwayland-server.so.0: cannot open shared object file`, and it can look intermittent because it follows the image the job lands on. Issue [#187](https://github.com/awalsh128/cache-apt-pkgs-action/issues/187) tracks this.
 
-To avoid this, put the image into `version` so a new image is a cache miss. The variables come from the runner environment, not the workflow `env` context, so `${{ env.ImageVersion }}` is empty unless you export it first:
+The action avoids this by adding a fingerprint of the image to the cache key. Before the cache lookup it runs `apt-get --simulate install` for your packages and hashes the names of the packages apt would unpack. A dependency that disappears from the image changes the fingerprint, so the job misses the old cache and installs fresh. Versions aren't part of the fingerprint, so a routine update on the image doesn't invalidate your caches. If the simulation fails, the fingerprint falls back to `ImageOS` and `ImageVersion` (set on GitHub-hosted runners), and without those the key doesn't depend on the image.
+
+The simulation costs a few seconds per job.
+
+On v1, which has no fingerprint, put the image into `version` so a new image is a cache miss. The variables come from the runner environment, not the workflow `env` context, so `${{ env.ImageVersion }}` is empty unless you export it first:
 
 ```yaml
 - name: Export runner image version
@@ -167,13 +171,13 @@ To avoid this, put the image into `version` so a new image is a cache miss. The 
     echo "ImageOS=${ImageOS}" >> "$GITHUB_ENV"
     echo "ImageVersion=${ImageVersion}" >> "$GITHUB_ENV"
   shell: bash
-- uses: awalsh128/cache-apt-pkgs-action@v2.0.0
+- uses: awalsh128/cache-apt-pkgs-action@v1
   with:
     packages: mypackage
     version: 1.0-${{ env.ImageOS }}-${{ env.ImageVersion }}
 ```
 
-The trade-off is a cold cache on every image rotation. `ImageOS` alone isn't enough, because pre-installed packages can change between image versions of the same OS. Only GitHub-hosted runners set these variables.
+The trade-off is a cold cache on every image rotation. `ImageOS` alone isn't enough, because pre-installed packages can change between image versions of the same OS.
 
 ### Stalled mirrors
 

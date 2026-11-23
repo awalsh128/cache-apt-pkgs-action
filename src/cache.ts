@@ -71,11 +71,23 @@ export class CacheKey {
   readonly arch: string;
   /** Normalized package names included in the cache so future unordered list comparisons are consistent. */
   readonly packageNames: ActionPackageNames;
+  /**
+   * Fingerprint of what the runner image already has (see `fingerprintImage`), so a cache built on one
+   * image state misses on another. Empty when none could be derived, and then left out of the key.
+   */
+  readonly imageFingerprint: string;
   /** MD5 hash of the serialized cache key. Not considered sensitive in the GitHub Cache action. */
   readonly hash: string;
 
-  constructor(version: string, forceUpdateIncrement: string, arch: string, packageNames: ActionPackageNames) {
+  constructor(
+    version: string,
+    forceUpdateIncrement: string,
+    arch: string,
+    packageNames: ActionPackageNames,
+    imageFingerprint = "",
+  ) {
     this.version = version;
+    this.imageFingerprint = imageFingerprint;
     this.forceUpdateIncrement = forceUpdateIncrement;
     this.arch = arch;
     this.packageNames = packageNames;
@@ -96,6 +108,8 @@ export class CacheKey {
       obj.forceUpdateIncrement!,
       obj.arch!,
       ActionPackageNames.fromJSON(obj.packageNames!),
+      // Keys saved before the fingerprint existed have none.
+      obj.imageFingerprint ?? "",
     );
   }
 
@@ -119,7 +133,9 @@ export class CacheKey {
           .map((key) => [key, sortObj(record[key])]),
       );
     };
-    return JSON.stringify(sortObj(this), null, readable ? 2 : 0);
+    // An absent fingerprint is left out so keys without one hash as they did before it existed.
+    const { imageFingerprint, ...rest } = this;
+    return JSON.stringify(sortObj(imageFingerprint === "" ? rest : this), null, readable ? 2 : 0);
   }
 
   toString(): string {

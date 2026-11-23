@@ -11,7 +11,11 @@ import {
 } from "ts-apt";
 
 import { ActionRunner } from "../src/action.js";
+import { fingerprintImage } from "../src/fingerprint.js";
 import { MANIFEST_INPUTS, MANIFEST_OUTPUTS } from "./manifest-fixtures.js";
+
+// The fingerprint has its own tests; here it only has to reach the cache key.
+vi.mock("../src/fingerprint.js", () => ({ fingerprintImage: vi.fn().mockResolvedValue("") }));
 
 vi.mock("ts-apt", async (importOriginal) => {
   const actual = await importOriginal<typeof import("ts-apt")>();
@@ -187,6 +191,45 @@ describe("ActionRunner", () => {
     await runner.runAction({ ...MANIFEST_INPUTS, packages: "curl" });
 
     expect(cache.loadAndRestore.mock.calls[0]?.[2]).toBe(restoreManager);
+  });
+
+  it("runAction looks the cache up with a key that holds the image fingerprint", async () => {
+    const { runner, cache } = createRunner();
+    cache.loadAndRestore.mockResolvedValue(undefined);
+    vi.mocked(fingerprintImage).mockResolvedValueOnce("apt:0123456789abcdef");
+    vi.mocked(createPackageManager).mockResolvedValue({
+      update: vi.fn().mockResolvedValue(0),
+      install: vi.fn().mockResolvedValue([]),
+      listInstalled: vi.fn().mockResolvedValue([]),
+      listAlternatives: vi.fn().mockResolvedValue([]),
+      listInstalledFiles: vi.fn().mockResolvedValue([]),
+      getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
+    } as never);
+
+    await runner.runAction({ ...MANIFEST_INPUTS, packages: "curl" });
+
+    expect(cache.loadAndRestore.mock.calls[0]?.[0].imageFingerprint).toBe("apt:0123456789abcdef");
+  });
+
+  it("runAction fingerprints with a simulating package manager", async () => {
+    const { runner, cache } = createRunner();
+    const packageNames = ActionPackageNames.fromInput("curl");
+    cache.loadAndRestore.mockResolvedValue(
+      new Manifest(
+        new Date(),
+        [],
+        new CacheKey("v1", "1", process.arch, packageNames),
+        MANIFEST_INPUTS,
+        MANIFEST_OUTPUTS,
+      ),
+    );
+    vi.mocked(createPackageManager).mockResolvedValue({
+      getNativeArchitecture: vi.fn().mockResolvedValue(NATIVE_ARCH),
+    } as never);
+
+    await runner.runAction({ ...MANIFEST_INPUTS, packages: "curl" });
+
+    expect(vi.mocked(createPackageManager).mock.calls.some((call) => call[3] === true)).toBe(true);
   });
 
   it("runAction cache miss saves the run's inputs and outputs in the manifest", async () => {

@@ -10,6 +10,9 @@ import { MANIFEST_INPUTS, MANIFEST_OUTPUTS } from "./manifest-fixtures.js";
 const NATIVE_ARCH = "amd64";
 const FOREIGN_ARCH = "i386";
 
+// The fingerprint has its own tests; here it only has to reach the cache key.
+vi.mock("../src/fingerprint.js", () => ({ fingerprintImage: vi.fn().mockResolvedValue("") }));
+
 vi.mock("ts-apt", async (importOriginal) => {
   const actual = await importOriginal<typeof import("ts-apt")>();
   return {

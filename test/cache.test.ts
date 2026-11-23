@@ -48,6 +48,18 @@ describe("cache", () => {
       expect(key.hash).toBe(HASH);
     });
 
+    it("creates a cache key with an image fingerprint with a different hash", () => {
+      const names = ActionPackageNames.fromInput(SERIALIZED_INPUT_PACKAGE_NAMES);
+      const key = new CacheKey(CACHE_VER, FORCE_UPDATE_INCREMENT, ARCH, names, "apt:0123456789abcdef");
+      expect(key.hash).not.toBe(HASH);
+    });
+
+    it("JSON roundtrips cache keys with an image fingerprint", () => {
+      const names = ActionPackageNames.fromInput(SERIALIZED_INPUT_PACKAGE_NAMES);
+      const key = new CacheKey(CACHE_VER, FORCE_UPDATE_INCREMENT, ARCH, names, "apt:0123456789abcdef");
+      expect(CacheKey.fromJSON(key.toJSON(false))).toEqual(key);
+    });
+
     it("JSON roundtrips cache keys", () => {
       const key = new CacheKey(
         CACHE_VER,
