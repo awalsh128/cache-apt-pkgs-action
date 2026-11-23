@@ -1,0 +1,730 @@
+#!/bin/bash
+#
+# apt-fast v1.10.0
+# Use this just like aptitude or apt-get for faster package downloading.
+#
+# Copyright: 2008-2012 Matt Parnell, http://www.mattparnell.com
+# Improvements, maintenance, revisions - 2012, 2017-2019 Dominique Lasserre
+#
+# You may distribute this file under the terms of the GNU General
+# Public License as published by the Free Software Foundation; either
+# version 3 of the License, or (at your option) any later version.
+#
+
+# This script is taken from an official source by the author.
+# If it ain't broke, don't fix it.
+# shellcheck disable=SC1090,SC2001,SC2015,SC2016,SC2034,SC2054,SC2154,SC2206,SC2243,SC2244,SC2248,SC2249,SC2250
+
+shopt -s nullglob
+
+[ -n "$DEBUG" ] && set -xv
+
+# Print colored messages.
+# Usage: msg "message text" "message type" "optional: err"
+# Message types are 'normal', 'hint' or 'warning'. Warnings and messages with a
+# third argument are piped to stderr.
+msg(){
+  msg_options=()
+  case "$2" in
+    normal) beginColor="$cGreen";;
+    hint) beginColor="$cBlue";;
+    warning) beginColor="$cRed";;
+    question) beginColor="$cRed"; msg_options=(-n);;
+    *) beginColor= ;;
+  esac
+
+  if [ -z "$3" ] && [ "$2" != "warning" ]; then
+    echo -e "${msg_options[@]}" "${aptfast_prefix}${beginColor}$1${endColor}"
+  else
+    echo -e "${msg_options[@]}" "${aptfast_prefix}${beginColor}$1${endColor}" >&2
+  fi
+}
+
+# Search for known options and decide if root privileges are needed.
+root=$#
+option=
+for argument in "$@"; do
+  case "$argument" in
+    upgrade | full-upgrade | install | dist-upgrade | build-dep)
+      option="install"
+      ;;
+    clean | autoclean)
+      option="clean"
+      ;;
+    download)
+      option="download"
+      root=0
+      ;;
+    source)
+      option="source"
+      root=0
+      ;;
+    changelog | list | show | help | --help | -h)
+      root=0
+      ;;
+  esac
+done
+
+# To handle priority of options correctly (environment over config file vars)
+# we need to preserve all interesting env variables. As this wouldn't be
+# difficult enough we have to preserve complete env vars (especially if value
+# ist set (even empty) or not) when changing context (sudo)...
+# Set a 'random' string to all unset variables.
+TMP_RANDOM="13979853562951413"
+TMP_LCK_FILE="${LCK_FILE-${TMP_RANDOM}}"
+TMP_DOWNLOADBEFORE="${DOWNLOADBEFORE-${TMP_RANDOM}}"
+TMP__APTMGR="${_APTMGR-${TMP_RANDOM}}"
+TMP_APTCACHE="${APTCACHE-${TMP_RANDOM}}"
+TMP_DLDIR="${DLDIR-${TMP_RANDOM}}"
+TMP_DLLIST="${DLLIST-${TMP_RANDOM}}"
+TMP__MAXNUM="${MAXNUM-${TMP_RANDOM}}"
+TMP__MAXCONPERSRV="${MAXCONPERSRV-${TMP_RANDOM}}"
+TMP__SPLITCON="${SPLITCON-${TMP_RANDOM}}"
+TMP__MINSPLITSZ=${MINSPLITSZ-${TMP_RANDOM}}
+TMP__PIECEALGO=${PIECEALGO-${TMP_RANDOM}}
+TMP_aptfast_prefix="${aptfast_prefix-${TMP_RANDOM}}"
+TMP_APT_FAST_TIMEOUT="${APT_FAST_TIMEOUT-${TMP_RANDOM}}"
+TMP_APT_FAST_APT_AUTH="${APT_FAST_APT_AUTH-${TMP_RANDOM}}"
+TMP_VERBOSE_OUTPUT="${VERBOSE_OUTPUT-${TMP_RANDOM}}"
+TMP_ftp_proxy="${ftp_proxy-${TMP_RANDOM}}"
+TMP_http_proxy="${http_proxy-${TMP_RANDOM}}"
+TMP_https_proxy="${https_proxy-${TMP_RANDOM}}"
+
+# Check for proper privileges.
+# Call explicitly with environment variables to get them into root conext.
+if [ "$root" -ne 0 ] && [ "$UID" != 0 ]; then
+  exec sudo DEBUG="$DEBUG" \
+            LCK_FILE="$TMP_LCK_FILE" \
+            DOWNLOADBEFORE="$TMP_DOWNLOADBEFORE" \
+            _APTMGR="$TMP__APTMGR" \
+            APTCACHE="$TMP_APTCACHE" \
+            DLDIR="$TMP_DLDIR" \
+            DLLIST="$TMP_DLLIST" \
+            _MAXNUM="$TMP__MAXNUM" \
+            _MAXCONPERSRV="$TMP__MAXCONPERSRV" \
+            _SPLITCON="$TMP__SPLITCON" \
+            _MINSPLITSZ="$TMP__MINSPLITSZ" \
+            _PIECEALGO="$TMP__PIECEALGO" \
+            aptfast_prefix="$TMP_aptfast_prefix" \
+            APT_FAST_TIMEOUT="$TMP_APT_FAST_TIMEOUT" \
+            APT_FAST_APT_AUTH="$TMP_APT_FAST_APT_AUTH" \
+            VERBOSE_OUTPUT="$TMP_VERBOSE_OUTPUT" \
+            ftp_proxy="$TMP_ftp_proxy" \
+            http_proxy="$TMP_http_proxy" \
+            https_proxy="$TMP_https_proxy" \
+            "$0" "$@"
+fi
+
+# Define lockfile.
+# Use /tmp as directory because everybody (not only root) has to have write
+# permissions.
+# We need lock for non-root commands too, because we only have one download
+# list file.
+LCK_FILE="/tmp/apt-fast"
+LCK_FD=99
+
+# Set default package manager, APT cache, temporary download dir,
+# temporary download list file, and maximal parallel downloads
+_APTMGR='apt-get'
+eval "$(apt-config shell APTCACHE Dir::Cache::archives/d)"
+# Check if APT config option Dir::Cache::archives::apt-fast-partial is set.
+eval "$(apt-config shell apt_fast_partial Dir::Cache::archives::apt-fast-partial/d)"
+if [ -z "$apt_fast_partial" ]; then
+  DLDIR="$(realpath "${APTCACHE}/../apt-fast")"
+else
+  DLDIR="${apt_fast_partial}"
+fi
+
+# Check for apt auth files
+eval "$(apt-config shell NETRC Dir::Etc::netrc/f)"
+eval "$(apt-config shell NETRCDIR Dir::Etc::netrcparts/d)"
+APTAUTHFILES=()
+if [ -f "$NETRC" ]; then
+    APTAUTHFILES=("$NETRC")
+fi
+if [ -d "$NETRCDIR" ]; then
+    APTAUTHFILES+=("$NETRCDIR"/*)
+fi
+
+DLLIST="/tmp/apt-fast.list"
+_MAXNUM=5
+_MAXCONPERSRV=10
+_SPLITCON=8
+_MINSPLITSZ="1M"
+_PIECEALGO="default"
+MIRRORS=()
+
+# Prefix in front of apt-fast output:
+aptfast_prefix=
+# aptfast_prefix="$(date '+%b %_d %T.%N') apt-fast: "
+
+# Set color variables.
+cGreen='\e[0;32m'
+cRed='\e[0;31m'
+cBlue='\e[0;34m'
+endColor='\e[0m'
+
+# Set timout value for apt-fast download confirmation dialog.
+# Value is in seconds.
+APT_FAST_TIMEOUT=60
+
+# Ask for download confirmation if unset
+DOWNLOADBEFORE=
+
+# Enable APT authentication support
+APT_FAST_APT_AUTH=1
+
+# Formatted package list in download confirmation if unset
+VERBOSE_OUTPUT=
+
+# Download command.
+_DOWNLOADER='aria2c --no-conf -c -j ${_MAXNUM} -x ${_MAXCONPERSRV} -s ${_SPLITCON} -i ${DLLIST} --min-split-size=${_MINSPLITSZ} --stream-piece-selector=${_PIECEALGO} --connect-timeout=600 --timeout=600 -m0 --header "Accept: */*"'
+
+# Load config file.
+for Prefix in /usr/local/etc /etc; do
+    CONFFILE=${Prefix}/apt-fast.conf
+    if [ -e "$CONFFILE" ]; then
+        source "$CONFFILE"
+        break
+    fi
+done
+
+# no proxy as default
+ftp_proxy=
+http_proxy=
+https_proxy=
+
+# Now overwrite with preserved values if values were set before (compare with
+# 'random' string).
+[ "$TMP_LCK_FILE" = "$TMP_RANDOM" ] || LCK_FILE="$TMP_LCK_FILE"
+[ "$TMP_DOWNLOADBEFORE" = "$TMP_RANDOM" ] || DOWNLOADBEFORE="$TMP_DOWNLOADBEFORE"
+[ "$TMP__APTMGR" = "$TMP_RANDOM" ] || _APTMGR="$TMP__APTMGR"
+[ "$TMP_APTCACHE" = "$TMP_RANDOM" ] || APTCACHE="$TMP_APTCACHE"
+[ "$TMP_DLDIR" = "$TMP_RANDOM" ] || DLDIR="$TMP_DLDIR"
+[ "$TMP_DLLIST" = "$TMP_RANDOM" ] || DLLIST="$TMP_DLLIST"
+[ "$TMP__MAXNUM" = "$TMP_RANDOM" ] || _MAXNUM="$TMP__MAXNUM"
+[ "$TMP__MAXCONPERSRV" = "$TMP_RANDOM" ] || _MAXCONPERSRV="$TMP__MAXCONPERSRV"
+[ "$TMP__SPLITCON" = "$TMP_RANDOM" ] || _SPLITCON="$TMP__SPLITCON"
+[ "$TMP__MINSPLITSZ" = "$TMP_RANDOM" ] || _MINSPLITSZ="$TMP__MINSPLITSZ"
+[ "$TMP__PIECEALGO" = "$TMP_RANDOM" ] || _PIECEALGO="$TMP__PIECEALGO"
+[ "$TMP_aptfast_prefix" = "$TMP_RANDOM" ] || aptfast_prefix="$TMP_aptfast_prefix"
+[ "$TMP_APT_FAST_TIMEOUT" = "$TMP_RANDOM" ] || APT_FAST_TIMEOUT="$TMP_APT_FAST_TIMEOUT"
+[ "$TMP_APT_FAST_APT_AUTH" = "$TMP_RANDOM" ] || APT_FAST_APT_AUTH="$TMP_APT_FAST_APT_AUTH"
+[ "$TMP_VERBOSE_OUTPUT" = "$TMP_RANDOM" ] || VERBOSE_OUTPUT="$TMP_VERBOSE_OUTPUT"
+[ "$TMP_ftp_proxy" = "$TMP_RANDOM" ] || ftp_proxy="$TMP_ftp_proxy"
+[ "$TMP_http_proxy" = "$TMP_RANDOM" ] || http_proxy="$TMP_http_proxy"
+[ "$TMP_https_proxy" = "$TMP_RANDOM" ] || https_proxy="$TMP_https_proxy"
+
+
+# Disable colors if not executed in terminal.
+if [ ! -t 1 ]; then
+  cGreen=
+  cRed=
+  cBlue=
+  endColor=
+  #FIXME: Time not updated.
+  [ -z "$aptfast_prefix" ] && aptfast_prefix="[apt-fast $(date +"%T")]"
+fi
+
+
+msg_already_running()
+{
+  msg "apt-fast already running!" "warning"
+  msg "Verify that all apt-fast processes are finished then remove $LCK_FILE.lock and try again." "hint"
+}
+
+
+# create the lock file and lock it, die on failure
+_create_lock()
+{
+    eval "exec $LCK_FD>\"$LCK_FILE.lock\""
+    flock -n $LCK_FD || { msg_already_running; exit 1; }
+
+    trap "cleanup_aptfast; exit_cleanup_state" EXIT
+    trap "cleanup_aptfast; exit 1" INT TERM
+}
+
+# unlock and remove the lock file
+_remove_lock()
+{
+    flock -u "$LCK_FD" 2>/dev/null
+    rm -f "$LCK_FILE.lock"
+}
+
+# Move download file away so missing permissions won't stop usage.
+CLEANUP_STATE=0
+cleanup_dllist()
+{
+  if [ -f "$DLLIST" ]
+  then
+    if ! mv -- "$DLLIST{,.old}" 2>/dev/null
+    then
+      if ! rm -f -- "$DLLIST" 2>/dev/null
+      then
+        msg "Could not clean up download list file." "warning"
+        CLEANUP_STATE=1
+      fi
+    fi
+  fi
+}
+
+cleanup_aptfast()
+{
+  local last_exit_code=$?
+  [ "$CLEANUP_STATE" -eq 0 ] && CLEANUP_STATE=$last_exit_code
+  cleanup_dllist
+  _remove_lock
+}
+
+exit_cleanup_state()
+{
+  exit $CLEANUP_STATE
+}
+
+# decode url string
+# translates %xx but must not convert '+' in spaces
+urldecode()
+{
+    printf '%b' "${1//%/\\x}"
+}
+
+# Check if mirrors are available. And if so add all mirrors to download list.
+get_mirrors(){
+  # Check all mirror lists.
+  for mirrorstr in "${MIRRORS[@]}"; do
+    # Build mirrors array from comma separated string.
+    IFS=", " read -r -a mirrors <<< "$mirrorstr"
+    # Check for all mirrors if URI of $1 is from mirror. If so add all other
+    # mirrors to (resmirror) list and break all loops.
+    for mirror in "${mirrors[@]}"; do
+      # Real expension.
+      if [[ "$1" == "$mirror"* ]]; then
+        filepath="${1#"${mirror}"}"
+        # Build list for aria download list.
+        list="${mirrors[*]}"
+        echo -e "${list// /${filepath}\\t}$filepath\n"
+        return 0
+      fi
+    done
+  done
+  # No other mirrors found.
+  echo "$1"
+}
+
+AUTH_INFO_PARSED=()
+# Parse apt authentication files.
+# Undefined behavior on whitespaces in host, username or password.
+prepare_auth(){
+  if [ "$APT_FAST_APT_AUTH" -eq 0 ]; then
+    return
+  fi
+  for auth_file in "${APTAUTHFILES[@]}"; do
+    # auth files have netrc syntax, possible multiline entries starting with "machine"
+    auth_info="$(tr '\n' ' ' < "$auth_file" | sed 's/\(\<machine\>\)/\n\1/g' | sed '1d')"
+    while IFS= read -r auth; do
+      machine="$(echo "$auth" | sed 's/.*\<machine\>[ \t]\+\([^ \t]\+\).*/\1/')"
+      login="$(echo "$auth" | sed 's/.*\<login\>[ \t]\+\([^ \t]\+\).*/\1/')"
+      password="$(echo "$auth" | sed 's/.*\<password\>[ \t]\+\([^ \t]\+\).*/\1/')"
+      # if machine does not have protocol, try https://
+      if ! [[ "$machine" =~ ^.*:// ]]; then
+        machine="https://$machine"
+      fi
+      if [ -z "$machine" ] || [ -z "$login" ] || [ -z "$password" ]; then
+        msg "Could not parse apt authentication (skipping): $auth ($auth_file)" "warning"
+        continue
+      fi
+      # use space separated string to convert back to array later
+      AUTH_INFO_PARSED+=("$machine $login $password")
+    done <<< "$auth_info"
+  done
+}
+
+# Gets URI as parameter and tries to add basic http credentials. Will fail on
+# credentials that contain characters that need URL-encoding.
+get_auth(){
+  if [ "$APT_FAST_APT_AUTH" -eq 0 ]; then
+    echo "$1"
+    return
+  fi
+  for auth_info in "${AUTH_INFO_PARSED[@]}"; do
+    # convert to array, don't escape variable here
+    auth_info_arr=($auth_info)
+    machine="${auth_info_arr[0]}"
+    # takes first match
+    if [[ "$1" == "$machine"* ]]; then
+      login="${auth_info_arr[1]}"
+      password="${auth_info_arr[2]}"
+      uri="$(echo "$1" | sed "s|^\([^:]\+://\)|\1$login:$password@|")"
+      echo "$uri"
+      return
+    fi
+  done
+  echo "$1"
+}
+
+# Globals to save package name, version, size and overall size.
+DOWNLOAD_DISPLAY=
+DOWNLOAD_SIZE=0
+# Get the package URLs.
+get_uris(){
+  if [ ! -d "$(dirname "$DLLIST")" ]
+  then
+    if ! mkdir -p -- "$(dirname "$DLLIST")"
+    then
+      msg "Could not create download file directory." "warning"
+      CLEANUP_STATE=1
+      exit
+    fi
+  elif [ -f "$DLLIST" ]; then
+    if ! rm -f -- "$DLLIST" 2>/dev/null && ! touch -- "$DLLIST" 2>/dev/null
+    then
+      msg "Unable to write to download file. Try restarting with root permissions or run 'apt-fast clean' first." "warning"
+      CLEANUP_STATE=1
+      exit
+    fi
+  fi
+
+  # Add header to overwrite file.
+  echo "# apt-fast mirror list: $(date)" > "$DLLIST"
+  # NOTE: "aptitude" doesn't have this functionality
+  # so we use "${_APTMGR}" to get package URI's
+  case "$(basename "${_APTMGR}")" in
+    'apt'|'apt-get') uri_mgr="${_APTMGR}";;
+    *) uri_mgr='apt-get';;
+  esac
+  uris_full="$("$uri_mgr" "${APT_SCRIPT_WARNING[@]}" -y --print-uris "$@")"
+  CLEANUP_STATE="$?"
+  if [ "$CLEANUP_STATE" -ne 0 ]
+  then
+    msg "Package manager quit with exit code." "warning"
+    exit
+  fi
+  prepare_auth
+  ## --print-uris format is:
+  # 'fileurl' filename filesize checksum_hint:filechecksum
+  while IFS=' ' read -r uri filename filesize checksum_string _
+  do
+    [ -z "$uri" ] && continue
+    uri="$(get_auth "${uri//"'"/}")"
+    IFS=':' read -r hash_algo checksum _ <<<"$checksum_string"
+
+    filename_decoded="$(urldecode "$filename")"
+    IFS='_' read -r pkg_name_decoded pkg_version_decoded _ <<<"$filename_decoded"
+    DOWNLOAD_DISPLAY="${DOWNLOAD_DISPLAY}$pkg_name_decoded $pkg_version_decoded"
+    DOWNLOAD_DISPLAY="${DOWNLOAD_DISPLAY} $(echo "$filesize" | numfmt --to=iec-i --suffix=B)\n"
+    DOWNLOAD_SIZE=$((DOWNLOAD_SIZE + filesize))
+
+    ## whole uri comes encoded (urlencoded). Filename must NOT be decoded because
+    # plain aptitude do not decode it when download and install it. Therefore, we
+    # will have ugly named packages at /var/cache/apt/archives but is the standard
+    # behavior.
+    # But package version must be decoded, otherways package=version calls will
+    # not work.
+
+    if [ -n "$HASH_SUPPORTED" ]; then
+      case "$hash_algo" in
+        SHA512) [ -z "$SHA512_SUPPORTED" ] && hash_algo= || hash_algo=sha-512 ;;
+        SHA256) [ -z "$SHA256_SUPPORTED" ] && hash_algo= || hash_algo=sha-256 ;;
+        SHA1)   [ -z "$SHA1_SUPPORTED" ]   && hash_algo= || hash_algo=sha-1 ;;
+        MD5Sum) [ -z "$MD5sum_SUPPORTED" ] && hash_algo= || hash_algo=md5 ;;
+        *) hash_algo=
+      esac
+
+      # Using apt-cache show package=version to ensure recover single and
+      # correct package version.
+      # Warning: assuming that package naming uses '_' as field separator.
+      # Therefore, this code expects package-name_version_arch.deb Otherwise
+      # below code will fail resoundingly
+      if [ -z "$hash_algo" ]; then
+        IFS='_' read -r pkg_name _ <<<"$filename"
+        pkg_version="$pkg_version_decoded"
+        # Transform multi-line field output from apt-cache to single line and sort checksums, strongest first
+        package_info="$(apt-cache show "$pkg_name=$pkg_version" | sed ':r;$!{N;br};s/\n / /g' | sort -r)"
+
+        while IFS=': ' read -r field checksum _
+        do
+          case "$field" in
+            SHA512)
+              [ -n "$SHA512_SUPPORTED" ] || continue
+              hash_algo="sha-512"
+              break ;;
+            SHA256)
+              [ -n "$SHA256_SUPPORTED" ] || continue
+              hash_algo="sha-256"
+              break ;;
+            SHA1)
+              [ -n "$SHA1_SUPPORTED" ] || continue
+              hash_algo="sha-1"
+              break ;;
+            MD5sum)
+              [ -n "$MD5sum_SUPPORTED" ] || continue
+              hash_algo="md5"
+              break ;;
+          esac
+        done <<<"$package_info"
+
+        if [ -z "$hash_algo" ]; then
+          checksum=
+          msg "Couldn't get supported checksum for $pkg_name ($pkg_version)." "warning"
+          REMOVE_WORKING_MESSAGE=
+        fi
+      fi
+    else
+      hash_algo=
+    fi
+
+    {
+      get_mirrors "$uri"
+      #echo " dir=$DLDIR"
+      if [ -n "$hash_algo" ]; then
+        echo " checksum=$hash_algo=$checksum"
+      fi
+      echo " out=$filename"
+    } >> "$DLLIST"
+  done <<<"$(echo "$uris_full" | grep -E "^'(http(s|)|(s|)ftp)://")"
+
+  #cat "$DLLIST"
+  #exit
+}
+
+display_downloadfile(){
+  if [ -n "$VERBOSE_OUTPUT" ]; then
+    cat "$DLLIST"
+  else
+    DISPLAY_SORT_OPTIONS=(-k 1,1)
+    # Sort output after package download size (decreasing):
+    #DISPLAY_SORT_OPTIONS=(-k 3,3 -hr)
+    while IFS=' ' read -r pkg ver size _; do
+        [ -z "$pkg" ] && continue
+        printf '%s%-40s %-20s %10s\n' "$aptfast_prefix" "$pkg" "$ver" "$size"
+    done <<<"$(echo -e "$DOWNLOAD_DISPLAY" | sort "${DISPLAY_SORT_OPTIONS[@]}")"
+  fi
+  msg "Download size: $(echo "$DOWNLOAD_SIZE" | numfmt --to=iec-i --suffix=B)" "normal"
+}
+
+# Create and insert a PID number to lockfile.
+_create_lock
+
+# Make sure aria2c (in general first parameter from _DOWNLOADER) is available.
+CMD="$(echo "$_DOWNLOADER" | sed 's/^\s*\([^ ]\+\).*$/\1/')"
+if [ ! "$(command -v "$CMD")" ]; then
+  msg "Command not found: $CMD" "normal" "err"
+  msg "You must configure $CONFFILE to use aria2c or another supported download manager" "normal" "err"
+  CLEANUP_STATE=1
+  exit
+fi
+
+# Make sure package manager is available.
+if [ ! "$(command -v "$_APTMGR")" ]; then
+  msg "\`$_APTMGR\` command not available." "warning"
+  msg "You must configure $CONFFILE to use either apt-get or aptitude." "normal" "err"
+  CLEANUP_STATE=1
+  exit
+fi
+
+# Disable script warning if apt is used.
+APT_SCRIPT_WARNING=()
+if [ "$(basename "${_APTMGR}")" == 'apt' ]; then
+    APT_SCRIPT_WARNING=(-o "Apt::Cmd::Disable-Script-Warning=true")
+fi
+
+# Set supported hash algorithms by aria2c (and also by Debian repository).
+SHA512_SUPPORTED=
+SHA256_SUPPORTED=
+SHA1_SUPPORTED=
+MD5sum_SUPPORTED=
+HASH_SUPPORTED=
+if [ "$CMD" == "aria2c" ]; then
+  for supported_hash in $(LC_ALL=C aria2c -v | sed '/^Hash Algorithms:/!d; s/\(^Hash Algorithms: \|,\)\+//g'); do
+    case "$supported_hash" in
+      sha-512) SHA512_SUPPORTED=y; HASH_SUPPORTED=y ;;
+      sha-256) SHA256_SUPPORTED=y; HASH_SUPPORTED=y ;;
+      sha-1)   SHA1_SUPPORTED=y;   HASH_SUPPORTED=y ;;
+      md5)     MD5sum_SUPPORTED=y; HASH_SUPPORTED=y ;;
+    esac
+  done
+  if [ -z "$HASH_SUPPORTED" ]; then
+    msg "Couldn't find supported checksum algorithm from aria2c. Checksums disabled." "warning"
+  fi
+fi
+
+# Check if "assume yes" switch is enabled and if yes enable $DOWNLOADBEFORE.
+# Also check if "download only" switch is enabled.
+#TODO: Get real value over APT items APT::Get::Assume-Yes and
+#      APT::Get::Assume-No .
+#      Respectively Aptitude::CmdLine::Download-Only and APT::Get::Download-Only.
+DOWNLOAD_ONLY=
+while true; do
+  while getopts ":dy-:" optchar; do
+    case "${optchar}" in
+      -)
+        case "${OPTARG}" in
+          yes | assume-yes)  DOWNLOADBEFORE=true ;;
+          assume-no)         DOWNLOADBEFORE=     ;;
+          download-only)     DOWNLOAD_ONLY=true  ;;
+        esac
+        ;;
+      y)
+        DOWNLOADBEFORE=true
+        ;;
+      d)
+        DOWNLOAD_ONLY=true
+        ;;
+      *)
+        ;;
+    esac
+  done
+  ((OPTIND++))
+  [ $OPTIND -gt $# ] && break
+done
+
+# Configure proxies. Use apt values over environment variables.
+# Note: If proxy setting is not set, there is no apt-config output.
+#       Therefore variable doesn't get overriden, which is intended.
+# Export the variables to make them available in subshells (aka the
+# downloader command).
+eval "$(apt-config shell ftp_proxy Acquire::ftp::proxy)"
+export ftp_proxy
+eval "$(apt-config shell http_proxy Acquire::http::proxy)"
+export http_proxy
+eval "$(apt-config shell https_proxy Acquire::https::proxy)"
+export https_proxy
+
+# aria2 has no socks support (see https://github.com/aria2/aria2/issues/153)
+if echo "$http_proxy" | grep -q "^socks5h://" || echo "$https_proxy" | grep -q "^socks5h://"; then
+  msg "Socks proxy detected. Falling back to ${_APTMGR}" "hint"
+  "${_APTMGR}" "${APT_SCRIPT_WARNING[@]}" "$@"
+  exit
+fi
+
+# Run actions.
+if [ "$option" == "install" ]; then
+  msg
+  msg "Working... this may take a while." "normal"
+  REMOVE_WORKING_MESSAGE=y
+
+  get_uris "$@"
+
+  [ -t 1 ] && [ -n "$REMOVE_WORKING_MESSAGE" ] && tput cuu 1 && tput el && tput cuu 1
+  # Test /tmp/apt-fast.list file exists and not just the apt-fast comment line.
+  # Then download all files from the list.
+  if [ -f "$DLLIST" ] && [ "$(wc -l "$DLLIST" | cut -d' ' -f1)" -gt 1 ] && [ ! "$DOWNLOADBEFORE" ]; then
+    display_downloadfile
+    msg
+    msg "Do you want to download the packages? [Y/n] " "question"
+
+    while ((!updsys)); do
+      read -r -sn1 -t "$APT_FAST_TIMEOUT" answer || { msg; msg "Timed out." "warning"; CLEANUP_STATE=1; exit; }
+      case "$answer" in
+        [JjYy])    result=1; updsys=1 ;;
+        [Nn])      result=0; updsys=1 ;;
+        "")        result=1; updsys=1 ;;
+        *)         updsys=0 ;;
+      esac
+    done
+  else
+    result=1
+  fi
+
+  if ((DOWNLOAD_SIZE)); then
+    msg
+    # Continue if answer was right or DOWNLOADBEFORE is enabled.
+    if ((result)); then
+      if [ -s "$DLLIST" ]; then
+        # Test if apt-fast directory is present where we put packages.
+        if [ ! -d "$DLDIR" ]; then
+          mkdir -p -- "$DLDIR"
+        fi
+
+        cd "$DLDIR" &>/dev/null || { msg; msg "Not able to change into download directory." "warning"; CLEANUP_STATE=1; exit; }
+
+        eval "${_DOWNLOADER}"  # execute downloadhelper command
+        if [ "$(find "$DLDIR" -printf . | wc -c)" -gt 1 ]; then
+
+          # Delete incomplete/corrupted downloaded files, if any: Not recursive, as we don't expect any dirs to exist within $DLDIR.
+
+          # When Aria2c downloads a file and detects it is corrupted, its filename won't be renamed back to its actual name,
+          # preserving .aria2 file extension, which also indicates when a file hasn't been completely downloaded.
+          for x in *.aria2; do
+            rm -f "$x" "${x%.aria2}"
+          done
+
+          # Move all packages to the apt install directory by force to ensure
+          # already existing debs which may be incomplete are replaced
+          find . -type f \( -name '*.deb' -o -name '*.ddeb' \) -execdir mv -ft "$APTCACHE" {} \+
+        fi
+        cd - &>/dev/null || msg "Failed to change back directory" "warning"
+      fi
+    else
+      CLEANUP_STATE=1
+      exit
+    fi
+  else
+    [ -t 1 ] && tput el
+  fi
+
+  # different problem resolving for aptitude
+  if [ -z "$DOWNLOAD_ONLY" ] || [ "$(basename "${_APTMGR}")" == 'aptitude' ]; then
+    "${_APTMGR}" "${APT_SCRIPT_WARNING[@]}" "$@"
+  fi
+
+
+elif [ "$option" == "clean" ]; then
+  "${_APTMGR}" "${APT_SCRIPT_WARNING[@]}" "$@" && {
+    if [ -d "$DLDIR" ]; then
+      find "$DLDIR" -maxdepth 1 -type f -delete
+      CLEANUP_STATE="$?"
+      [ -f "$DLLIST" ] && rm -f -- "$DLLIST"* || true
+    fi
+  }
+
+elif [ "$option" == "download" ]; then
+  msg
+  msg "Working... this may take a while." "normal"
+  REMOVE_WORKING_MESSAGE=y
+
+  get_uris "$@"
+
+  [ -t 1 ] && [ -n "$REMOVE_WORKING_MESSAGE" ] && tput cuu 1 && tput el && tput cuu 1
+
+  if [ -f "$DLLIST" ] && [ "$(wc -l "$DLLIST" | cut -d' ' -f1)" -gt 1 ]; then
+    display_downloadfile
+    eval "${_DOWNLOADER}"
+  fi
+
+  # different problem resolving for aptitude
+  if [ "$(basename "${_APTMGR}")" == 'aptitude' ]; then
+    "${_APTMGR}" "$@"
+  fi
+
+elif [ "$option" == "source" ]; then
+  msg
+  msg "Working... this may take a while." "normal"
+  REMOVE_WORKING_MESSAGE=y
+
+  get_uris "$@"
+
+  [ -t 1 ] && [ -n "$REMOVE_WORKING_MESSAGE" ] && tput cuu 1 && tput el && tput cuu 1
+
+  if [ -f "$DLLIST" ] && [ "$(wc -l "$DLLIST" | cut -d' ' -f1)" -gt 1 ]; then
+    display_downloadfile
+    eval "${_DOWNLOADER}"
+  fi
+  # We use APT manager here to provide more verbose output. This method is
+  # slightly slower then extractiong packages manually after download but also
+  # more hardened (e.g. some options like --compile are available).
+  "${_APTMGR}" "${APT_SCRIPT_WARNING[@]}" "$@"
+  # Uncomment following snippet to extract source directly and comment
+  # both lines before.
+  #while read srcfile; do
+  #  # extract only .dsc files
+  #  echo "$srcfile" | grep -q '\.dsc$' || continue
+  #  dpkg-source -x "$(basename "$srcfile")"
+  #done < "$DLLIST"
+
+# Execute package manager directly if unknown options are passed.
+else
+  "${_APTMGR}" "${APT_SCRIPT_WARNING[@]}" "$@"
+fi
+
+# After error or all done remove our lockfile (done with EXIT trap)
