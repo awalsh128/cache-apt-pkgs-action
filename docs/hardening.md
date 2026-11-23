@@ -24,7 +24,7 @@ It is a JavaScript action on the `node24` runtime, so your workflow does not run
 
 ## Controls to put around it
 
-- Pin the action to an exact release (e.g. `v2.0.0`) or, for stricter supply chain control, to a full commit SHA. v2 has no floating major tag.
+- Pin the action to an exact release (e.g. `v2.0.0`) or, for stricter supply chain control, to a full commit SHA. The floating `v2` tag moves on each stable release, so don't use it here.
 - Set the minimum `permissions` your job needs, instead of the broad defaults.
 - Run on GitHub-hosted or otherwise trusted runners, with APT sources you control.
 - Limit who can change workflow files and package lists, with branch protection and pull request review.

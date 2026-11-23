@@ -42,7 +42,7 @@ Flow:
 1. Open a PR to `staging-2`. [pr.yml](.github/workflows/pr.yml) and [scripts/ops/pr_checks.mts](scripts/ops/pr_checks.mts) enforce branch policy and action pinning.
 2. After the squash merge, [ci.yml](.github/workflows/ci.yml) runs on `staging-2`, and again on `main-2` after each promotion. Nothing is released from a merge: changes pile up on `staging-2` until you decide the version is ready, so versions are not bumped per change.
 3. Run [promote.yml](.github/workflows/promote.yml) (workflow dispatch on `staging-2`). It requires CI success for the `staging-2` head, fast-forwards `main-2`, and starts the official release.
-4. `release.yml` on `main-2` computes one version from all the commits since the last release, tags `vX.Y.Z`, creates the GitHub Release, and attests the bundle. There is no floating `v2` tag on purpose: consumers pin an exact release or a commit SHA.
+4. `release.yml` on `main-2` computes one version from all the commits since the last release, tags `vX.Y.Z`, creates the GitHub Release, and attests the bundle. It then moves the floating `v2` tag to that release (stable releases only, never a candidate). `v2` is the only mutable tag: the rulesets in [.github/rulesets](.github/rulesets) make every exact `v2.*` tag immutable, and only the release app can create or move `v2`.
 5. Optional: to try a candidate first, run [release.yml](.github/workflows/release.yml) by hand on `staging-2` (it tags `vX.Y.Z-rc.N`; `dry-run` previews without tagging).
 
 Releases never commit to a branch. `dist/` is gitignored, so semantic-release tags a detached commit (released source plus built `dist/`, see [release.config.ts](release.config.ts)). That commit is what `uses: awalsh128/cache-apt-pkgs-action@v2.1.0` runs.

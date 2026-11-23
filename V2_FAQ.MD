@@ -44,7 +44,7 @@ repository.
 
 **The action inputs and outputs are backwards compatible.** The action runs on the `node24` runtime, so self-hosted runners need a runner version that supports it (GitHub-hosted runners already do).
 
-- Change to an exact `v2.*.*` release (or a commit SHA) in your GitHub workflow. v2 has no floating `v2` tag, on purpose.
+- Change to `@v2` (latest stable v2), an exact `v2.*.*` release or a commit SHA in your GitHub workflow. `v2` is the only tag that moves.
 - `v1.*` will still get patch updates but is in maintenance mode.
 
 ## Some internal changes

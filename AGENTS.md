@@ -70,6 +70,7 @@ You are an expert developer focused on TypeScript, Bash, DevOps, Git, and GitHub
 - Flow: PR to `staging-2` (squash, Conventional Commit title), `promote.yml` fast-forwards `main-2` and `release.yml` publishes once; merges to `staging-2` never release.
 - NEVER commit to `main-2` or `staging-2` directly; releases never commit to a branch.
 - Use `pr.yml` and `scripts/ops/pr_checks.mts` to enforce branch policy and workflow pinning.
+- `v2` is the only mutable tag, moved by `release.yml` on stable releases only. NEVER move, delete or recreate any exact `v2.*` tag.
 - Use `release.yml` and semantic-release for publishing; the tag points at a detached commit that carries `dist/`.
 - Keep release automation compatible with the Octo STS app bypass on the `main-2` and release tag rulesets (`.github/rulesets/`).
 
