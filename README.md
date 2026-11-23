@@ -9,7 +9,6 @@
 </p>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/awalsh128/cache-apt-pkgs-action" alt="License"></a>
   <a href="https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/action-tests.yml?query=branch%3Amaster"><img src="https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/action-tests.yml?label=Tests%20master&branch=master" alt="Tests master"></a>
   <a href="https://github.com/awalsh128/cache-apt-pkgs-action/releases"><img src="https://img.shields.io/github/v/release/awalsh128/cache-apt-pkgs-action?label=Release" alt="Latest release"></a>
 </p>
