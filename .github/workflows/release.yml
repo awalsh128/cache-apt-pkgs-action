@@ -6,8 +6,10 @@ name: Release
 # - staging-2: a manual run releases a candidate (e.g. v2.1.0-rc.1). Use it only when a candidate is
 #   wanted; the official release is computed from the same commits either way.
 #
-# There is no floating major tag (v2) on purpose: a tag that moves lets a compromised release change what
-# consumers run, so they pin an exact release or a commit SHA.
+# The floating major tag (v2) is the only mutable tag. A stable release on main-2 moves it to the new
+# release commit; release candidates never touch it. Every exact tag (v2.1.0, v2.1.0-rc.1) is immutable
+# and can't be updated or deleted by anyone, see .github/rulesets/. Consumers who want no moving
+# parts pin an exact release or a commit SHA.
 # - Manual runs first require a successful CI run for the commit.
 #
 # Releases never commit to a branch. dist/ is gitignored, so semantic-release tags a detached commit
@@ -105,6 +107,28 @@ jobs:
           bundle="cache-apt-pkgs-action-$TAG.tar.gz"
           git archive --format=tar.gz -o "$bundle" "$TAG" action.yml dist LICENSE
           echo "path=$bundle" >> "$GITHUB_OUTPUT"
+
+      # The only mutable tag. Stable releases only, so a release candidate never moves it. It points at
+      # the same dist commit as the exact tag, so attestation and bundle cover what @v2 resolves to.
+      # The tag ruleset lets only the Octo STS app create or move it.
+      - name: Move major tag
+        if: ${{ steps.release.outputs.official == 'true' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.octo-sts.outputs.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          major="v${VERSION%%.*}"
+          sha="$(git rev-parse "$TAG^{commit}")"
+          if gh api "repos/$REPO/git/ref/tags/$major" --silent 2>/dev/null; then
+            gh api -X PATCH "repos/$REPO/git/refs/tags/$major" -f sha="$sha" -F force=true --silent
+          else
+            gh api -X POST "repos/$REPO/git/refs" -f ref="refs/tags/$major" -f sha="$sha" --silent
+          fi
+          echo "Moved $major to $TAG ($sha)"
 
       - name: Attest build provenance
         if: ${{ steps.bundle.outputs.path != '' }}

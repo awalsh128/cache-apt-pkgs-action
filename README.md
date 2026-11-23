@@ -1,10 +1,20 @@
-# <img src="logo.png" alt="Cache APT Packages logo" height="80" align="center"> Cache APT Packages v2
+<p align="center">
+  <img src="logo.png" alt="Cache APT Packages logo" width="128" height="128">
+</p>
 
-[![License](https://img.shields.io/github/license/awalsh128/cache-apt-pkgs-action)](LICENSE)
-[![CI main-2](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20main-2&branch=main-2)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Amain-2)
-[![codecov main-2](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/branch/main-2/graph/badge.svg)](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/tree/main-2)
-[![CI staging-2](https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20staging-2&branch=staging-2)](https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Astaging-2)
-[![codecov staging-2](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/branch/staging-2/graph/badge.svg)](https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/tree/staging-2)
+<h1 align="center">Cache APT Packages</h1>
+
+<p align="center">
+  Cache APT packages between GitHub Actions runs, so a run restores them instead of installing them again.
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/awalsh128/cache-apt-pkgs-action" alt="License"></a>
+  <a href="https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Amain-2"><img src="https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20main-2&branch=main-2" alt="CI main-2"></a>
+  <a href="https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/tree/main-2"><img src="https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/branch/main-2/graph/badge.svg" alt="Codecov main-2"></a>
+  <a href="https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Astaging-2"><img src="https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20staging-2&branch=staging-2" alt="CI staging-2"></a>
+  <a href="https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/tree/staging-2"><img src="https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/branch/staging-2/graph/badge.svg" alt="Codecov staging-2"></a>
+</p>
 
 Cache APT packages between workflow runs, so a run restores them from the GitHub Actions cache instead of installing them again. It is built on [`@actions/cache`](https://github.com/actions/toolkit/tree/main/packages/cache) and [ts-apt](https://github.com/awalsh128/ts-apt).
 
@@ -14,9 +24,17 @@ Cache APT packages between workflow runs, so a run restores them from the GitHub
 - 🧾 Reports the exact installed versions as outputs, for audit logs.
 - 🔍 Uploads the logs and manifests as an artifact when `debug` is on.
 
-[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-db61a2?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/awalsh128)
+<!-- prettier-ignore -->
+<p align="center">
+  <a href="https://github.com/sponsors/awalsh128"><img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-db61a2?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor awalsh128"></a>
+</p>
 
-If you find this project useful, please consider [sponsoring it](https://github.com/sponsors/awalsh128) and show some ❤️ for open source maintainers.
+<p align="center">
+  Free and open source, and kept up by one person.<br />
+  If it saves you time, <a href="https://github.com/sponsors/awalsh128">sponsor it monthly</a> or
+  <a href="https://github.com/sponsors/awalsh128?frequency=one-time">leave a small one-time tip</a>. Every bit
+  helps.
+</p>
 
 > [!IMPORTANT]
 > v2 is still in development and has no release yet, so the examples use `v2.0.0`, the first one. Use `@v1` (or `@latest`) for the released version. The [Version 2 FAQ](V2_FAQ.MD) covers what changes.
@@ -62,10 +80,11 @@ A Linux runner with APT (e.g. GitHub-hosted `ubuntu-latest`). The action runs on
 
 ## Versions
 
-- `@v#.#.#` is an exact release (e.g. `v2.0.0`). Release candidates, cut by hand from `staging-2`, are tagged `v#.#.#-rc.#` and may be unstable.
+- `@v2` is the latest stable v2 release. It moves on each stable release, and it is the only tag that ever moves.
+- `@v#.#.#` is an exact release (e.g. `v2.0.0`). It never changes once published. Release candidates, cut by hand from `staging-2`, are tagged `v#.#.#-rc.#` and may be unstable. `@v2` never points at one.
 - A full commit SHA pins the exact code and is the safest choice.
 
-v2 has no floating major tag (e.g. `@v2`) on purpose. A tag that moves lets a compromised release change what your workflow runs. `@latest` and `@v1` are moving tags, and they only point at v1.
+A tag that moves lets a compromised release change what your workflow runs. If that matters to you, pin an exact release or a commit SHA instead of `@v2`. `@latest` and `@v1` are moving tags too, and they only point at v1.
 
 Version 1 is maintained on the frozen `master` branch. Version 2 is released from tags only. The `main-2` and `staging-2` branches hold source without the built `dist/`, so do not use them as `uses:` refs.
 

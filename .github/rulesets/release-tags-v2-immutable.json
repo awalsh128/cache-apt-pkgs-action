@@ -1,0 +1,8 @@
+{
+  "name": "release tags v2 immutable",
+  "target": "tag",
+  "enforcement": "active",
+  "conditions": { "ref_name": { "include": ["refs/tags/v2.*"], "exclude": [] } },
+  "bypass_actors": [],
+  "rules": [{ "type": "update" }, { "type": "deletion" }]
+}
