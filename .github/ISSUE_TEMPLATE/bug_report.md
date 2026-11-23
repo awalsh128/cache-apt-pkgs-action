@@ -6,7 +6,7 @@ labels: ""
 assignees: ""
 ---
 
-IMPORTANT: Please read about the limitation of [non-file dependencies](https://github.com/awalsh128/cache-apt-pkgs-action/blob/master/README.md#non-file-dependencies) before filing an issue.
+IMPORTANT: Please read about the limitation of [non-file dependencies](https://github.com/awalsh128/cache-apt-pkgs-action/blob/main-2/README.md#non-file-dependencies) before filing an issue.
 
 **Describe the bug**
 A clear and concise description of what the bug is.
