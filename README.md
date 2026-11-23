@@ -9,7 +9,6 @@
 </p>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/awalsh128/cache-apt-pkgs-action" alt="License"></a>
   <a href="https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Amain-2"><img src="https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20main-2&branch=main-2" alt="CI main-2"></a>
   <a href="https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/tree/main-2"><img src="https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/branch/main-2/graph/badge.svg" alt="Codecov main-2"></a>
   <a href="https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Astaging-2"><img src="https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20staging-2&branch=staging-2" alt="CI staging-2"></a>
