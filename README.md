@@ -41,9 +41,9 @@ installing them again. It is built on
 
 <!-- prettier-ignore -->
 > [!IMPORTANT]
-> v2 has a release candidate (`v2.0.0-rc.1`) and no stable release yet, so the examples use
-> `v2.0.0`, the first stable one. Use `@v1` for the released version. The [Version 2 FAQ](V2_FAQ.MD) covers
-> what changes.
+> v2 has release candidates and no stable release yet, so the examples use `v2.0.0`, the first stable one.
+> Pick a candidate from [Releases](https://github.com/awalsh128/cache-apt-pkgs-action/releases) to try it, or
+> use `@v1` for the released version. The [Version 2 FAQ](V2_FAQ.MD) covers what changes.
 
 <!-- prettier-ignore -->
 > [!NOTE]
