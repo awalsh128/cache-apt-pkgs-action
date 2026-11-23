@@ -177,7 +177,7 @@ export default {
   branches: [
     // Pre-release candidate, feature complete, but may contain known bugs.
     //
-    //   'staging-2' releases candidates only when a release is started by hand.
+    //   'staging-2' releases a candidate when release-candidate.yml starts one after CI passes.
     //   'channel: "next"' publishes the GitHub prerelease on the 'next' channel.
     //   'prerelease: "rc"' adds the '-rc.x' suffix (e.g., v2.1.0-rc.1).
     { name: "staging-2", channel: "next", prerelease: "rc" },

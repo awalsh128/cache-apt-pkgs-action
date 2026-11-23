@@ -2,10 +2,10 @@ name: CI
 
 on:
   repository_dispatch:
-  # staging-2 collects changes; nothing is released from a push, so versions only change when a
-  # release is started on purpose (promote.yml, or release.yml by hand). main-2 re-runs once per
-  # promotion (a fast-forward of a commit that already passed), which keeps its CI and coverage
-  # badges current. Release lookups by SHA ignore it while it is in progress.
+  # A staging-2 push that passes starts a release candidate (release-candidate.yml); official versions
+  # only change when promote.yml starts a release. main-2 re-runs once per promotion (a fast-forward
+  # of a commit that already passed), which keeps its CI and coverage badges current. Release lookups
+  # by SHA ignore it while it is in progress.
   push:
     branches: [main-2, staging-2]
   pull_request:

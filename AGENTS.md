@@ -67,7 +67,7 @@ You are an expert developer focused on TypeScript, Bash, DevOps, Git, and GitHub
 - `master` is v1 and frozen for maintenance only: security fixes and critical bug fixes, nothing else.
 - NEVER add features, refactors, docs rewrites or breaking changes to `master`.
 - ASK FIRST before any change to `master`, and only when the user explicitly says it is a v1 update.
-- Flow: PR to `staging-2` (squash, Conventional Commit title), `promote.yml` fast-forwards `main-2` and `release.yml` publishes once; merges to `staging-2` never release.
+- Flow: PR to `staging-2` (squash, Conventional Commit title), `release-candidate.yml` starts a release candidate after CI passes on `staging-2`, and `promote.yml` fast-forwards `main-2` and starts the official release.
 - NEVER commit to `main-2` or `staging-2` directly; releases never commit to a branch.
 - Use `pr.yml` and `scripts/ops/pr_checks.mts` to enforce branch policy and workflow pinning.
 - `v2` is the only mutable tag, moved by `release.yml` on stable releases only. NEVER move, delete or recreate any exact `v2.*` tag.

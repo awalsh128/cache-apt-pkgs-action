@@ -1,10 +1,11 @@
 name: Release
 
-# Changes are collected on staging-2 and released all at once, so nothing is released from a push:
-# - main-2: promote.yml starts this after fast-forwarding main-2 to a CI-passed staging-2 commit,
-#   releasing one official version (e.g. v2.1.0).
-# - staging-2: a manual run releases a candidate (e.g. v2.1.0-rc.1). Use it only when a candidate is
-#   wanted; the official release is computed from the same commits either way.
+# Started on its own, never called from another workflow, by:
+# - main-2: promote.yml, after fast-forwarding main-2 to a CI-passed staging-2 commit, releasing one
+#   official version (e.g. v2.1.0).
+# - staging-2: release-candidate.yml, after CI passes on a push, releasing a candidate (e.g.
+#   v2.1.0-rc.1) when the commits since the last release call for one. A manual run does the same.
+#   The official release is computed from the same commits either way.
 #
 # The floating major tag (v2) is the only mutable tag. A stable release on main-2 moves it to the new
 # release commit; release candidates never touch it. Every exact tag (v2.1.0, v2.1.0-rc.1) is immutable
