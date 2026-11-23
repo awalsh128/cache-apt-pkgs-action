@@ -3,6 +3,8 @@ import {
   type CommandRunner,
   type PackageInfo,
   type PackageManager,
+  type NotInstallablePackage,
+  PackageNotInstallableError,
   type PackageName,
 } from "ts-apt";
 import { Cache, CacheKey } from "./cache.js";
@@ -15,6 +17,27 @@ type EmptyPackageBehavior = "error" | "warn" | "ignore";
 const FORCE_UPDATE_INCREMENT = "1";
 
 const EMPTY_PACKAGES_MESSAGE = "Packages argument is empty.";
+
+/**
+ * Explains which requested packages apt cannot install and what to do about each, for the step's failure
+ * message.
+ *
+ * @param packages The packages apt reported as not installable.
+ * @returns A message naming each package, why it fails, and the alternatives apt offers.
+ */
+function describeNotInstallable(packages: readonly NotInstallablePackage[]): string {
+  const lines = packages.map((entry) => {
+    if (entry.reason === "not-found") {
+      return `- '${entry.name}' was not found. Check the name for a typo, or that the repository providing it is set up.`;
+    }
+    const instead =
+      entry.alternatives.length > 0
+        ? ` Use one of these instead: ${entry.alternatives.join(", ")}.`
+        : " It is virtual or obsolete and nothing provides it.";
+    return `- '${entry.name}' has no installation candidate.${instead}`;
+  });
+  return `apt cannot install ${packages.length === 1 ? "a requested package" : "some requested packages"}. Fix the packages input.\n${lines.join("\n")}`;
+}
 
 /** Inputs accepted by the GitHub Action runtime. */
 export interface ActionInputs {
@@ -137,9 +160,16 @@ export class ActionRunner {
     // Runner images ship an apt index that can predate the archive, so a package whose version was
     // superseded (e.g. a security update) 404s on download. Refresh it before every fresh install.
     await this.timed("apt update", () => installManager.update());
-    const reportedInfos = await this.timed("apt install", () =>
-      installManager.install(packageNames.toArray()),
-    );
+    const reportedInfos = await this.timed("apt install", async () => {
+      try {
+        return await installManager.install(packageNames.toArray());
+      } catch (error) {
+        if (error instanceof PackageNotInstallableError) {
+          throw new Error(describeNotInstallable(error.packages), { cause: error });
+        }
+        throw error;
+      }
+    });
     const packageInfos = await this.addAlreadyInstalled(installManager, packageNames, reportedInfos);
     // Collect each package's installed files so the archives have content, and the alternatives it
     // registered, since their links aren't in the file list.
