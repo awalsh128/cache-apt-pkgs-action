@@ -83,7 +83,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Analyze
-        uses: github/codeql-action/analyze@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a # v4
+        uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4
 
   linters:
     runs-on: ubuntu-24.04
