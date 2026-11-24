@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/action-tests.yml?query=branch%3Amaster"><img src="https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/action-tests.yml?label=Tests%20master&branch=master" alt="Tests master"></a>
-  <a href="https://github.com/awalsh128/cache-apt-pkgs-action/releases"><img src="https://img.shields.io/github/v/release/awalsh128/cache-apt-pkgs-action?label=Release" alt="Latest release"></a>
+  <a href="https://github.com/awalsh128/cache-apt-pkgs-action/releases"><img src="https://img.shields.io/github/v/release/awalsh128/cache-apt-pkgs-action?label=Release&filter=v1.*" alt="Latest v1 release"></a>
 </p>
 
 Cache Advanced Package Tool (APT) packages between workflow runs, so a run restores them from the GitHub Actions cache instead of installing them again. It is a composition of [actions/cache](https://github.com/actions/cache/) and the `apt` utility.
