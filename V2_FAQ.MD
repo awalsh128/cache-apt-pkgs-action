@@ -1,5 +1,8 @@
-<img src="logo.png" alt="Description" height="80" align="center" style="padding-right: 1em;">
-<span style="font-size: 2em; font-weight: bold;">Cache APT Packages Action v2 :: FAQ</span>
+<p align="center">
+  <img src="logo.png" alt="Cache APT Packages logo" width="128" height="128">
+</p>
+
+<h1 align="center">Cache APT Packages v2 FAQ</h1>
 
 ## Why did you create a new version?
 
@@ -12,7 +15,7 @@ idioms like:
 - robust logging, debugging, other instrumentations; and
 - avoiding cryptic shell and system environment considerations.
 
-The lack of these
+v2 moves that logic into typed, tested TypeScript.
 
 ### Language Choice
 
@@ -40,21 +43,22 @@ For ease of use there is an option to bring in the workspace for inline source v
 
 ## How do I start using this?
 
-<!-- prettier-ignore -->
-> [!IMPORTANT]
-> This is in the early phase of development. Use at your own risk!
+v2 is stable and released from tags only. See the [README](README.md#versions) for the tags.
 
-**The action inputs and outputs are backwards compatible.** The action runs on the `node24` runtime, so
-self-hosted runners need a runner version that supports it (GitHub-hosted runners already do).
+**The inputs and outputs are backwards compatible, with one exception:** `add-repository` (adding PPAs and
+other repositories before install) and the already obsolete `refresh` input are gone. Add a repository in a
+step before the action instead. The action runs on the `node24` runtime, so self-hosted runners need a runner
+version that supports it (GitHub-hosted runners already do).
 
 - Change to `@v2` (latest stable v2), an exact `v2.*.*` release or a commit SHA in your GitHub workflow. `v2`
   is the only tag that moves.
-- `v1.*` will still get patch updates but is in maintenance mode.
+- `v1.*` will still get patch updates but is in maintenance mode. Stay on `@v1` if you need `add-repository`.
 
 ## Some internal changes
 
 - Logging uses native GitHub calls that will result in run annotations.
-- Output will tend to be more verbose but this will be tuned as this version matures.
-- All the metadata generated like manifests, the cache key, and logs are now stored as artifacts.
+- Output is more verbose than v1.
+- When `debug` is on (or a run fails), the manifests, the cache key and the logs are uploaded as a workflow
+  artifact.
 - Debug mode can either be specified via an input parameter `debug` or
   [as part of the repository settings](https://docs.github.com/en/actions/how-tos/monitor-workflows/enable-debug-logging).

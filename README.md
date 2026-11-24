@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/awalsh128/cache-apt-pkgs-action/releases/latest"><img src="https://img.shields.io/github/v/release/awalsh128/cache-apt-pkgs-action?label=Release" alt="Latest release"></a>
   <a href="https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Amain-2"><img src="https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20main-2&branch=main-2" alt="CI main-2"></a>
   <a href="https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/tree/main-2"><img src="https://codecov.io/gh/awalsh128/cache-apt-pkgs-action/branch/main-2/graph/badge.svg" alt="Codecov main-2"></a>
   <a href="https://github.com/awalsh128/cache-apt-pkgs-action/actions/workflows/ci.yml?query=branch%3Astaging-2"><img src="https://img.shields.io/github/actions/workflow/status/awalsh128/cache-apt-pkgs-action/ci.yml?label=CI%20staging-2&branch=staging-2" alt="CI staging-2"></a>
@@ -41,9 +42,9 @@ installing them again. It is built on
 
 <!-- prettier-ignore -->
 > [!IMPORTANT]
-> v2 has release candidates and no stable release yet, so the examples use `v2.0.0`, the first stable one.
-> Pick a candidate from [Releases](https://github.com/awalsh128/cache-apt-pkgs-action/releases) to try it, or
-> use `@v1` for the released version. The [Version 2 FAQ](V2_FAQ.MD) covers what changes.
+> v2 is stable. Use `@v2` (or an exact release like `v2.0.0`) for new and existing workflows. v1 is in
+> maintenance mode and only gets bug and reliability fixes, so use `@v1` only if you need what v2 dropped
+> (e.g. `add-repository`). The [Version 2 FAQ](V2_FAQ.MD) covers what changes.
 
 <!-- prettier-ignore -->
 > [!NOTE]
@@ -94,6 +95,7 @@ runners need a runner version that supports it. GitHub-hosted runners already do
   moves.
 - `@v#.#.#` is an exact release (e.g. `v2.0.0`). It never changes once published. Release candidates, cut from
   `staging-2` after CI passes, are tagged `v#.#.#-rc.#` and may be unstable. `@v2` never points at one.
+- `@v1` is the last v1 release line, in maintenance mode on the frozen `master` branch.
 - A full commit SHA pins the exact code and is the safest choice.
 
 A tag that moves lets a compromised release change what your workflow runs. If that matters to you, pin an
