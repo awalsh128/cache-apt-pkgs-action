@@ -1,0 +1,6 @@
+{
+  "chat.tools.terminal.autoApprove": {},
+  "chat.useAgentsMdFile": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true
+}
