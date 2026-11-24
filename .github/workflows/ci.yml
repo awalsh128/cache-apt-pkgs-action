@@ -127,13 +127,6 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: Check Action Dependencies Pinned
-        shell: bash
-        env:
-          # Authenticated API requests avoid the shared runner IP rate limit.
-          GITHUB_TOKEN: ${{ github.token }}
-        run: npm run check:latest-action-pins
-
       # Fails if ts-apt is linked locally or not pinned to a pushed commit SHA.
       - name: Check Dependency Pins
         shell: bash

@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # Keeps the SHA-pinned actions in the workflows and the local composite action current.
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/setup
+    target-branch: staging-2
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "ci"
