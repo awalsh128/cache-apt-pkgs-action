@@ -33,7 +33,7 @@ Cache Advanced Package Tool (APT) packages between workflow runs, so a run resto
 </p>
 
 > [!IMPORTANT]
-> Version 1 is in maintenance mode. Recent releases have been unstable, so v1 is locked to bug fixes and reliability work. Version 2 is in pre-release (see [v2.0.0-rc.1](https://github.com/awalsh128/cache-apt-pkgs-action/releases/tag/v2.0.0-rc.1)) and is developed on the [`staging-2`](https://github.com/awalsh128/cache-apt-pkgs-action/tree/staging-2) branch. It is written in TypeScript, has better test coverage and relies much less on Bash scripts, which have caused more than one major break.
+> Version 1 is in maintenance mode. Recent releases have been unstable, so v1 is locked to bug fixes and reliability work. Version 2 is stable (see [v2.0.0](https://github.com/awalsh128/cache-apt-pkgs-action/releases/tag/v2.0.0)), so use `@v2` for new workflows. It is released from the [`main-2`](https://github.com/awalsh128/cache-apt-pkgs-action/tree/main-2) branch and developed on `staging-2`. It is written in TypeScript, has better test coverage and relies much less on Bash scripts, which have caused more than one major break.
 
 > [!NOTE]
 > Looking for co-maintainers to help review changes and investigate issues. I haven't had as much time to stay on top of this action as I would like, and I want to make sure it stays responsive and reliable for the community. If you are interested, please reach out.
@@ -66,7 +66,7 @@ There are two kinds of version labels you can use.
 
 `@v1` is the latest v1 release and moves on each one. For no moving parts, pin a release tag (e.g. `@v1.6.3`) or a full commit SHA. The `latest` tag is deprecated and will no longer be updated.
 
-Version 2 has its own tags. `@v2` will be the latest stable v2 release once there is one, and it is the only tag that moves there. The `main-2` and `staging-2` branches don't carry the built action, so don't use them as `uses:` refs. See the [v2 README](https://github.com/awalsh128/cache-apt-pkgs-action/blob/staging-2/README.md#versions) for its versions.
+Version 2 has its own tags. `@v2` is the latest stable v2 release, and it is the only tag that moves there. The `main-2` and `staging-2` branches don't carry the built action, so don't use them as `uses:` refs. See the [v2 README](https://github.com/awalsh128/cache-apt-pkgs-action/blob/main-2/README.md#versions) for its versions.
 
 ### Inputs
 
